@@ -298,6 +298,8 @@ body {
 .field__label {
   color: var(--text);
 }
+.users-banner { padding: 0.6rem 0.8rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 0.75rem; background: var(--pending-bg); color: var(--pending-text); }
+.users-banner[data-kind="error"] { background: var(--fail-bg); color: var(--fail-text); }
 .sync-status { font-size: 0.78rem; color: var(--text-muted); }
 .sync-status[data-state="error"] { color: var(--fail-text); }
 .type-bar { margin-bottom: 0.75rem; }
@@ -514,6 +516,8 @@ body {
   font-size: 0.78rem;
   color: var(--text-faint);
 }
+
+[hidden] { display: none !important; }
 
 /* ---------- Đăng nhập ---------- */
 .login-overlay {
@@ -737,6 +741,9 @@ body {
       </button>
       <button class="sidebar__item" data-tab="repeatability">
         <span class="sidebar__icon">🎯</span> Độ lặp lại
+      </button>
+      <button class="sidebar__item" data-tab="users">
+        <span class="sidebar__icon">👥</span> Người dùng
       </button>
       <button class="sidebar__item" data-tab="settings">
         <span class="sidebar__icon">⚙️</span> Cài đặt
@@ -1028,6 +1035,27 @@ body {
         </div>
       </section>
 
+      <!-- ---------- PANEL: NGƯỜI DÙNG (Admin) ---------- -->
+      <section class="panel" id="panel-users" data-panel="users">
+        <h1 class="panel__title">Quản lý người dùng</h1>
+        <p class="panel__desc" id="users-mode-note"></p>
+        <div class="card">
+          <div class="toolbar">
+            <button type="button" class="btn btn--secondary" id="btn-users-refresh">🔄 Tải lại</button>
+            <button type="button" class="btn btn--primary" id="btn-users-add">➕ Thêm người dùng</button>
+          </div>
+          <div class="users-banner" id="users-banner" hidden></div>
+          <div class="table-wrapper">
+            <table class="data-table" id="users-table">
+              <thead>
+                <tr><th>Họ và tên</th><th>Đăng nhập</th><th>Vai trò</th><th>Trạng thái</th><th style="text-align:right;">Thao tác</th></tr>
+              </thead>
+              <tbody id="users-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       <!-- ---------- PANEL: CÀI ĐẶT ---------- -->
       <section class="panel" id="panel-settings" data-panel="settings">
         <h1 class="panel__title">Cài đặt</h1>
@@ -1077,22 +1105,6 @@ body {
           <div class="card" id="settings-auditlog">
             <h2 class="card__title">Nhật ký thao tác gần đây</h2>
             <ul class="settings-list" id="audit-log-list"><!-- render bằng JS --></ul>
-          </div>
-
-          <div class="card" id="settings-users">
-            <h2 class="card__title">Quản lý người dùng &amp; phân quyền</h2>
-            <ul class="settings-list" id="users-list"><!-- render bằng JS --></ul>
-            <div class="settings-add-row settings-add-row--wrap">
-              <input type="text" class="field__input" id="user-new-name" placeholder="Tên đăng nhập" />
-              <input type="text" class="field__input" id="user-new-password" placeholder="Mật khẩu" />
-              <select class="field__input" id="user-new-role">
-                <option value="inspector">Inspector (Tester)</option>
-                <option value="supervisor">Supervisor/Manager</option>
-                <option value="admin">Admin</option>
-              </select>
-              <button type="button" class="btn btn--secondary" id="btn-add-user">Thêm người dùng</button>
-            </div>
-            <p class="storage-mode">Mật khẩu chỉ để phân biệt người dùng trên máy dùng chung — KHÔNG phải bảo mật thật sự (app chạy offline, dữ liệu vẫn nằm ngay trên máy).</p>
           </div>
         </div>
       </section>
@@ -1144,13 +1156,17 @@ body {
   <div class="login-overlay" id="login-overlay" hidden>
     <div class="login-box">
       <h2>Đăng nhập Lab Record</h2>
-      <label class="field">
+      <label class="field" id="login-user-wrap">
         <span class="field__label">Người dùng</span>
         <select class="field__input" id="login-user"></select>
       </label>
+      <label class="field" id="login-email-wrap" hidden>
+        <span class="field__label">Email hoặc tên đăng nhập</span>
+        <input type="text" class="field__input" id="login-email" autocomplete="username" />
+      </label>
       <label class="field">
         <span class="field__label">Mật khẩu</span>
-        <input type="password" class="field__input" id="login-password" />
+        <input type="password" class="field__input" id="login-password" autocomplete="current-password" />
       </label>
       <p class="field__hint login-error" id="login-error"></p>
       <button type="button" class="btn btn--primary" id="btn-login">Đăng nhập</button>
@@ -1195,6 +1211,7 @@ const CONFIG = {
   // nằm trong mã phía trình duyệt; mức bảo vệ dữ liệu do RLS quyết định (xem supabase/schema.sql).
   supabase: {
     enabled: true,
+    auth: true,   // true = đăng nhập thật bằng Supabase Auth (email + mật khẩu); false = đăng nhập cục bộ như trước
     url: 'https://stkxfpceffdtkxcrcrtw.supabase.co',
     key: 'sb_publishable_mJA0tM6dGm08bKlDaJCyaQ_bVX-Liy0'
   },
@@ -1530,6 +1547,108 @@ const Storage = (function () {
   return { init, put, get, getAll, delete: del, mode: () => mode };
 })();
 
+/* ---------------- ĐĂNG NHẬP SUPABASE AUTH (email + mật khẩu) ----------------
+   Khi CONFIG.supabase.auth = true: đăng nhập thật, token dùng cho mọi request tới Supabase; vai trò
+   lấy từ bảng `profiles`; quyền thật do RLS trên server quyết định (supabase/auth.sql).
+   Phiên lưu trong localStorage (tự làm mới token) — trên máy dùng chung nhớ bấm Đăng xuất. */
+const Auth = (function () {
+  const KEY = 'labrecord_auth';
+  let session = null;
+  const sb = () => CONFIG.supabase;
+  const on = () => !!(sb() && sb().enabled && sb().auth);
+  function load() { try { session = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { session = null; } }
+  function save() { try { if (session) localStorage.setItem(KEY, JSON.stringify(session)); else localStorage.removeItem(KEY); } catch (e) {} }
+  async function authReq(path, body) {
+    const r = await fetch(sb().url + '/auth/v1/' + path, { method: 'POST', headers: { apikey: sb().key, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { const e = new Error(j.msg || j.error_description || j.message || ('HTTP ' + r.status)); e.status = r.status; throw e; }
+    return j;
+  }
+  // Đăng nhập bằng "tên đăng nhập" (không có @) → email nội bộ, PHẢI khớp Edge Function admin-users.
+  function toEmail(login) {
+    login = String(login || '').trim();
+    if (login.includes('@')) return login;
+    return login.toLowerCase() + '@' + new URL(sb().url).hostname.split('.')[0] + '.users.internal';
+  }
+  function apply(tok) {
+    session = Object.assign(session || {}, {
+      access_token: tok.access_token, refresh_token: tok.refresh_token,
+      expires_at: Date.now() + (tok.expires_in || 3600) * 1000, user: { id: tok.user.id, email: tok.user.email }
+    });
+    save();
+  }
+  async function rest(path, opts) {
+    const r = await fetch(sb().url + '/rest/v1/' + path, Object.assign({}, opts, {
+      headers: Object.assign({ apikey: sb().key, Authorization: 'Bearer ' + await api.token() }, opts && opts.headers) }));
+    if (!r.ok) { const e = new Error('HTTP ' + r.status + ' ' + (await r.text().catch(() => '')).slice(0, 140)); e.status = r.status; throw e; }
+    return r;
+  }
+  // Cột `disabled` chỉ có sau khi chạy supabase/users.sql; chưa có thì tự lùi về truy vấn cũ.
+  async function selectProfiles(filter, cols, extraCols) {
+    try { return await (await rest('profiles?' + filter + '&select=' + cols + ',' + extraCols)).json(); }
+    catch (e) { if (e.status !== 400) throw e; return (await rest('profiles?' + filter + '&select=' + cols)).json(); }
+  }
+  async function fetchProfile() {
+    const rows = await selectProfiles('user_id=eq.' + session.user.id, 'role,display_name', 'disabled');
+    if (!rows.length || rows[0].disabled) return null;
+    return { role: rows[0].role, name: rows[0].display_name || session.user.email };
+  }
+  const api = {
+    on,
+    ready: () => !!session,
+    session: () => session,
+    async signIn(login, password) {
+      session = null;
+      apply(await authReq('token?grant_type=password', { email: toEmail(login), password }));
+      const p = await fetchProfile();
+      if (!p) { await api.signOut(); throw new Error('Tài khoản chưa được cấp quyền (chưa có hồ sơ vai trò). Liên hệ Admin.'); }
+      session.profile = p; save();
+      return session;
+    },
+    async token() {
+      if (!session) { const e = new Error('Chưa đăng nhập'); e.authFail = true; throw e; }
+      if (session.expires_at - 60000 < Date.now()) {
+        try { apply(await authReq('token?grant_type=refresh_token', { refresh_token: session.refresh_token })); }
+        catch (e) { if (e.status && e.status < 500) { session = null; save(); } e.authFail = true; throw e; }
+      }
+      return session.access_token;
+    },
+    restore() { load(); return session && session.profile ? session : null; },
+    // Kiểm tra lại phiên khi mở app: 'ok' (kèm hồ sơ mới nhất), 'invalid' (phải đăng nhập lại), 'offline' (giữ phiên đang có)
+    async validate() {
+      try { await api.token(); } catch (e) { return { status: e.status && e.status < 500 ? 'invalid' : 'offline' }; }
+      try {
+        const p = await fetchProfile();
+        if (!p) return { status: 'invalid' };
+        session.profile = p; save();
+        return { status: 'ok', profile: p };
+      } catch (e) { return { status: (e.status === 401 || e.status === 403) ? 'invalid' : 'offline' }; }
+    },
+    async signOut() {
+      try { if (session) await fetch(sb().url + '/auth/v1/logout', { method: 'POST', headers: { apikey: sb().key, Authorization: 'Bearer ' + session.access_token } }); } catch (e) {}
+      session = null; save();
+    },
+    clear() { session = null; save(); },
+    async listProfiles() { return selectProfiles('order=email.asc', 'user_id,email,display_name,role', 'disabled,username'); },
+    // Gọi Edge Function admin-users (list-users / create-user / change-role / disable-user / enable-user). Chỉ Admin.
+    async adminInvoke(action, payload) {
+      const r = await fetch(sb().url + '/functions/v1/admin-users', {
+        method: 'POST',
+        headers: { apikey: sb().key, Authorization: 'Bearer ' + await api.token(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(Object.assign({ action }, payload || {}))
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        const e = new Error(r.status === 404 ? 'Chưa triển khai Edge Function "admin-users" trên Supabase (xem supabase/README.md).' : (j.error || j.message || ('HTTP ' + r.status)));
+        e.status = r.status;
+        throw e;
+      }
+      return j;
+    }
+  };
+  return api;
+})();
+
 /* ---------------- ĐỒNG BỘ SUPABASE (offline-first) ----------------
    Dữ liệu vẫn lưu cục bộ trước (IndexedDB/localStorage) nên app chạy được khi mất mạng.
    Mọi ghi/xoá được đưa vào hàng đợi rồi đẩy lên Supabase qua REST (PostgREST) bằng fetch
@@ -1542,11 +1661,12 @@ const Storage = (function () {
 const Sync = (function () {
   const Q_KEY = 'labrecord_syncq', LP_KEY = 'labrecord_sync_lastpull', FIRST_KEY = 'labrecord_sync_seeded';
   const SYNC_SETTINGS = ['staff', 'thresholds', 'fieldMapping', 'itemCodes', 'repeatability'];
-  let status = 'off', lastSync = null, lastError = '', busy = false, timer = null;
+  let status = 'off', lastSync = null, lastError = '', busy = false, timer = null, started = false;
 
   const cfg = () => CONFIG.supabase;
-  const enabled = () => !!(cfg() && cfg().enabled && cfg().url && cfg().key);
-  const headers = (extra) => Object.assign({ apikey: cfg().key, Authorization: 'Bearer ' + cfg().key }, extra || {});
+  const configured = () => !!(cfg() && cfg().enabled && cfg().url && cfg().key);
+  const enabled = () => configured() && (!Auth.on() || Auth.ready());   // ở chế độ Auth chỉ đồng bộ khi đã đăng nhập
+  const headers = (extra) => Object.assign({ apikey: cfg().key }, extra || {});
   const jsonHeaders = (prefer) => headers({ 'Content-Type': 'application/json', Prefer: prefer || 'resolution=merge-duplicates,return=minimal' });
   const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } };
   const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
@@ -1562,11 +1682,22 @@ const Sync = (function () {
     if (store === 'settings') return SYNC_SETTINGS.includes(key);
     return store === 'auditLog' || store === 'attachments';
   }
+  // Token người dùng (Supabase Auth) hoặc publishable key khi chưa dùng Auth; tự làm mới token khi hết hạn.
   async function http(url, opts) {
+    opts = Object.assign({}, opts);
+    const tok = Auth.on() ? await Auth.token() : cfg().key;
+    opts.headers = Object.assign({}, opts.headers, { Authorization: 'Bearer ' + tok });
     const r = await fetch(url, opts);
-    if (!r.ok) { const t = await r.text().catch(() => ''); throw new Error('HTTP ' + r.status + ' ' + t.slice(0, 160)); }
+    if (!r.ok) {
+      const t = await r.text().catch(() => '');
+      const e = new Error('HTTP ' + r.status + ' ' + t.slice(0, 160));
+      e.status = r.status;
+      throw e;
+    }
     return r;
   }
+  // Bị server từ chối vĩnh viễn (RLS/trigger/dữ liệu sai) → bỏ mục này khỏi hàng đợi để không chặn các mục sau.
+  const permanent = (e) => !e.authFail && e.status >= 400 && e.status < 500 && ![401, 408, 429].includes(e.status);
   const rest = (path, opts) => http(cfg().url + '/rest/v1/' + path, opts);
 
   async function pushItem(it) {
@@ -1591,7 +1722,7 @@ const Sync = (function () {
     if (it.store === 'auditLog') {
       const v = await Storage.get('auditLog', it.key);
       if (!v) return;
-      return rest('lab_audit?on_conflict=id', { method: 'POST', headers: jsonHeaders(),
+      return rest('lab_audit?on_conflict=id', { method: 'POST', headers: jsonHeaders('resolution=ignore-duplicates,return=minimal'),
         body: JSON.stringify({ id: v.id, data: v }) });
     }
     if (it.store === 'attachments') {
@@ -1607,13 +1738,19 @@ const Sync = (function () {
     if (typeof navigator !== 'undefined' && navigator.onLine === false) { status = 'offline'; render(); return; }
     busy = true;
     try {
-      let q = readQ();
+      let q = readQ(), rejected = 0;
       while (q.length) {
-        await pushItem(q[0]);
-        q = readQ().filter(x => !(x.op === q[0].op && x.store === q[0].store && x.key === q[0].key));
+        const it = q[0];
+        try { await pushItem(it); }
+        catch (e) {
+          if (!permanent(e)) throw e;
+          rejected++; lastError = 'Server từ chối ghi ' + it.store + ': ' + e.message;
+        }
+        q = readQ().filter(x => !(x.op === it.op && x.store === it.store && x.key === it.key));
         writeQ(q);
       }
-      status = 'ok'; lastError = '';
+      status = rejected ? 'error' : 'ok';
+      if (!rejected) lastError = '';
     } catch (e) {
       status = 'error'; lastError = e.message;
     } finally { busy = false; render(); }
@@ -1710,7 +1847,8 @@ const Sync = (function () {
 
   function label() {
     const n = readQ().length;
-    if (!enabled()) return '';
+    if (!configured()) return '';
+    if (Auth.on() && !Auth.ready()) return '☁ Chờ đăng nhập' + (n ? ' (' + n + ' chờ)' : '');
     if (status === 'error') return '☁ Lỗi đồng bộ' + (n ? ' (' + n + ' chờ)' : '');
     if (status === 'offline') return '☁ Offline' + (n ? ' (' + n + ' chờ)' : '');
     if (n) return '☁ ' + n + ' chờ đồng bộ';
@@ -1720,26 +1858,35 @@ const Sync = (function () {
     const t = label();
     const h = document.getElementById('sync-status'); if (h) { h.textContent = t; h.title = lastError; h.dataset.state = status; }
     const s = document.getElementById('sync-status-detail');
-    if (s) s.textContent = enabled() ? (t + (lastError ? ' — ' + lastError : '')) : 'Chưa bật đồng bộ (CONFIG.supabase.enabled = false).';
+    if (s) s.textContent = configured() ? (t + (lastError ? ' — ' + lastError : '')) : 'Chưa bật đồng bộ (CONFIG.supabase.enabled = false).';
   }
 
   return {
     start() {
       if (!enabled()) { render(); return; }
-      window.addEventListener('online', () => syncNow(false));
-      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') syncNow(false); });
+      if (!started) {
+        started = true;
+        window.addEventListener('online', () => syncNow(false));
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') syncNow(false); });
+      }
+      if (timer) clearInterval(timer);
       timer = setInterval(() => syncNow(false), 60000);
       syncNow(false);
+    },
+    stop() {
+      if (timer) clearInterval(timer);
+      timer = null; status = 'off'; lastSync = null;
+      render();
     },
     syncNow,
     onLocalPut(store, val) {
       const key = val && (val.id !== undefined ? val.id : val.key);
-      if (!enabled() || key === undefined || !syncable(store, key)) return;
+      if (!configured() || key === undefined || !syncable(store, key)) return;
       enqueue('put', store, key);
       flush();
     },
     onLocalDelete(store, key) {
-      if (!enabled() || store !== 'records' || !syncable(store, key)) return;
+      if (!configured() || store !== 'records' || !syncable(store, key)) return;
       enqueue('del', store, key);
       flush();
     },
@@ -1797,6 +1944,7 @@ const state = {
   adminType: 'powder',    // loại sản phẩm đang xem/sửa ở các tab Item Code / Spec. / Độ lặp lại / Parameters
   editingRecordId: null,  // nếu đang mở lại 1 bản nháp để sửa tiếp, lưu id để ghi đè thay vì tạo phiếu mới
   currentUser: null,      // { name, role } sau khi đăng nhập
+  profiles: [],           // hồ sơ vai trò từ Supabase (chế độ Auth): {user_id, email, display_name, role}
   blockEnteredAt: {},     // paramIndex(1-9) -> ISO timestamp lúc bắt đầu nhập khối chỉ tiêu đó
 };
 
@@ -2299,7 +2447,8 @@ function switchTab(tabName) {
   if (tabName === 'spec') renderSpecTable();
   if (tabName === 'repeatability') renderRepeatabilityTable();
   if (tabName === 'parameters') renderParametersTable();
-  if (tabName === 'settings') { renderStaffList(); renderAuditLogList(); renderUsersTable(); }
+  if (tabName === 'settings') { renderStaffList(); renderAuditLogList(); }
+  if (tabName === 'users') renderUsersTab(true);
 }
 
 /* ---------------- DASHBOARD ---------------- */
@@ -2386,7 +2535,10 @@ function populateLoginUserSelect() {
   sel.innerHTML = USERS.map(u => '<option value="' + escapeAttr(u.name) + '">' + u.name + ' — ' + ROLES[u.role].label + '</option>').join('');
 }
 function showLogin() {
-  populateLoginUserSelect();
+  const supa = Auth.on();
+  document.getElementById('login-user-wrap').hidden = supa;
+  document.getElementById('login-email-wrap').hidden = !supa;
+  if (!supa) populateLoginUserSelect();
   document.getElementById('login-password').value = '';
   document.getElementById('login-error').textContent = '';
   document.getElementById('login-overlay').hidden = false;
@@ -2394,25 +2546,50 @@ function showLogin() {
 function hideLogin() {
   document.getElementById('login-overlay').hidden = true;
 }
-async function attemptLogin() {
-  const name = document.getElementById('login-user').value;
-  const pass = document.getElementById('login-password').value;
-  const user = USERS.find(u => u.name === name && u.password === pass);
-  if (!user) {
-    document.getElementById('login-error').textContent = 'Sai mật khẩu, vui lòng thử lại.';
-    return;
-  }
-  state.currentUser = { name: user.name, role: user.role };
-  try { sessionStorage.setItem('labrecord_session', JSON.stringify(state.currentUser)); } catch (e) {}
+
+// Việc chung sau khi đăng nhập thành công (mật khẩu cục bộ hoặc Supabase Auth).
+async function afterLoginSuccess(user, logAction) {
+  state.currentUser = user;
   hideLogin();
   updateHeaderUser();
   applyRolePermissions();
-  AuditLog.log('login', {});
+  AuditLog.log(logAction || 'login', {});
+  Sync.start();
   await checkAutoRecovery();
   startAutoSave();
 }
-function logout() {
+
+async function attemptLogin() {
+  const errEl = document.getElementById('login-error');
+  const pass = document.getElementById('login-password').value;
+  if (Auth.on()) {
+    const email = document.getElementById('login-email').value.trim();
+    if (!email || !pass) { errEl.textContent = 'Nhập email/tên đăng nhập và mật khẩu.'; return; }
+    const btn = document.getElementById('btn-login');
+    btn.disabled = true; errEl.textContent = 'Đang đăng nhập…';
+    try {
+      const s = await Auth.signIn(email, pass);
+      await loadProfiles();
+      await afterLoginSuccess({ name: s.profile.name, role: s.profile.role, email: s.user.email });
+    } catch (e) {
+      errEl.textContent = e.status === 400 ? 'Sai tên đăng nhập/email hoặc mật khẩu (hoặc tài khoản bị vô hiệu hoá).' : (e.message || 'Đăng nhập lỗi.');
+    } finally { btn.disabled = false; }
+    return;
+  }
+  const name = document.getElementById('login-user').value;
+  const user = USERS.find(u => u.name === name && u.password === pass);
+  if (!user) { errEl.textContent = 'Sai mật khẩu, vui lòng thử lại.'; return; }
+  try { sessionStorage.setItem('labrecord_session', JSON.stringify({ name: user.name, role: user.role })); } catch (e) {}
+  await afterLoginSuccess({ name: user.name, role: user.role });
+}
+async function logout() {
+  if (Auth.on() && Sync.pendingCount() > 0) {
+    const ok = await confirmModal('Còn dữ liệu chưa đồng bộ', 'Có ' + Sync.pendingCount() + ' thay đổi chưa đẩy lên Supabase. Đăng xuất vẫn giữ chúng trên máy này và sẽ đẩy lên khi bạn đăng nhập lại. Đăng xuất?');
+    if (!ok) return;
+  }
   AuditLog.log('logout', {});
+  Sync.stop();
+  await Auth.signOut();
   state.currentUser = null;
   try { sessionStorage.removeItem('labrecord_session'); } catch (e) {}
   if (autoSaveTimer) clearInterval(autoSaveTimer);
@@ -2422,42 +2599,150 @@ function logout() {
 function updateHeaderUser() {
   const el = document.getElementById('current-user');
   if (!state.currentUser) { el.textContent = 'Chưa đăng nhập'; return; }
-  el.innerHTML = '<span class="header-user-badge">Xin chào, <b>' + state.currentUser.name +
+  const canLogout = CONFIG.loginRequired || Auth.on();
+  el.innerHTML = '<span class="header-user-badge">Xin chào, <b>' + escapeAttr(state.currentUser.name) +
     '</b> (' + ROLES[state.currentUser.role].label + ')' +
-    (CONFIG.loginRequired ? ' <button type="button" class="btn btn--secondary" id="btn-logout">Đăng xuất</button>' : '') + '</span>';
+    (canLogout ? ' <button type="button" class="btn btn--secondary" id="btn-logout">Đăng xuất</button>' : '') + '</span>';
   const lo = document.getElementById('btn-logout');
   if (lo) lo.addEventListener('click', logout);
 }
-// Ẩn các tab/khối chỉ Supervisor+/Admin mới được vào — CHỈ là điều hướng UI, KHÔNG phải
-// bảo mật thật (ứng dụng chạy offline, không có backend xác thực).
+// Ẩn các tab/khối chỉ Supervisor+/Admin mới được vào. Ở chế độ Supabase Auth, quyền THẬT được
+// chặn bởi RLS trên server (supabase/auth.sql); phần ẩn UI này chỉ để giao diện gọn.
 function applyRolePermissions() {
   const supervisorPlus = hasRole('supervisor');
   const adminOnly = hasRole('admin');
   document.querySelectorAll('[data-tab="itemcode"], [data-tab="spec"], [data-tab="repeatability"]').forEach(btn => {
     btn.hidden = !supervisorPlus;
   });
-  document.querySelectorAll('[data-tab="parameters"], [data-tab="settings"]').forEach(btn => {
+  document.querySelectorAll('[data-tab="parameters"], [data-tab="settings"], [data-tab="users"]').forEach(btn => {
     btn.hidden = !adminOnly;
   });
   populateStaffSelects();
 }
 
-/* ---------------- QUẢN LÝ NGƯỜI DÙNG (Admin) ---------------- */
-function renderUsersTable() {
-  const ul = document.getElementById('users-list');
-  if (!ul) return;
-  ul.innerHTML = USERS.map((u, idx) =>
-    '<li><span>' + u.name + ' — ' + ROLES[u.role].label + '</span> <button type="button" class="btn btn--secondary btn-remove-user" data-idx="' + idx + '">Xoá</button></li>'
-  ).join('');
-  ul.querySelectorAll('.btn-remove-user').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const idx = parseInt(btn.dataset.idx, 10);
-      if (USERS[idx].name === state.currentUser.name) { toast('Không thể tự xoá tài khoản đang đăng nhập.', 'warn'); return; }
-      USERS.splice(idx, 1);
-      persistUsers();
-      renderUsersTable();
-      AuditLog.log('remove-user', {});
-    });
+/* ---------------- HỒ SƠ NGƯỜI DÙNG (Supabase) ---------------- */
+async function loadProfiles() {
+  if (!Auth.on()) return;
+  try { state.profiles = await Auth.listProfiles(); } catch (e) { console.warn('loadProfiles lỗi:', e); }
+}
+
+/* ---------------- TAB NGƯỜI DÙNG (chỉ Admin) ----------------
+   Chế độ Supabase Auth: danh sách/tạo/đổi vai trò/vô hiệu hoá đều gọi Edge Function `admin-users`
+   (cần service_role nên chỉ chạy được trên server). Chế độ cục bộ (auth:false): thao tác trên mảng USERS. */
+let usersCache = [];
+const $id = (id) => document.getElementById(id);
+function usersBanner(msg, kind) {
+  const b = $id('users-banner');
+  b.hidden = !msg; b.textContent = msg || ''; b.dataset.kind = kind || 'info';
+}
+async function renderUsersTab(reload) {
+  const supa = Auth.on();
+  const tbody = $id('users-table-body');
+  $id('users-mode-note').textContent = supa
+    ? 'Tài khoản Supabase Auth — quyền được server (RLS) kiểm soát thật.'
+    : 'Chế độ cục bộ: tài khoản chỉ nằm trên máy này, mật khẩu KHÔNG bảo mật thật.';
+  if (supa) {
+    if (reload || !usersCache.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-faint);">Đang tải danh sách người dùng…</td></tr>';
+      try { usersCache = (await Auth.adminInvoke('list-users')).users || []; usersBanner(''); }
+      catch (e) { usersCache = []; usersBanner('Không tải được danh sách người dùng: ' + e.message, 'error'); }
+    }
+  } else {
+    usersCache = USERS.map(u => ({ userId: u.name, displayName: u.name, username: u.name, email: null, role: u.role, status: 'Active' }));
+    usersBanner('');
+  }
+  if (!usersCache.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-faint);">Chưa có người dùng.</td></tr>';
+    return;
+  }
+  const me = state.currentUser && state.currentUser.email;
+  tbody.innerHTML = usersCache.map(u => {
+    const isDisabled = u.status === 'Disabled';
+    const roleSel = '<select class="field__input" data-act="role" data-uid="' + escapeAttr(u.userId) + '">' +
+      Object.keys(ROLES).map(r => '<option value="' + r + '"' + (r === u.role ? ' selected' : '') + '>' + ROLES[r].label + '</option>').join('') + '</select>';
+    const login = u.username ? '@' + escapeAttr(u.username) : escapeAttr(u.email || '');
+    const status = '<span class="param-summary__status" data-status="' + (isDisabled ? 'fail' : 'pass') + '">' + (isDisabled ? 'Vô hiệu hoá' : 'Hoạt động') + '</span>';
+    const isSelf = supa && me && u.email === me;
+    const actBtn = supa
+      ? (isSelf ? '' : '<button type="button" class="btn btn--secondary" data-act="toggle" data-uid="' + escapeAttr(u.userId) + '" data-disabled="' + (isDisabled ? '1' : '0') + '">' + (isDisabled ? 'Kích hoạt lại' : 'Vô hiệu hoá') + '</button>')
+      : '<button type="button" class="btn btn--secondary" data-act="remove" data-uid="' + escapeAttr(u.userId) + '">Xoá</button>';
+    return '<tr><td>' + escapeAttr(u.displayName) + '</td><td>' + login + '</td><td>' + roleSel + '</td><td>' + status + '</td><td style="text-align:right;">' + actBtn + '</td></tr>';
+  }).join('');
+
+  tbody.querySelectorAll('select[data-act="role"]').forEach(sel => sel.addEventListener('change', async () => {
+    try {
+      if (supa) await Auth.adminInvoke('change-role', { targetUserId: sel.dataset.uid, newRole: sel.value });
+      else { USERS.find(x => x.name === sel.dataset.uid).role = sel.value; await persistUsers(); }
+      AuditLog.log('set-role', { user: sel.dataset.uid, role: sel.value });
+      toast('Đã đổi vai trò.', 'success');
+    } catch (e) { toast('Không đổi được vai trò: ' + e.message, 'warn'); }
+    if (supa) { await loadProfiles(); populateStaffSelects(); }
+    renderUsersTab(true);
+  }));
+  tbody.querySelectorAll('button[data-act="toggle"]').forEach(btn => btn.addEventListener('click', async () => {
+    const disable = btn.dataset.disabled !== '1';
+    const ok = await confirmModal(disable ? 'Vô hiệu hoá tài khoản?' : 'Kích hoạt lại tài khoản?',
+      disable ? 'Người này sẽ không đăng nhập và không truy cập dữ liệu được nữa cho đến khi được kích hoạt lại.' : 'Người này sẽ đăng nhập lại được.');
+    if (!ok) return;
+    try {
+      await Auth.adminInvoke(disable ? 'disable-user' : 'enable-user', { targetUserId: btn.dataset.uid });
+      AuditLog.log(disable ? 'disable-user' : 'enable-user', { user: btn.dataset.uid });
+      toast(disable ? 'Đã vô hiệu hoá.' : 'Đã kích hoạt lại.', 'success');
+      await loadProfiles(); populateStaffSelects();
+    } catch (e) { toast('Lỗi: ' + e.message, 'warn'); }
+    renderUsersTab(true);
+  }));
+  tbody.querySelectorAll('button[data-act="remove"]').forEach(btn => btn.addEventListener('click', async () => {
+    if (btn.dataset.uid === state.currentUser.name) { toast('Không thể tự xoá tài khoản đang đăng nhập.', 'warn'); return; }
+    const ok = await confirmModal('Xoá người dùng?', 'Xoá tài khoản "' + btn.dataset.uid + '" khỏi máy này?');
+    if (!ok) return;
+    USERS.splice(USERS.findIndex(x => x.name === btn.dataset.uid), 1);
+    await persistUsers();
+    AuditLog.log('remove-user', {});
+    renderUsersTab(false);
+  }));
+}
+
+function openUserAddModal() {
+  const supa = Auth.on();
+  Modal.open(
+    '<h2>Thêm người dùng mới</h2>' +
+    '<form id="user-add-form">' +
+    '<label class="field"><span class="field__label">Họ và tên *</span><input id="ua-name" class="field__input" required placeholder="VD: Nguyễn Văn A" /></label>' +
+    '<label class="field"><span class="field__label">Vai trò *</span><select id="ua-role" class="field__input">' +
+      Object.keys(ROLES).map(r => '<option value="' + r + '">' + ROLES[r].label + '</option>').join('') + '</select></label>' +
+    '<label class="field"><span class="field__label">' + (supa ? 'Tên đăng nhập hoặc email *' : 'Tên đăng nhập *') + '</span>' +
+      '<input id="ua-login" class="field__input" required autocomplete="off" placeholder="' + (supa ? 'vd: nguyenvana (hoặc dán email nếu có @)' : 'vd: nguyenvana') + '" />' +
+      (supa ? '<span class="field__hint">Tên đăng nhập: chữ thường/số, có thể có . _ - ; không cần email. Nếu nhập địa chỉ có @ thì người này đăng nhập bằng email đó.</span>' : '') + '</label>' +
+    '<label class="field"><span class="field__label">Mật khẩu ban đầu * (tối thiểu 6 ký tự)</span><input id="ua-pass" type="password" class="field__input" minlength="6" required autocomplete="new-password" /></label>' +
+    '<p class="field__hint login-error" id="ua-err"></p>' +
+    '<div class="form-actions"><button type="button" class="btn btn--secondary" id="ua-cancel">Huỷ</button>' +
+    '<button type="submit" class="btn btn--primary" id="ua-submit">Tạo tài khoản</button></div></form>'
+  );
+  $id('ua-cancel').addEventListener('click', () => Modal.close());
+  $id('user-add-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = $id('ua-name').value.trim(), role = $id('ua-role').value, login = $id('ua-login').value.trim(), pass = $id('ua-pass').value;
+    const err = $id('ua-err'), btn = $id('ua-submit');
+    err.textContent = '';
+    if (pass.length < 6) { err.textContent = 'Mật khẩu phải có tối thiểu 6 ký tự.'; return; }
+    btn.disabled = true;
+    try {
+      if (supa) {
+        const payload = { displayName: name, role, password: pass };
+        if (login.includes('@')) payload.email = login; else payload.username = login;
+        await Auth.adminInvoke('create-user', payload);
+        await loadProfiles(); populateStaffSelects();
+      } else {
+        if (USERS.some(u => u.name === login)) throw new Error('Tên đăng nhập đã tồn tại.');
+        USERS.push({ name: login, password: pass, role });
+        await persistUsers();
+      }
+      AuditLog.log('add-user', { name: login, role });
+      Modal.close();
+      toast('Đã tạo người dùng ' + name + '.', 'success');
+      renderUsersTab(true);
+    } catch (ex) { err.textContent = ex.message; btn.disabled = false; }
   });
 }
 
@@ -2780,7 +3065,9 @@ function populateStaffSelects() {
   });
   // Reviewed by = người có quyền Supervisor/Admin (vai trò ký duyệt), không dùng chung
   // danh sách "Người thực hiện" (nhân viên vận hành thiết bị) nữa.
-  const reviewerNames = USERS.filter(u => u.role === 'supervisor' || u.role === 'admin').map(u => u.name);
+  const reviewerNames = Auth.on()
+    ? state.profiles.filter(p => !p.disabled && (p.role === 'supervisor' || p.role === 'admin')).map(p => p.display_name || p.email)
+    : USERS.filter(u => u.role === 'supervisor' || u.role === 'admin').map(u => u.name);
   const rbSel = form.elements['reviewedBy'];
   if (rbSel) {
     const current = rbSel.value;
@@ -3335,7 +3622,28 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('login-password').addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptLogin(); });
   let restored = null;
   try { restored = JSON.parse(sessionStorage.getItem('labrecord_session') || 'null'); } catch (e) {}
-  if (restored && USERS.some(u => u.name === restored.name && u.role === restored.role)) {
+  if (Auth.on()) {
+    const sess = Auth.restore();
+    if (sess) {
+      state.currentUser = { name: sess.profile.name, role: sess.profile.role, email: sess.user.email };
+      updateHeaderUser();
+      applyRolePermissions();
+      Sync.start();
+      loadProfiles().then(populateStaffSelects);
+      Auth.validate().then((v) => {
+        if (v.status === 'invalid') {
+          toast('Phiên đăng nhập đã hết hạn hoặc bị thu hồi — vui lòng đăng nhập lại.', 'warn');
+          Sync.stop(); Auth.clear(); state.currentUser = null; updateHeaderUser(); showLogin();
+        } else if (v.status === 'ok' && (v.profile.role !== state.currentUser.role || v.profile.name !== state.currentUser.name)) {
+          state.currentUser.role = v.profile.role; state.currentUser.name = v.profile.name;
+          updateHeaderUser(); applyRolePermissions();
+        }
+      });
+      checkAutoRecovery().then(() => startAutoSave());
+    } else {
+      showLogin();
+    }
+  } else if (restored && USERS.some(u => u.name === restored.name && u.role === restored.role)) {
     state.currentUser = restored;
     updateHeaderUser();
     applyRolePermissions();
@@ -3350,22 +3658,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     showLogin();
   }
 
-  // Cài đặt > Quản lý người dùng (Admin)
-  document.getElementById('btn-add-user').addEventListener('click', () => {
-    const name = document.getElementById('user-new-name').value.trim();
-    const password = document.getElementById('user-new-password').value.trim();
-    const role = document.getElementById('user-new-role').value;
-    if (!name || !password) { toast('Vui lòng nhập tên và mật khẩu.', 'warn'); return; }
-    if (USERS.some(u => u.name === name)) { toast('Tên đăng nhập đã tồn tại.', 'warn'); return; }
-    USERS.push({ name, password, role });
-    document.getElementById('user-new-name').value = '';
-    document.getElementById('user-new-password').value = '';
-    persistUsers();
-    renderUsersTable();
-    populateStaffSelects();
-    AuditLog.log('add-user', { name, role });
-    toast('Đã thêm người dùng ' + name + '.', 'success');
-  });
+  // Tab Người dùng (Admin)
+  document.getElementById('btn-users-refresh').addEventListener('click', () => renderUsersTab(true));
+  document.getElementById('btn-users-add').addEventListener('click', openUserAddModal);
 
   // Điều hướng
   document.querySelectorAll('.sidebar__item').forEach(btn => {
