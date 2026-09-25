@@ -298,6 +298,8 @@ body {
 .field__label {
   color: var(--text);
 }
+.sync-status { font-size: 0.78rem; color: var(--text-muted); }
+.sync-status[data-state="error"] { color: var(--fail-text); }
 .type-bar { margin-bottom: 0.75rem; }
 .field--inline { flex-direction: row; align-items: center; gap: 0.6rem; }
 .field--inline .field__input { min-width: 12rem; }
@@ -706,6 +708,7 @@ body {
     </div>
     <div class="app-header__actions">
       <button id="btn-new-record" class="btn btn--primary">+ Phiếu mới</button>
+      <span class="sync-status" id="sync-status"></span>
       <span class="app-header__user" id="current-user">Người dùng: --</span>
     </div>
   </header>
@@ -1062,6 +1065,15 @@ body {
             <p class="storage-mode" id="storage-mode-note"></p>
           </div>
 
+          <div class="card" id="settings-sync">
+            <h2 class="card__title">Đồng bộ Supabase</h2>
+            <p class="storage-mode" id="sync-status-detail"></p>
+            <div class="settings-backup__actions">
+              <button type="button" class="btn btn--secondary" id="btn-sync-now">Đồng bộ ngay</button>
+            </div>
+            <p class="storage-mode">Dữ liệu lưu trên máy trước rồi tự đẩy lên Supabase khi có mạng. Danh sách người dùng/mật khẩu và giao diện KHÔNG được đồng bộ.</p>
+          </div>
+
           <div class="card" id="settings-auditlog">
             <h2 class="card__title">Nhật ký thao tác gần đây</h2>
             <ul class="settings-list" id="audit-log-list"><!-- render bằng JS --></ul>
@@ -1179,6 +1191,13 @@ const CONFIG = {
   // tính năng), app tự vào với tài khoản Admin để thấy đủ tab — toàn bộ code đăng nhập
   // và phân quyền vẫn giữ nguyên.
   loginRequired: false,
+  // Kết nối Supabase (đồng bộ dữ liệu giữa các máy). `key` là publishable key — được thiết kế để
+  // nằm trong mã phía trình duyệt; mức bảo vệ dữ liệu do RLS quyết định (xem supabase/schema.sql).
+  supabase: {
+    enabled: true,
+    url: 'https://stkxfpceffdtkxcrcrtw.supabase.co',
+    key: 'sb_publishable_mJA0tM6dGm08bKlDaJCyaQ_bVX-Liy0'
+  },
   autoLoginUser: 'Admin',
 };
 let STAFF = ['Trân', 'Huy', 'Hiền', 'Định', 'Trang', 'Triều'];
@@ -1510,6 +1529,238 @@ const Storage = (function () {
 
   return { init, put, get, getAll, delete: del, mode: () => mode };
 })();
+
+/* ---------------- ĐỒNG BỘ SUPABASE (offline-first) ----------------
+   Dữ liệu vẫn lưu cục bộ trước (IndexedDB/localStorage) nên app chạy được khi mất mạng.
+   Mọi ghi/xoá được đưa vào hàng đợi rồi đẩy lên Supabase qua REST (PostgREST) bằng fetch
+   thuần, không cần SDK. Khi có mạng: đẩy hàng đợi rồi kéo thay đổi từ máy khác.
+   - Phiếu: so sánh meta.updatedAt, bản mới hơn thắng; xoá phiếu = tombstone (deleted=true).
+   - Danh mục (nhân viên/ngưỡng/field mapping/mã hàng/độ lặp lại): ghi đè cả tài liệu, bản mới hơn thắng.
+   - KHÔNG đồng bộ `users` (chứa mật khẩu dạng chữ thường) và `theme` (theo từng máy).
+   - `draft_current` (tự lưu tạm) chỉ nằm trên máy, không đồng bộ.
+   Schema/RLS: xem supabase/schema.sql. */
+const Sync = (function () {
+  const Q_KEY = 'labrecord_syncq', LP_KEY = 'labrecord_sync_lastpull', FIRST_KEY = 'labrecord_sync_seeded';
+  const SYNC_SETTINGS = ['staff', 'thresholds', 'fieldMapping', 'itemCodes', 'repeatability'];
+  let status = 'off', lastSync = null, lastError = '', busy = false, timer = null;
+
+  const cfg = () => CONFIG.supabase;
+  const enabled = () => !!(cfg() && cfg().enabled && cfg().url && cfg().key);
+  const headers = (extra) => Object.assign({ apikey: cfg().key, Authorization: 'Bearer ' + cfg().key }, extra || {});
+  const jsonHeaders = (prefer) => headers({ 'Content-Type': 'application/json', Prefer: prefer || 'resolution=merge-duplicates,return=minimal' });
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  const readQ = () => lsGet(Q_KEY, []);
+  function writeQ(q) { lsSet(Q_KEY, q); render(); }
+  function enqueue(op, store, key) {
+    const q = readQ().filter(x => !(x.store === store && x.key === key));
+    q.push({ op, store, key });
+    writeQ(q);
+  }
+  function syncable(store, key) {
+    if (store === 'records') return key !== 'draft_current';
+    if (store === 'settings') return SYNC_SETTINGS.includes(key);
+    return store === 'auditLog' || store === 'attachments';
+  }
+  async function http(url, opts) {
+    const r = await fetch(url, opts);
+    if (!r.ok) { const t = await r.text().catch(() => ''); throw new Error('HTTP ' + r.status + ' ' + t.slice(0, 160)); }
+    return r;
+  }
+  const rest = (path, opts) => http(cfg().url + '/rest/v1/' + path, opts);
+
+  async function pushItem(it) {
+    const now = new Date().toISOString();
+    if (it.store === 'records') {
+      if (it.op === 'del') {
+        return rest('lab_records?on_conflict=id', { method: 'POST', headers: jsonHeaders(),
+          body: JSON.stringify({ id: it.key, data: {}, deleted: true, updated_at: now }) });
+      }
+      const v = await Storage.get('records', it.key);
+      if (!v) return;
+      return rest('lab_records?on_conflict=id', { method: 'POST', headers: jsonHeaders(),
+        body: JSON.stringify({ id: v.id, product_type: v.productType || DEFAULT_TYPE, data: v, deleted: false,
+          updated_at: (v.meta && v.meta.updatedAt) || now }) });
+    }
+    if (it.store === 'settings') {
+      const v = await Storage.get('settings', it.key);
+      if (!v) return;
+      return rest('lab_settings?on_conflict=key', { method: 'POST', headers: jsonHeaders(),
+        body: JSON.stringify({ key: v.key, value: v.value, updated_at: v.updatedAt || now }) });
+    }
+    if (it.store === 'auditLog') {
+      const v = await Storage.get('auditLog', it.key);
+      if (!v) return;
+      return rest('lab_audit?on_conflict=id', { method: 'POST', headers: jsonHeaders(),
+        body: JSON.stringify({ id: v.id, data: v }) });
+    }
+    if (it.store === 'attachments') {
+      const v = await Storage.get('attachments', it.key);
+      if (!v || !v.blob) return; // chế độ localStorage dự phòng không có Blob
+      return http(cfg().url + '/storage/v1/object/lab-attachments/' + encodeURIComponent(it.key), {
+        method: 'POST', headers: headers({ 'Content-Type': v.type || 'application/octet-stream', 'x-upsert': 'true' }), body: v.blob });
+    }
+  }
+
+  async function flush() {
+    if (!enabled() || busy) return;
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) { status = 'offline'; render(); return; }
+    busy = true;
+    try {
+      let q = readQ();
+      while (q.length) {
+        await pushItem(q[0]);
+        q = readQ().filter(x => !(x.op === q[0].op && x.store === q[0].store && x.key === q[0].key));
+        writeQ(q);
+      }
+      status = 'ok'; lastError = '';
+    } catch (e) {
+      status = 'error'; lastError = e.message;
+    } finally { busy = false; render(); }
+  }
+
+  async function pullAll(path, orderKey) {
+    const rows = [];
+    let lp = null;
+    for (;;) {
+      const cond = lp ? '&' + orderKey + '=gt.' + encodeURIComponent(lp) : '';
+      const page = await (await rest(path + '&order=' + orderKey + '.asc&limit=500' + cond, { headers: headers() })).json();
+      rows.push(...page);
+      if (page.length < 500) break;
+      lp = page[page.length - 1][orderKey];
+    }
+    return rows;
+  }
+
+  async function pull() {
+    if (!enabled()) return false;
+    const pend = new Set(readQ().map(x => x.store + '|' + x.key));
+    let changed = false;
+
+    // Danh mục
+    const remoteSettings = await (await rest('lab_settings?select=key,value,updated_at', { headers: headers() })).json();
+    const remoteKeys = new Set();
+    for (const row of remoteSettings) {
+      if (!SYNC_SETTINGS.includes(row.key)) continue;
+      remoteKeys.add(row.key);
+      if (pend.has('settings|' + row.key)) continue;
+      const local = await Storage.get('settings', row.key);
+      const rt = new Date(row.updated_at).getTime(), lt = local ? new Date(local.updatedAt || 0).getTime() : -1;
+      if (rt > lt) { await Storage.raw.put('settings', { key: row.key, value: row.value, updatedAt: row.updated_at }); changed = true; }
+      else if (rt < lt) enqueue('put', 'settings', row.key);
+    }
+    for (const k of SYNC_SETTINGS) {
+      if (!remoteKeys.has(k) && !pend.has('settings|' + k) && await Storage.get('settings', k)) enqueue('put', 'settings', k);
+    }
+
+    // Phiếu (kéo phần thay đổi kể từ lần trước, dựa trên synced_at do server đặt)
+    const lp = lsGet(LP_KEY, null);
+    const first = !lp;
+    const rows = await pullAll('lab_records?select=id,data,updated_at,synced_at,deleted' + (lp ? '&synced_at=gt.' + encodeURIComponent(lp) : ''), 'synced_at');
+    const remoteIds = new Set(rows.map(r => r.id));
+    for (const row of rows) {
+      if (row.id === 'draft_current' || pend.has('records|' + row.id)) continue;
+      const local = await Storage.get('records', row.id);
+      if (row.deleted) { if (local) { await Storage.raw.delete('records', row.id); changed = true; } continue; }
+      const rt = new Date((row.data.meta && row.data.meta.updatedAt) || row.updated_at).getTime();
+      const lt = local ? new Date((local.meta && local.meta.updatedAt) || 0).getTime() : -1;
+      if (rt > lt) { await Storage.raw.put('records', row.data); changed = true; }
+      else if (rt < lt) enqueue('put', 'records', row.id);
+    }
+    if (rows.length) lsSet(LP_KEY, rows[rows.length - 1].synced_at);
+    else if (first) lsSet(LP_KEY, '1970-01-01T00:00:00+00:00');
+
+    // Lần đồng bộ đầu tiên của máy này: đẩy các phiếu/nhật ký đã có sẵn trên máy mà server chưa có
+    if (!lsGet(FIRST_KEY, false)) {
+      for (const r of await Storage.getAll('records')) {
+        if (r.id !== 'draft_current' && !remoteIds.has(r.id)) enqueue('put', 'records', r.id);
+      }
+      lsSet(FIRST_KEY, true);
+    }
+    return changed;
+  }
+
+  async function syncNow(manual) {
+    if (!enabled()) { render(); return; }
+    await flush();
+    if (status === 'error' || status === 'offline') { if (manual) toast('Đồng bộ chưa được: ' + (lastError || 'không có mạng'), 'warn'); return; }
+    try {
+      const changed = await pull();
+      await flush();
+      lastSync = new Date();
+      if (changed) await afterPull();
+      status = readQ().length ? 'pending' : 'ok'; lastError = '';
+      if (manual) toast('Đã đồng bộ với Supabase.', 'success');
+    } catch (e) {
+      status = 'error'; lastError = e.message;
+      if (manual) toast('Đồng bộ lỗi: ' + e.message, 'warn');
+    }
+    render();
+  }
+
+  async function afterPull() {
+    await loadMasterDataFromDb();
+    migrateProductTypes();
+    await loadRecordsCache();
+    renderDashboard();
+    renderHistoryTable();
+    renderAdminTab();
+    updateThresholdsForCustomer();
+  }
+
+  function label() {
+    const n = readQ().length;
+    if (!enabled()) return '';
+    if (status === 'error') return '☁ Lỗi đồng bộ' + (n ? ' (' + n + ' chờ)' : '');
+    if (status === 'offline') return '☁ Offline' + (n ? ' (' + n + ' chờ)' : '');
+    if (n) return '☁ ' + n + ' chờ đồng bộ';
+    return lastSync ? '☁ Đã đồng bộ ' + lastSync.toLocaleTimeString('vi-VN') : '☁ Đang kết nối…';
+  }
+  function render() {
+    const t = label();
+    const h = document.getElementById('sync-status'); if (h) { h.textContent = t; h.title = lastError; h.dataset.state = status; }
+    const s = document.getElementById('sync-status-detail');
+    if (s) s.textContent = enabled() ? (t + (lastError ? ' — ' + lastError : '')) : 'Chưa bật đồng bộ (CONFIG.supabase.enabled = false).';
+  }
+
+  return {
+    start() {
+      if (!enabled()) { render(); return; }
+      window.addEventListener('online', () => syncNow(false));
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') syncNow(false); });
+      timer = setInterval(() => syncNow(false), 60000);
+      syncNow(false);
+    },
+    syncNow,
+    onLocalPut(store, val) {
+      const key = val && (val.id !== undefined ? val.id : val.key);
+      if (!enabled() || key === undefined || !syncable(store, key)) return;
+      enqueue('put', store, key);
+      flush();
+    },
+    onLocalDelete(store, key) {
+      if (!enabled() || store !== 'records' || !syncable(store, key)) return;
+      enqueue('del', store, key);
+      flush();
+    },
+    pendingCount: () => readQ().length,
+    render
+  };
+})();
+
+// Bọc Storage: mọi ghi/xoá cục bộ tự đưa vào hàng đợi đồng bộ; Storage.raw.* ghi cục bộ mà KHÔNG đồng bộ (dùng khi kéo từ server).
+Storage.raw = { put: Storage.put, delete: Storage.delete };
+Storage.put = async (store, val) => {
+  if (store === 'settings' && val) val.updatedAt = new Date().toISOString();
+  const ok = await Storage.raw.put(store, val);
+  if (ok) Sync.onLocalPut(store, val);
+  return ok;
+};
+Storage.delete = async (store, key) => {
+  const ok = await Storage.raw.delete(store, key);
+  if (ok) Sync.onLocalDelete(store, key);
+  return ok;
+};
 
 /* ---------------- AUDIT LOG (ghi vào Storage) ---------------- */
 const AuditLog = {
@@ -3285,6 +3536,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   renderStaffList();
+  document.getElementById('btn-sync-now').addEventListener('click', () => Sync.syncNow(true));
+  Sync.start();
   // Auto Recovery + Auto Save chỉ chạy SAU khi đăng nhập thành công (xem attemptLogin
   // và nhánh khôi phục phiên phía trên) — tránh hiện modal khôi phục phía sau màn đăng nhập.
 });
