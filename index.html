@@ -1,0 +1,3559 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+  <title>Lab Record – ILD Coffee</title>
+  <style>
+
+/*
+  Lab Record – ILD Coffee
+  style.css — layout + theme (CSS variables) + responsive + animation.
+  Phần 4 (UI Polish) hoàn thiện: Dark mode, Responsive, Animation, Accessibility.
+*/
+
+/* ---------- Theme tokens ---------- */
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-alt: #f9fafb;
+  --border: #e5e7eb;
+  --text: #1f2937;
+  --text-muted: #6b7280;
+  --text-faint: #9ca3af;
+  --primary: #2563eb;
+  --primary-text: #ffffff;
+  --accent-bg: #eef2ff;
+  --computed-bg: #f3f4f6;
+  --pass-bg: #dcfce7; --pass-text: #166534;
+  --fail-bg: #fee2e2; --fail-text: #991b1b;
+  --accept-bg: #fef9c3; --accept-text: #854d0e;
+  --pending-bg: #f3f4f6; --pending-text: #6b7280;
+  --warn-border: #f87171; --warn-bg: #fef2f2;
+}
+:root[data-theme="dark"] {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface-alt: #26334a;
+  --border: #334155;
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-faint: #64748b;
+  --primary: #3b82f6;
+  --primary-text: #ffffff;
+  --accent-bg: #1e3a5f;
+  --computed-bg: #2b3b52;
+  --pass-bg: #14532d; --pass-text: #bbf7d0;
+  --fail-bg: #7f1d1d; --fail-text: #fecaca;
+  --accept-bg: #713f12; --accept-text: #fef08a;
+  --pending-bg: #334155; --pending-text: #cbd5e1;
+  --warn-border: #f87171; --warn-bg: #450a0a;
+}
+
+/* ---------- Reset cơ bản ---------- */
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ---------- Layout tổng thể ---------- */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.app-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+.app-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.app-body {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 110px);
+}
+
+/* ---------- Sidebar (thanh tab ngang, cố định trên cùng) ---------- */
+.sidebar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 1rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.sidebar__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+.sidebar__item.is-active {
+  background: var(--accent-bg);
+  font-weight: 600;
+}
+
+/* ---------- Main content / Panels ---------- */
+.main-content {
+  padding: 1.25rem;
+  overflow-y: auto;
+}
+.panel {
+  display: none;
+}
+.panel.is-active {
+  display: block;
+  animation: fadeIn 0.18s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.panel__title {
+  margin: 0 0 1rem 0;
+  font-size: 1.4rem;
+}
+.panel__desc {
+  margin: -0.5rem 0 1rem 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.guide-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+
+/* ---------- Card chung ---------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+.card__title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+}
+
+/* ---------- Dashboard: stat + chart grid ---------- */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+}
+.stat-card__label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.stat-card__value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-top: 0.25rem;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+}
+.chart-card__title {
+  font-size: 1rem;
+  margin: 0 0 0.75rem 0;
+}
+.chart-card__body {
+  min-height: 120px;
+  color: var(--text-faint);
+}
+.simple-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.simple-list li {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--text);
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ---------- Form: field / grid ---------- */
+.analysis-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+}
+.field--full {
+  grid-column: 1 / -1;
+}
+.field--upload {
+  margin-top: 0.75rem;
+}
+.photo-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.photo-thumb {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.photo-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.photo-thumb__remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  line-height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+.field__label {
+  color: var(--text);
+}
+.field__hint {
+  font-size: 0.75rem;
+  color: var(--text-faint);
+}
+.completion-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.completion-bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--computed-bg);
+  overflow: hidden;
+}
+.completion-bar__fill {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.2s ease;
+}
+.completion-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.field__input {
+  padding: 0.45rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: var(--surface);
+  color: var(--text);
+}
+.field__input--computed {
+  background: var(--computed-bg);
+  color: var(--text);
+}
+.field__input--conclusion {
+  font-weight: 700;
+}
+
+/* ---------- Param tables (khối chỉ tiêu) ---------- */
+.param-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.5rem;
+}
+.param-table th,
+.param-table td {
+  border: 1px solid var(--border);
+  padding: 0.4rem;
+  text-align: left;
+  font-size: 0.85rem;
+}
+.param-table th {
+  background: var(--surface-alt);
+  font-weight: 600;
+}
+.param-table .field__input {
+  width: 100%;
+}
+.sieve-table th,
+.sieve-table td {
+  text-align: center;
+}
+
+.param-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: var(--text);
+  align-items: center;
+}
+.param-summary__status {
+  margin-left: auto;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: var(--pending-bg);
+  color: var(--pending-text);
+  font-weight: 600;
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.autosave-status {
+  margin-right: auto;
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn--primary {
+  background: var(--primary);
+  color: var(--primary-text);
+}
+.btn--primary:hover {
+  filter: brightness(1.08);
+}
+.btn--secondary {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+}
+.btn--secondary:hover {
+  filter: brightness(0.97);
+}
+:root[data-theme="dark"] .btn--secondary:hover {
+  filter: brightness(1.2);
+}
+.btn--file {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ---------- History panel ---------- */
+.toolbar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.table-wrapper {
+  overflow-x: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.data-table th,
+.data-table td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.88rem;
+  text-align: left;
+}
+
+/* ---------- Settings panel ---------- */
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.settings-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.settings-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.settings-add-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.settings-add-row--wrap {
+  flex-wrap: wrap;
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+.settings-add-row--wrap .field__input {
+  flex: 1 1 140px;
+}
+.table-wrapper .field__input {
+  padding: 0.3rem 0.4rem;
+  font-size: 0.85rem;
+}
+.settings-backup__actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.storage-mode {
+  margin: 0.75rem 0 0 0;
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+
+/* ---------- Đăng nhập ---------- */
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 1rem;
+}
+.login-overlay[hidden] { display: none; }
+.login-box {
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 1.5rem;
+  width: 320px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.login-box h2 { margin: 0 0 0.25rem 0; font-size: 1.15rem; }
+.login-box .btn { width: 100%; }
+.login-error { color: var(--fail-text); min-height: 1em; }
+.header-user-badge { display: flex; align-items: center; gap: 0.5rem; }
+
+/* ---------- Modal ---------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 900;
+  padding: 1rem;
+}
+.modal-overlay[hidden] {
+  display: none;
+}
+.modal {
+  position: relative;
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 1.25rem;
+  min-width: 320px;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  animation: modalIn 0.15s ease;
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+.modal__close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+.detail-param-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin: 0.75rem 0;
+}
+.detail-param-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.detail-param-row__label {
+  font-weight: 600;
+  flex: 0 0 42%;
+}
+.detail-param-row__value {
+  color: var(--text-muted);
+  flex: 1;
+}
+
+/* ---------- Toast ---------- */
+.toast-container {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 1000;
+  max-width: calc(100vw - 2rem);
+}
+
+/* ---------- Footer ---------- */
+.app-footer {
+  text-align: center;
+  padding: 0.6rem;
+  font-size: 0.78rem;
+  color: var(--text-faint);
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+/* ---------- Trạng thái Đạt/Không đạt ---------- */
+.param-summary__status[data-status="pass"],
+.field__input--conclusion[data-status="pass"] { background: var(--pass-bg); color: var(--pass-text); }
+.param-summary__status[data-status="fail"],
+.field__input--conclusion[data-status="fail"] { background: var(--fail-bg); color: var(--fail-text); }
+.param-summary__status[data-status="accept"],
+.field__input--conclusion[data-status="accept"] { background: var(--accept-bg); color: var(--accept-text); }
+.param-summary__status[data-status="pending"],
+.field__input--conclusion[data-status="pending"] { background: var(--pending-bg); color: var(--pending-text); }
+.field__input--warn { border-color: var(--warn-border); background: var(--warn-bg); }
+
+/* ---------- Toast ---------- */
+.toast {
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  background: #111827;
+  color: #ffffff;
+  font-size: 0.85rem;
+  opacity: 1;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  animation: toastIn 0.2s ease;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.toast--success { background: #166534; }
+.toast--warn { background: #92400e; }
+.toast--info { background: #1f2937; }
+.toast--out { opacity: 0; transition: opacity 0.3s ease; }
+
+/* ---------- Print (Xuất PDF qua window.print) ---------- */
+.print-area {
+  display: none;
+}
+.print-report-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.25rem 0 1rem 0;
+  font-size: 0.85rem;
+}
+.print-report-table td {
+  border: 1px solid #ccc;
+  padding: 0.25rem 0.5rem;
+}
+.print-report-table td:first-child {
+  width: 40%;
+  color: #555;
+}
+@media print {
+  body.is-printing > *:not(#print-area) { display: none !important; }
+  body.is-printing #print-area { display: block !important; color: #000; background: #fff; padding: 1rem; }
+}
+
+/* ---------- Responsive (Tablet/Mobile) ---------- */
+@media (max-width: 900px) {
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .chart-grid { grid-template-columns: 1fr; }
+  .field-grid { grid-template-columns: repeat(2, 1fr); }
+  .settings-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .stat-grid { grid-template-columns: 1fr 1fr; }
+  .field-grid { grid-template-columns: 1fr; }
+  .app-header__actions { width: 100%; justify-content: space-between; }
+}
+
+  </style>
+</head>
+<body>
+
+  <!-- ===================== HEADER ===================== -->
+  <header class="app-header">
+    <div class="app-header__brand">
+      <span class="app-header__logo">☕</span>
+      <span class="app-header__title">Lab Record</span>
+    </div>
+    <div class="app-header__actions">
+      <button id="btn-new-record" class="btn btn--primary">+ Phiếu mới</button>
+      <span class="app-header__user" id="current-user">Người dùng: --</span>
+    </div>
+  </header>
+
+  <div class="app-body">
+
+    <!-- ===================== SIDEBAR / NAVIGATION ===================== -->
+    <nav class="sidebar" id="sidebar">
+      <button class="sidebar__item is-active" data-tab="dashboard">
+        <span class="sidebar__icon">📊</span> Tổng quan
+      </button>
+      <button class="sidebar__item" data-tab="form">
+        <span class="sidebar__icon">📝</span> Nhập liệu
+      </button>
+      <button class="sidebar__item" data-tab="history">
+        <span class="sidebar__icon">🔎</span> Lịch sử &amp; Tra cứu
+      </button>
+      <button class="sidebar__item" data-tab="itemcode">
+        <span class="sidebar__icon">📦</span> Item Code
+      </button>
+      <button class="sidebar__item" data-tab="spec">
+        <span class="sidebar__icon">📐</span> Spec.
+      </button>
+      <button class="sidebar__item" data-tab="parameters">
+        <span class="sidebar__icon">🧩</span> Parameters
+      </button>
+      <button class="sidebar__item" data-tab="repeatability">
+        <span class="sidebar__icon">🎯</span> Độ lặp lại
+      </button>
+      <button class="sidebar__item" data-tab="settings">
+        <span class="sidebar__icon">⚙️</span> Cài đặt
+      </button>
+      <button class="sidebar__item" data-tab="guide">
+        <span class="sidebar__icon">📖</span> Hướng dẫn sử dụng
+      </button>
+    </nav>
+
+    <!-- ===================== MAIN CONTENT ===================== -->
+    <main class="main-content">
+
+      <!-- ---------- PANEL: TỔNG QUAN (Dashboard) ---------- -->
+      <section class="panel is-active" id="panel-dashboard" data-panel="dashboard">
+        <h1 class="panel__title">Tổng quan</h1>
+
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-card__label">Tổng số phiếu</div>
+            <div class="stat-card__value" id="stat-total">--</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__label">Tỷ lệ Đạt</div>
+            <div class="stat-card__value" id="stat-pass-rate">--</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__label">Phiếu hôm nay</div>
+            <div class="stat-card__value" id="stat-today">--</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__label">Không đạt (tháng này)</div>
+            <div class="stat-card__value" id="stat-fail-month">--</div>
+          </div>
+        </div>
+
+        <div class="chart-grid">
+          <div class="chart-card">
+            <h2 class="chart-card__title">Kết quả theo ngày</h2>
+            <div class="chart-card__body" id="chart-by-date"><!-- Phần 2/3: render chart --></div>
+          </div>
+          <div class="chart-card">
+            <h2 class="chart-card__title">Đạt / Không đạt theo Item Code</h2>
+            <div class="chart-card__body" id="chart-by-item"><!-- Phần 2/3: render chart --></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- PANEL: NHẬP LIỆU (Form) ---------- -->
+      <section class="panel" id="panel-form" data-panel="form">
+        <h1 class="panel__title">Phiếu ghi nhận kết quả phân tích</h1>
+
+        <div class="completion-row">
+          <div class="completion-bar"><div class="completion-bar__fill" id="form-completion-bar" style="width:0%"></div></div>
+          <span class="completion-label" id="form-completion-label">0% hoàn thành</span>
+        </div>
+
+        <form id="analysis-form" class="analysis-form">
+
+          <!-- Khối: Thông tin mẫu -->
+          <fieldset class="card" id="block-sample-info">
+            <legend class="card__title">Thông tin mẫu</legend>
+            <div class="field-grid">
+              <label class="field">
+                <span class="field__label">Item Code</span>
+                <input type="number" inputmode="numeric" name="itemCode" class="field__input" placeholder="VD: 11000050" />
+              </label>
+              <label class="field">
+                <span class="field__label">Recipe</span>
+                <input type="text" name="recipe" class="field__input" readonly placeholder="Tự động" />
+              </label>
+              <label class="field">
+                <span class="field__label">Product Name</span>
+                <input type="text" name="productName" class="field__input" readonly placeholder="Tự động" />
+              </label>
+              <label class="field">
+                <span class="field__label">Customer</span>
+                <select name="customer" class="field__input">
+                  <option value="">-- Chọn --</option>
+                  <option value="INS">INS</option>
+                  <option value="LDC">LDC</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="field__label">Batch</span>
+                <input type="text" name="batch" class="field__input" placeholder="VD: 62550110F1" />
+              </label>
+              <label class="field">
+                <span class="field__label">Ngày sản xuất</span>
+                <input type="text" name="productionDate" class="field__input" readonly placeholder="Tự động từ Batch" />
+              </label>
+              <label class="field">
+                <span class="field__label">PO</span>
+                <input type="number" inputmode="numeric" name="po" class="field__input" placeholder="VD: 712600110" />
+              </label>
+              <label class="field">
+                <span class="field__label">SSCC</span>
+                <input type="text" name="sscc" class="field__input" placeholder="VD: 71260011000027" />
+                <span class="field__hint" id="sscc-hint"></span>
+              </label>
+            </div>
+          </fieldset>
+
+          <!-- Khối chỉ tiêu 1: Độ Ẩm (Halogen) -->
+          <fieldset class="card param-card" id="block-param-1" data-param="1">
+            <legend class="card__title">1. Độ Ẩm (Halogen)</legend>
+            <table class="param-table">
+              <thead>
+                <tr>
+                  <th>Người thực hiện</th>
+                  <th>Khối lượng mẫu (g)</th>
+                  <th>Nhiệt độ sấy (℃)</th>
+                  <th>Thời gian sấy (mm:ss)</th>
+                  <th>Kết quả ẩm (%)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="param-table__row" data-rep="1">
+                  <td><select class="field__input" name="do_am_1_nguoi_thuc_hien"><option value="">--</option></select></td>
+                  <td><input type="number" step="any" class="field__input" name="do_am_1_khoi_luong_mau" /></td>
+                  <td><input type="number" step="any" class="field__input" name="do_am_1_nhiet_do_say" value="114" /></td>
+                  <td><input type="text" class="field__input" name="do_am_1_thoi_gian_say" placeholder="mm:ss" /></td>
+                  <td><input type="number" step="any" class="field__input" name="do_am_1_ket_qua" /></td>
+                </tr>
+                <tr class="param-table__row" data-rep="2">
+                  <td><select class="field__input" name="do_am_2_nguoi_thuc_hien"><option value="">--</option></select></td>
+                  <td><input type="number" step="any" class="field__input" name="do_am_2_khoi_luong_mau" /></td>
+                  <td><input type="number" step="any" class="field__input" name="do_am_2_nhiet_do_say" value="114" /></td>
+                  <td><input type="text" class="field__input" name="do_am_2_thoi_gian_say" placeholder="mm:ss" /></td>
+                  <td><input type="number" step="any" class="field__input" name="do_am_2_ket_qua" /></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="param-summary">
+              <span>Giá trị trung bình (%): <output name="do_am_avg">--</output></span>
+              <span>Sự khác nhau: <output name="do_am_diff">--</output></span>
+              <span>Range: <output name="do_am_range">≤ 3</output></span>
+              <span class="param-summary__status" data-status="pending">--</span>
+            </div>
+          </fieldset>
+
+          <!-- Khối chỉ tiêu 2: Tỷ trọng - mật độ chảy tự do -->
+          <fieldset class="card param-card" id="block-param-2" data-param="2">
+            <legend class="card__title">2. Tỷ trọng - mật độ chảy tự do</legend>
+            <table class="param-table">
+              <thead>
+                <tr>
+                  <th>Người thực hiện</th>
+                  <th>Khối lượng bình (g)</th>
+                  <th>Khối lượng mẫu (g)</th>
+                  <th>Thể tích bình (L)</th>
+                  <th>Kết quả tỷ trọng (g/L)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="param-table__row" data-rep="1">
+                  <td><select class="field__input" name="ty_trong_1_nguoi_thuc_hien"><option value="">--</option></select></td>
+                  <td><input type="number" step="any" class="field__input" name="ty_trong_1_khoi_luong_binh" /></td>
+                  <td><input type="number" step="any" class="field__input" name="ty_trong_1_khoi_luong_mau" /></td>
+                  <td><input type="number" step="any" class="field__input" name="ty_trong_1_the_tich_binh" value="0.205" /></td>
+                  <td><output class="field__input field__input--computed" name="ty_trong_1_ket_qua">--</output></td>
+                </tr>
+                <tr class="param-table__row" data-rep="2">
+                  <td><select class="field__input" name="ty_trong_2_nguoi_thuc_hien"><option value="">--</option></select></td>
+                  <td><input type="number" step="any" class="field__input" name="ty_trong_2_khoi_luong_binh" /></td>
+                  <td><input type="number" step="any" class="field__input" name="ty_trong_2_khoi_luong_mau" /></td>
+                  <td><input type="number" step="any" class="field__input" name="ty_trong_2_the_tich_binh" value="0.205" /></td>
+                  <td><output class="field__input field__input--computed" name="ty_trong_2_ket_qua">--</output></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="param-summary">
+              <span>Giá trị trung bình (g/L): <output name="ty_trong_avg">--</output></span>
+              <span>Sự khác nhau: <output name="ty_trong_diff">--</output></span>
+              <span>Range: <output name="ty_trong_range">220-240</output></span>
+              <span class="param-summary__status" data-status="pending">--</span>
+            </div>
+          </fieldset>
+
+          <!-- Khối chỉ tiêu 3: Độ màu -->
+          <fieldset class="card param-card" id="block-param-3" data-param="3">
+            <legend class="card__title">3. Độ màu</legend>
+            <table class="param-table">
+              <thead>
+                <tr>
+                  <th>Người thực hiện</th>
+                  <th>Kết quả độ màu (ACN)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="param-table__row" data-rep="1">
+                  <td><select class="field__input" name="do_mau_1_nguoi_thuc_hien"><option value="">--</option></select></td>
+                  <td><input type="number" step="any" class="field__input" name="do_mau_1_ket_qua" /></td>
+                </tr>
+                <tr class="param-table__row" data-rep="2">
+                  <td><select class="field__input" name="do_mau_2_nguoi_thuc_hien"><option value="">--</option></select></td>
+                  <td><input type="number" step="any" class="field__input" name="do_mau_2_ket_qua" /></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="param-summary">
+              <span>Giá trị trung bình (ACN): <output name="do_mau_avg">--</output></span>
+              <span>Sự khác nhau: <output name="do_mau_diff">--</output></span>
+              <span>Range: <output name="do_mau_range">Max 88</output></span>
+              <span class="param-summary__status" data-status="pending">--</span>
+            </div>
+          </fieldset>
+
+          <!-- Khối chỉ tiêu 4: Độ cặn -->
+          <fieldset class="card param-card" id="block-param-4" data-param="4">
+            <legend class="card__title">4. Độ cặn</legend>
+            <div class="field-grid">
+              <label class="field">
+                <span class="field__label">Người thực hiện</span>
+                <select class="field__input" name="do_can_nguoi_thuc_hien"><option value="">--</option></select>
+              </label>
+              <label class="field">
+                <span class="field__label">Khối lượng mẫu (g)</span>
+                <input type="number" step="any" class="field__input" name="do_can_khoi_luong_mau" value="3" />
+              </label>
+              <label class="field">
+                <span class="field__label">Thể tích nước (ml)</span>
+                <input type="number" step="any" class="field__input" name="do_can_the_tich_nuoc" value="300" />
+              </label>
+              <label class="field">
+                <span class="field__label">Kết quả độ cặn (Grade)</span>
+                <select class="field__input" name="do_can_ket_qua">
+                  <option value="">--</option>
+                  <option value="1">1</option>
+                  <option value="1.5">1.5</option>
+                  <option value="2">2</option>
+                  <option value="2.5">2.5</option>
+                  <option value="3">3</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="field__label">Range</span>
+                <output class="field__input" name="do_can_range">≤ 2</output>
+              </label>
+            </div>
+            <label class="field field--upload">
+              <span class="field__label">Vị trí dán mẫu cặn (ảnh — có thể chọn/chụp nhiều)</span>
+              <input type="file" accept="image/*" capture="environment" multiple class="field__input" name="do_can_anh" />
+            </label>
+            <div class="photo-gallery" id="gallery-do_can_anh"></div>
+            <div class="param-summary">
+              <span class="param-summary__status" data-status="pending">--</span>
+            </div>
+          </fieldset>
+
+          <!-- Khối chỉ tiêu 5: pH -->
+          <fieldset class="card param-card" id="block-param-5" data-param="5">
+            <legend class="card__title">5. pH</legend>
+            <table class="param-table">
+              <thead>
+                <tr>
+                  <th>Người thực hiện</th>
+                  <th>Khối lượng mẫu (g)</th>
+                  <th>Thể tích nước (ml)</th>
+                  <th>Nhiệt độ mẫu 25±0.5 (℃)</th>
+                  <th>Kết quả pH</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="param-table__row" data-rep="1">
+                  <td><select class="field__input" name="ph_1_nguoi_thuc_hien"><option value="">--</option></select></td>
+                  <td><input type="number" step="any" class="field__input" name="ph_1_khoi_luong_mau" value="1.5" /></td>
+                  <td><input type="number" step="any" class="field__input" name="ph_1_the_tich_nuoc" value="100" /></td>
+                  <td><input type="number" step="any" class="field__input" name="ph_1_nhiet_do" /></td>
+                  <td><input type="number" step="any" class="field__input" name="ph_1_ket_qua" /></td>
+                </tr>
+                <tr class="param-table__row" data-rep="2">
+                  <td><select class="field__input" name="ph_2_nguoi_thuc_hien"><option value="">--</option></select></td>
+                  <td><input type="number" step="any" class="field__input" name="ph_2_khoi_luong_mau" value="1.5" /></td>
+                  <td><input type="number" step="any" class="field__input" name="ph_2_the_tich_nuoc" value="100" /></td>
+                  <td><input type="number" step="any" class="field__input" name="ph_2_nhiet_do" /></td>
+                  <td><input type="number" step="any" class="field__input" name="ph_2_ket_qua" /></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="param-summary">
+              <span>Giá trị trung bình: <output name="ph_avg">--</output></span>
+              <span>Sự khác nhau: <output name="ph_diff">--</output></span>
+              <span>Range: <output name="ph_range">4.7-5.3</output></span>
+              <span class="param-summary__status" data-status="pending">--</span>
+            </div>
+          </fieldset>
+
+          <!-- Khối chỉ tiêu 6: Acidity -->
+          <fieldset class="card param-card" id="block-param-6" data-param="6">
+            <legend class="card__title">6. Acidity</legend>
+            <table class="param-table">
+              <thead>
+                <tr>
+                  <th>Người thực hiện</th>
+                  <th>Khối lượng mẫu (g)</th>
+                  <th>Thể tích nước (ml)</th>
+                  <th>Nồng độ NaOH</th>
+                  <th>Thể tích tiêu tốn</th>
+                  <th>Kết quả Acidity</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="param-table__row" data-rep="1">
+                  <td><select class="field__input" name="acidity_1_nguoi_thuc_hien"><option value="">--</option></select></td>
+                  <td><input type="number" step="any" class="field__input" name="acidity_1_khoi_luong_mau" value="1.4" /></td>
+                  <td><input type="number" step="any" class="field__input" name="acidity_1_the_tich_nuoc" value="100" /></td>
+                  <td><input type="number" step="any" class="field__input" name="acidity_1_nong_do_naoh" /></td>
+                  <td><input type="number" step="any" class="field__input" name="acidity_1_the_tich_tieu_ton" /></td>
+                  <td><output class="field__input field__input--computed" name="acidity_1_ket_qua">--</output></td>
+                </tr>
+                <tr class="param-table__row" data-rep="2">
+                  <td><select class="field__input" name="acidity_2_nguoi_thuc_hien"><option value="">--</option></select></td>
+                  <td><input type="number" step="any" class="field__input" name="acidity_2_khoi_luong_mau" value="1.4" /></td>
+                  <td><input type="number" step="any" class="field__input" name="acidity_2_the_tich_nuoc" value="100" /></td>
+                  <td><input type="number" step="any" class="field__input" name="acidity_2_nong_do_naoh" /></td>
+                  <td><input type="number" step="any" class="field__input" name="acidity_2_the_tich_tieu_ton" /></td>
+                  <td><output class="field__input field__input--computed" name="acidity_2_ket_qua">--</output></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="param-summary">
+              <span>Giá trị trung bình: <output name="acidity_avg">--</output></span>
+              <span>Sự khác nhau: <output name="acidity_diff">--</output></span>
+              <span>Range: <output name="acidity_range">3.7-4.5 (Accept to 4.7)</output></span>
+              <span class="param-summary__status" data-status="pending">--</span>
+            </div>
+          </fieldset>
+
+          <!-- Khối chỉ tiêu 7: Độ hòa tan -->
+          <fieldset class="card param-card" id="block-param-7" data-param="7">
+            <legend class="card__title">7. Độ hòa tan</legend>
+            <table class="param-table">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Người thực hiện</th>
+                  <th>Khối lượng mẫu (g)</th>
+                  <th>Thể tích nước (ml)</th>
+                  <th>Nhiệt độ mẫu (℃)</th>
+                  <th>Thời gian khuấy (s)</th>
+                  <th>Kết quả (V/X)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="param-table__row" data-rep="hot">
+                  <td>Nóng</td>
+                  <td><select class="field__input" name="hoa_tan_nong_nguoi_thuc_hien"><option value="">--</option></select></td>
+                  <td><input type="number" step="any" class="field__input" name="hoa_tan_nong_khoi_luong_mau" value="2.5" /></td>
+                  <td><input type="number" step="any" class="field__input" name="hoa_tan_nong_the_tich_nuoc" value="150" /></td>
+                  <td><input type="number" step="any" class="field__input" name="hoa_tan_nong_nhiet_do" /></td>
+                  <td><input type="number" step="any" class="field__input" name="hoa_tan_nong_thoi_gian" value="30" /></td>
+                  <td>
+                    <select class="field__input" name="hoa_tan_nong_ket_qua">
+                      <option value="">--</option>
+                      <option value="V">V</option>
+                      <option value="X">X</option>
+                    </select>
+                  </td>
+                </tr>
+                <tr class="param-table__row" data-rep="cold">
+                  <td>Lạnh</td>
+                  <td><select class="field__input" name="hoa_tan_lanh_nguoi_thuc_hien"><option value="">--</option></select></td>
+                  <td><input type="number" step="any" class="field__input" name="hoa_tan_lanh_khoi_luong_mau" value="2.5" /></td>
+                  <td><input type="number" step="any" class="field__input" name="hoa_tan_lanh_the_tich_nuoc" value="50" /></td>
+                  <td><input type="number" step="any" class="field__input" name="hoa_tan_lanh_nhiet_do" /></td>
+                  <td><input type="number" step="any" class="field__input" name="hoa_tan_lanh_thoi_gian" value="180" /></td>
+                  <td>
+                    <select class="field__input" name="hoa_tan_lanh_ket_qua">
+                      <option value="">--</option>
+                      <option value="V">V</option>
+                      <option value="X">X</option>
+                    </select>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="param-summary">
+              <span>Range: <output name="hoa_tan_range">V</output></span>
+              <span class="param-summary__status" data-status="pending">--</span>
+            </div>
+          </fieldset>
+
+          <!-- Khối chỉ tiêu 8: Kích thước hạt -->
+          <fieldset class="card param-card" id="block-param-8" data-param="8">
+            <legend class="card__title">8. Kích thước hạt</legend>
+            <div class="field-grid">
+              <label class="field">
+                <span class="field__label">Người thực hiện</span>
+                <select class="field__input" name="kich_thuoc_nguoi_thuc_hien"><option value="">--</option></select>
+              </label>
+              <label class="field">
+                <span class="field__label">Khối lượng mẫu (g)</span>
+                <input type="number" step="any" class="field__input" name="kich_thuoc_khoi_luong_mau" value="100" />
+              </label>
+              <label class="field">
+                <span class="field__label">Biên độ (mm)</span>
+                <input type="number" step="any" class="field__input" name="kich_thuoc_bien_do" value="70" />
+              </label>
+              <label class="field">
+                <span class="field__label">Thời gian (s)</span>
+                <input type="number" step="any" class="field__input" name="kich_thuoc_thoi_gian" value="120" />
+              </label>
+              <label class="field">
+                <span class="field__label">Khối lượng mẫu sau sàng (g)</span>
+                <output class="field__input field__input--computed" name="kich_thuoc_khoi_luong_sau_sang">--</output>
+              </label>
+              <label class="field">
+                <span class="field__label">Range</span>
+                <output class="field__input" name="kich_thuoc_range">&lt;0.5mm max 1%</output>
+              </label>
+            </div>
+
+            <table class="param-table sieve-table">
+              <thead>
+                <tr>
+                  <th>Cỡ lưới</th>
+                  <th>4.00 mm</th>
+                  <th>3.35 mm</th>
+                  <th>2.80 mm</th>
+                  <th>2.00 mm</th>
+                  <th>1.40 mm</th>
+                  <th>1.00 mm</th>
+                  <th>0.50 mm</th>
+                  <th>&lt;0.5mm</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Khối lượng sàng (g)</td>
+                  <td><input type="number" step="any" class="field__input" name="sieve_400_w" /></td>
+                  <td><input type="number" step="any" class="field__input" name="sieve_335_w" /></td>
+                  <td><input type="number" step="any" class="field__input" name="sieve_280_w" /></td>
+                  <td><input type="number" step="any" class="field__input" name="sieve_200_w" /></td>
+                  <td><input type="number" step="any" class="field__input" name="sieve_140_w" /></td>
+                  <td><input type="number" step="any" class="field__input" name="sieve_100_w" /></td>
+                  <td><input type="number" step="any" class="field__input" name="sieve_050_w" /></td>
+                  <td><input type="number" step="any" class="field__input" name="sieve_lt050_w" /></td>
+                </tr>
+                <tr>
+                  <td>Khối lượng mẫu + sàng (g)</td>
+                  <td><input type="number" step="any" class="field__input" name="sieve_400_wt" /></td>
+                  <td><input type="number" step="any" class="field__input" name="sieve_335_wt" /></td>
+                  <td><input type="number" step="any" class="field__input" name="sieve_280_wt" /></td>
+                  <td><input type="number" step="any" class="field__input" name="sieve_200_wt" /></td>
+                  <td><input type="number" step="any" class="field__input" name="sieve_140_wt" /></td>
+                  <td><input type="number" step="any" class="field__input" name="sieve_100_wt" /></td>
+                  <td><input type="number" step="any" class="field__input" name="sieve_050_wt" /></td>
+                  <td><input type="number" step="any" class="field__input" name="sieve_lt050_wt" /></td>
+                </tr>
+                <tr>
+                  <td>% mẫu trên sàng</td>
+                  <td><output class="field__input field__input--computed" name="sieve_400_pct">--</output></td>
+                  <td><output class="field__input field__input--computed" name="sieve_335_pct">--</output></td>
+                  <td><output class="field__input field__input--computed" name="sieve_280_pct">--</output></td>
+                  <td><output class="field__input field__input--computed" name="sieve_200_pct">--</output></td>
+                  <td><output class="field__input field__input--computed" name="sieve_140_pct">--</output></td>
+                  <td><output class="field__input field__input--computed" name="sieve_100_pct">--</output></td>
+                  <td><output class="field__input field__input--computed" name="sieve_050_pct">--</output></td>
+                  <td><output class="field__input field__input--computed" name="sieve_lt050_pct">--</output></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="param-summary">
+              <span class="param-summary__status" data-status="pending">--</span>
+            </div>
+          </fieldset>
+
+          <!-- Khối chỉ tiêu 9: Ngoại vật -->
+          <fieldset class="card param-card" id="block-param-9" data-param="9">
+            <legend class="card__title">9. Ngoại vật</legend>
+            <div class="field-grid">
+              <label class="field">
+                <span class="field__label">Khối lượng mẫu (g)</span>
+                <input type="number" step="any" class="field__input" name="ngoai_vat_khoi_luong_mau" value="50" />
+              </label>
+              <label class="field">
+                <span class="field__label">Thể tích nước (ml)</span>
+                <input type="number" step="any" class="field__input" name="ngoai_vat_the_tich_nuoc" value="500" />
+              </label>
+              <label class="field">
+                <span class="field__label">Kết quả</span>
+                <select class="field__input" name="ngoai_vat_ket_qua">
+                  <option value="">--</option>
+                  <option value="Absent">Absent</option>
+                  <option value="Present">Present</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="field__label">Range</span>
+                <output class="field__input" name="ngoai_vat_range">Max 10 units &lt; 1.00mm / Max 1 unit &gt; 1.0mm</output>
+              </label>
+            </div>
+            <label class="field field--upload">
+              <span class="field__label">Hình ảnh ngoại vật (có thể chọn/chụp nhiều)</span>
+              <input type="file" accept="image/*" capture="environment" multiple class="field__input" name="ngoai_vat_anh" />
+            </label>
+            <div class="photo-gallery" id="gallery-ngoai_vat_anh"></div>
+            <div class="param-summary">
+              <span class="param-summary__status" data-status="pending">--</span>
+            </div>
+          </fieldset>
+
+          <!-- Khối: Ghi chú + Kết luận + Reviewed by -->
+          <fieldset class="card" id="block-conclusion">
+            <legend class="card__title">Ghi chú &amp; Kết luận</legend>
+            <label class="field field--full">
+              <span class="field__label">Ghi chú</span>
+              <textarea class="field__input" name="ghiChu" rows="3"></textarea>
+            </label>
+            <div class="field-grid">
+              <label class="field">
+                <span class="field__label">Kết luận</span>
+                <output class="field__input field__input--computed field__input--conclusion" name="ketLuan">--</output>
+              </label>
+              <label class="field">
+                <span class="field__label">Reviewed by</span>
+                <select class="field__input" name="reviewedBy"><option value="">--</option></select>
+              </label>
+              <label class="field">
+                <span class="field__label">Ngày duyệt</span>
+                <output class="field__input" name="reviewedDate">--</output>
+              </label>
+            </div>
+          </fieldset>
+
+          <div class="form-actions">
+            <span id="autosave-status" class="autosave-status"></span>
+            <button type="button" id="btn-save-draft" class="btn btn--secondary">Lưu nháp</button>
+            <button type="button" id="btn-force-submit" class="btn btn--secondary" hidden title="Đóng phiếu dù còn chỉ tiêu chưa hoàn tất">⚠ Force đóng Report</button>
+            <button type="submit" id="btn-submit-form" class="btn btn--primary">Lưu phiếu</button>
+          </div>
+
+        </form>
+      </section>
+
+      <!-- ---------- PANEL: LỊCH SỬ & TRA CỨU ---------- -->
+      <section class="panel" id="panel-history" data-panel="history">
+        <h1 class="panel__title">Lịch sử &amp; Tra cứu</h1>
+
+        <div class="toolbar">
+          <input type="search" class="field__input" id="history-search" placeholder="Tìm theo Batch / Item Code..." />
+          <select class="field__input" id="history-filter-customer">
+            <option value="">Tất cả Customer</option>
+            <option value="INS">INS</option>
+            <option value="LDC">LDC</option>
+          </select>
+          <select class="field__input" id="history-filter-result">
+            <option value="">Tất cả kết luận</option>
+            <option value="Đạt">Đạt</option>
+            <option value="Không đạt">Không đạt</option>
+          </select>
+          <input type="date" class="field__input" id="history-filter-date" />
+          <button type="button" class="btn btn--secondary" id="btn-export-history-csv">Xuất CSV</button>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="data-table" id="history-table">
+            <thead>
+              <tr>
+                <th>Ngày nhập</th>
+                <th>Item Code</th>
+                <th>Product Name</th>
+                <th>Batch</th>
+                <th>Customer</th>
+                <th>Kết luận</th>
+                <th>Reviewed by</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="history-table-body">
+              <!-- Phần 2: render rows bằng JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ---------- PANEL: ITEM CODE (Danh mục mã hàng) ---------- -->
+      <section class="panel" id="panel-itemcode" data-panel="itemcode">
+        <h1 class="panel__title">Item Code — Danh mục mã hàng</h1>
+        <p class="panel__desc">Tra cứu, thêm mã hàng mới hoặc cập nhật Recipe khi có thay đổi. Sửa trực tiếp trong bảng, áp dụng ngay cho tra cứu tự động ở tab Nhập liệu.</p>
+
+        <div class="card">
+          <div class="settings-add-row settings-add-row--wrap">
+            <input type="text" class="field__input" id="itemcode-new-item" placeholder="Item Code (VD: 11000050)" />
+            <input type="text" class="field__input" id="itemcode-new-name" placeholder="Product Name" />
+            <input type="text" class="field__input" id="itemcode-new-recipe" placeholder="Recipe (VD: 452)" />
+            <button type="button" class="btn btn--secondary" id="btn-add-itemcode">+ Thêm mã hàng</button>
+          </div>
+
+          <input type="search" class="field__input" id="itemcode-search" placeholder="Tìm theo Item Code / Product Name / Recipe..." style="margin-bottom:0.75rem;" />
+
+          <div class="table-wrapper">
+            <table class="data-table" id="itemcode-table">
+              <thead>
+                <tr>
+                  <th>Item Code</th>
+                  <th>Product Name</th>
+                  <th>Recipe</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="itemcode-table-body"></tbody>
+            </table>
+          </div>
+          <p class="storage-mode" id="itemcode-count-note"></p>
+        </div>
+      </section>
+
+      <!-- ---------- PANEL: SPEC. (Bảng ngưỡng kết luận) ---------- -->
+      <section class="panel" id="panel-spec" data-panel="spec">
+        <h1 class="panel__title">Spec. — Bảng ngưỡng kết luận</h1>
+        <p class="panel__desc">Thiết lập ngưỡng Đạt/Không đạt theo Customer + Chỉ tiêu (+ Recipe nếu có nhiều mức). Sửa trực tiếp trong bảng, áp dụng ngay cho tính kết luận ở tab Nhập liệu.</p>
+
+        <div class="card">
+          <div class="settings-add-row settings-add-row--wrap">
+            <select class="field__input" id="spec-new-customer">
+              <option value="INS">INS</option>
+              <option value="LDC">LDC</option>
+            </select>
+            <select class="field__input" id="spec-new-parameter"></select>
+            <input type="text" class="field__input" id="spec-new-unit" placeholder="Đơn vị" />
+            <input type="text" class="field__input" id="spec-new-requirement" placeholder="Yêu cầu (VD: ≤ 3, 220-240, Max 88)" />
+            <input type="text" class="field__input" id="spec-new-recipe" placeholder="Recipe (- nếu không giới hạn)" />
+            <button type="button" class="btn btn--secondary" id="btn-add-spec">+ Thêm dòng</button>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="data-table" id="spec-table">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Chỉ tiêu</th>
+                  <th>Đơn vị</th>
+                  <th>Yêu cầu</th>
+                  <th>Recipe</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="spec-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- PANEL: PARAMETERS (Thiết lập thông tin trường dữ liệu) ---------- -->
+      <section class="panel" id="panel-parameters" data-panel="parameters">
+        <h1 class="panel__title">Parameters — Thiết lập thông tin trường dữ liệu</h1>
+        <p class="panel__desc">Bảng tham chiếu toàn bộ trường dữ liệu của phiếu (theo Field Mapping gốc). Có thể sửa Kiểu dữ liệu / Independent-Dependent / Ghi chú để lưu tài liệu nội bộ — sửa ở đây KHÔNG tự đổi cấu trúc form Nhập liệu.</p>
+
+        <div class="card">
+          <div class="table-wrapper">
+            <table class="data-table" id="parameters-table">
+              <thead>
+                <tr>
+                  <th>Chỉ tiêu</th>
+                  <th>Trường</th>
+                  <th>Kiểu dữ liệu</th>
+                  <th>Independent/Dependent</th>
+                  <th>Ghi chú</th>
+                </tr>
+              </thead>
+              <tbody id="parameters-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- PANEL: ĐỘ LẶP LẠI (dung sai giữa 2 lần đo) ---------- -->
+      <section class="panel" id="panel-repeatability" data-panel="repeatability">
+        <h1 class="panel__title">Độ lặp lại phương pháp đo</h1>
+        <p class="panel__desc">Chênh lệch tối đa cho phép giữa 2 lần đo lặp lại. Nếu "Sự khác nhau" vượt ngưỡng này, ô đó tô đỏ cảnh báo — <b>không</b> tự động đổi Kết luận Đạt/Không đạt (vẫn tính theo Trung bình như hiện tại), chỉ nhắc người đo kiểm tra lại thao tác.</p>
+        <div class="card">
+          <div class="settings-add-row settings-add-row--wrap">
+            <input type="text" class="field__input" id="repeat-new-parameter" list="repeat-parameter-list" placeholder="Chỉ tiêu (chọn hoặc gõ tên mới)" />
+            <datalist id="repeat-parameter-list"></datalist>
+            <input type="text" class="field__input" id="repeat-new-unit" placeholder="Đơn vị" />
+            <input type="number" step="any" class="field__input" id="repeat-new-maxdiff" placeholder="Chênh lệch tối đa" />
+            <button type="button" class="btn btn--secondary" id="btn-add-repeat">+ Thêm chỉ tiêu</button>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table" id="repeatability-table">
+              <thead><tr><th>Chỉ tiêu</th><th>Đơn vị</th><th>Chênh lệch tối đa cho phép</th><th></th></tr></thead>
+              <tbody id="repeatability-table-body"></tbody>
+            </table>
+          </div>
+          <p class="storage-mode">Giá trị mặc định là ước lượng ban đầu — cần QA xác nhận lại theo phương pháp thử chính thức.</p>
+        </div>
+      </section>
+
+      <!-- ---------- PANEL: CÀI ĐẶT ---------- -->
+      <section class="panel" id="panel-settings" data-panel="settings">
+        <h1 class="panel__title">Cài đặt</h1>
+
+        <div class="settings-grid">
+          <div class="card" id="settings-staff">
+            <h2 class="card__title">Danh sách nhân viên</h2>
+            <ul class="settings-list" id="staff-list"><!-- Phần 2 --></ul>
+            <div class="settings-add-row">
+              <input type="text" class="field__input" id="staff-new-name" placeholder="Tên nhân viên mới" />
+              <button type="button" class="btn btn--secondary" id="btn-add-staff">Thêm</button>
+            </div>
+          </div>
+
+          <div class="card" id="settings-appearance">
+            <h2 class="card__title">Giao diện</h2>
+            <label class="field">
+              <span class="field__label">Chế độ hiển thị</span>
+              <select class="field__input" id="theme-select">
+                <option value="light">Light (mặc định)</option>
+                <option value="dark">Dark</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="card" id="settings-backup">
+            <h2 class="card__title">Backup / Restore</h2>
+            <div class="settings-backup__actions">
+              <button type="button" class="btn btn--secondary" id="btn-export-backup">Xuất backup (JSON)</button>
+              <label class="btn btn--secondary btn--file">
+                Nhập backup (JSON)
+                <input type="file" accept="application/json" id="input-import-backup" hidden />
+              </label>
+            </div>
+            <p class="storage-mode" id="storage-mode-note"></p>
+          </div>
+
+          <div class="card" id="settings-auditlog">
+            <h2 class="card__title">Nhật ký thao tác gần đây</h2>
+            <ul class="settings-list" id="audit-log-list"><!-- render bằng JS --></ul>
+          </div>
+
+          <div class="card" id="settings-users">
+            <h2 class="card__title">Quản lý người dùng &amp; phân quyền</h2>
+            <ul class="settings-list" id="users-list"><!-- render bằng JS --></ul>
+            <div class="settings-add-row settings-add-row--wrap">
+              <input type="text" class="field__input" id="user-new-name" placeholder="Tên đăng nhập" />
+              <input type="text" class="field__input" id="user-new-password" placeholder="Mật khẩu" />
+              <select class="field__input" id="user-new-role">
+                <option value="inspector">Inspector (Tester)</option>
+                <option value="supervisor">Supervisor/Manager</option>
+                <option value="admin">Admin</option>
+              </select>
+              <button type="button" class="btn btn--secondary" id="btn-add-user">Thêm người dùng</button>
+            </div>
+            <p class="storage-mode">Mật khẩu chỉ để phân biệt người dùng trên máy dùng chung — KHÔNG phải bảo mật thật sự (app chạy offline, dữ liệu vẫn nằm ngay trên máy).</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- PANEL: HƯỚNG DẪN SỬ DỤNG ---------- -->
+      <section class="panel" id="panel-guide" data-panel="guide">
+        <h1 class="panel__title">Hướng dẫn sử dụng</h1>
+
+        <div class="card">
+          <h2 class="card__title">1. Nhập phiếu mới</h2>
+          <ol class="guide-list">
+            <li>Bấm <b>+ Phiếu mới</b> hoặc chọn tab <b>Nhập liệu</b>.</li>
+            <li>Nhập <b>Item Code</b> — hệ thống tự tra <b>Recipe</b> và <b>Product Name</b> từ danh mục.</li>
+            <li>Chọn <b>Customer</b> (INS/LDC) — các ô "Range" của 9 chỉ tiêu sẽ tự cập nhật theo ngưỡng tương ứng (xem tab <b>Spec.</b>).</li>
+            <li>Nhập <b>Batch</b> — hệ thống tự tính <b>Ngày sản xuất</b> (ký tự vị trí 2-3-4 của Batch = ngày thứ mấy trong năm hiện tại).</li>
+            <li>Điền số liệu cho từng khối chỉ tiêu (1. Độ Ẩm ... 9. Ngoại vật) — các ô Trung bình/Sự khác nhau và nhãn Đạt/Không đạt tự cập nhật khi bạn nhập.</li>
+            <li>Điền Ghi chú, chọn <b>Reviewed by</b> (tự ghi ngày duyệt).</li>
+            <li><b>Lưu nháp</b>: lưu tạm để làm tiếp sau. <b>Lưu phiếu</b>: lưu chính thức và chuyển sang tab Lịch sử.</li>
+          </ol>
+        </div>
+
+        <div class="card">
+          <h2 class="card__title">2. Tra cứu lịch sử</h2>
+          <p>Tab <b>Lịch sử &amp; Tra cứu</b>: tìm theo Batch/Item Code, lọc theo Customer/Kết luận/Ngày. Bấm <b>Xem</b> để xem chi tiết một phiếu.</p>
+        </div>
+
+        <div class="card">
+          <h2 class="card__title">3. Cấu hình ngưỡng &amp; trường dữ liệu</h2>
+          <p><b>Tab Spec.</b>: thiết lập bảng ngưỡng Đạt/Không đạt theo Customer + Chỉ tiêu (+ Recipe nếu có nhiều mức) — sửa/thêm/xoá dòng, áp dụng ngay cho tab Nhập liệu.</p>
+          <p><b>Tab Parameters</b>: bảng tham chiếu toàn bộ trường dữ liệu của phiếu (kiểu dữ liệu, Independent/Dependent, ghi chú) — dùng để tra cứu/ghi chú nội bộ, không làm thay đổi cấu trúc form.</p>
+          <p><b>Tab Cài đặt</b>: quản lý danh sách nhân viên thực hiện, giao diện (Light/Dark), backup/restore dữ liệu.</p>
+        </div>
+
+        <div class="card">
+          <h2 class="card__title">4. Lưu trữ dữ liệu &amp; sao lưu</h2>
+          <p>Dữ liệu (phiếu, ngưỡng, nhân viên, trường dữ liệu) được lưu bền bằng <b>IndexedDB</b> ngay trên máy/trình duyệt đang mở — tải lại trang hay tắt máy vẫn còn dữ liệu. Nếu trình duyệt chặn IndexedDB (một số trường hợp mở trực tiếp file HTML), ứng dụng tự chuyển sang <b>localStorage</b> dự phòng — vẫn giữ được dữ liệu chữ/số nhưng <b>không lưu được ảnh đính kèm</b>. Xem trạng thái đang dùng ở tab <b>Cài đặt</b>.</p>
+          <p><b>Lưu ý quan trọng:</b> dữ liệu lưu theo từng trình duyệt/máy — mở file này trên máy khác hoặc trình duyệt khác sẽ KHÔNG thấy phiếu đã nhập trước đó. Dùng <b>Xuất backup (JSON)</b> ở tab Cài đặt để sao lưu định kỳ, và <b>Nhập backup (JSON)</b> để chuyển dữ liệu sang máy khác.</p>
+          <p>Ứng dụng tự động lưu nháp phiếu đang nhập mỗi 20 giây; nếu đóng trình duyệt giữa chừng, lần mở lại sau sẽ được hỏi khôi phục.</p>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ===================== KHU VỰC IN / XUẤT PDF (ẩn, chỉ hiện khi in) ===================== -->
+  <div id="print-area" class="print-area"></div>
+
+  <!-- ===================== ĐĂNG NHẬP (bắt buộc, chặn thao tác cho tới khi đăng nhập) ===================== -->
+  <div class="login-overlay" id="login-overlay" hidden>
+    <div class="login-box">
+      <h2>Đăng nhập Lab Record</h2>
+      <label class="field">
+        <span class="field__label">Người dùng</span>
+        <select class="field__input" id="login-user"></select>
+      </label>
+      <label class="field">
+        <span class="field__label">Mật khẩu</span>
+        <input type="password" class="field__input" id="login-password" />
+      </label>
+      <p class="field__hint login-error" id="login-error"></p>
+      <button type="button" class="btn btn--primary" id="btn-login">Đăng nhập</button>
+    </div>
+  </div>
+
+  <!-- ===================== MODAL DÙNG CHUNG ===================== -->
+  <div class="modal-overlay" id="modal-overlay" hidden>
+    <div class="modal" id="modal-box">
+      <button class="modal__close" id="modal-close">✕</button>
+      <div class="modal__body" id="modal-body"><!-- Phần 2: nội dung modal render động --></div>
+    </div>
+  </div>
+
+  <!-- ===================== TOAST ===================== -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer class="app-footer">
+    <span>Lab Record v1.0 – ILD Coffee Vietnam</span>
+  </footer>
+
+  <!-- ===================== SCRIPTS ===================== -->
+  <script>
+/* =========================================================
+   Lab Record – ILD Coffee
+   Phần 2 (Logic) + Phần 3 (Lưu trữ) + Phần 4 (Polish) + Phần 5 (Validation).
+   Dồn 1 file HTML để gửi xem offline. Ranh giới module giữ bằng comment
+   (theo hướng dẫn skill khi chỉ dùng 1 file).
+   ========================================================= */
+
+/* ---------------- CONFIG ---------------- */
+const CONFIG = {
+  appName: 'Lab Record',
+  version: 'v1.0 (Phần 1-5)',
+  defaultUser: 'QA Demo',
+};
+let STAFF = ['Trân', 'Huy', 'Hiền', 'Định', 'Trang', 'Triều'];
+
+/* ---------------- PHÂN QUYỀN (Phần 6): Inspector < Supervisor/Manager < Admin ----------------
+   Mật khẩu ở đây chỉ để phân biệt người dùng trên máy/tablet dùng chung — KHÔNG phải cơ chế
+   bảo mật thật (app chạy offline, không có backend xác thực). Đổi mật khẩu mặc định ở tab
+   Cài đặt trước khi đưa vào dùng thật. */
+const ROLES = {
+  inspector: { label: 'Inspector (Tester)', level: 1 },
+  supervisor: { label: 'Supervisor/Manager', level: 2 },
+  admin: { label: 'Admin', level: 3 }
+};
+let USERS = [
+  { name: 'Trân', password: '1234', role: 'inspector' },
+  { name: 'Huy', password: '1234', role: 'inspector' },
+  { name: 'Hiền', password: '1234', role: 'inspector' },
+  { name: 'Định', password: '1234', role: 'inspector' },
+  { name: 'Trang', password: '1234', role: 'inspector' },
+  { name: 'Triều', password: '1234', role: 'inspector' },
+  { name: 'Supervisor', password: 'sup1234', role: 'supervisor' },
+  { name: 'Admin', password: 'admin1234', role: 'admin' }
+];
+function hasRole(minRole) {
+  if (!state.currentUser) return false;
+  return ROLES[state.currentUser.role].level >= ROLES[minRole].level;
+}
+
+/* ---------------- ĐỘ LẶP LẠI (Phần 6): dung sai tối đa giữa 2 lần đo ---------------- */
+let REPEATABILITY = [
+  { parameter: '1. Độ Ẩm (Halogen)', unit: '%', maxDiff: 0.1 },
+  { parameter: '2. Tỷ trọng - mật độ chảy tự do', unit: 'g/L', maxDiff: 5 },
+  { parameter: '3. Độ màu', unit: 'ACN', maxDiff: 1 },
+  { parameter: '5. pH', unit: '-', maxDiff: 0.05 },
+  { parameter: '6. Acidity', unit: '-', maxDiff: 0.05 }
+];
+function getMaxDiff(parameterLabel) {
+  const row = REPEATABILITY.find(r => r.parameter === parameterLabel);
+  return row ? row.maxDiff : null;
+}
+
+/* ---------------- MASTER DATA (seed từ Excel gốc, có thể bị ghi đè bởi dữ liệu đã lưu trong Storage) ---------------- */
+const ITEM_CODES = [{"item": "11000028", "name": "Freeze Dried Instant Coffee Bonita 14", "recipe": "405A"}, {"item": "11000171", "name": "Freeze Dried Instant Coffee Bonita 14T RFA", "recipe": "402AT"}, {"item": "11000032", "name": "Freeze Dried Instant Coffee Bonita 15", "recipe": "402A"}, {"item": "11000139", "name": "Freeze Dried Instant Coffee BUENA RFA Decaf 302D", "recipe": "302D"}, {"item": "11000154", "name": "Freeze Dried Instant Coffee Delica 02 Organic RFA", "recipe": "452ORG"}, {"item": "10100013", "name": "Freeze Dried Instant Coffee FD 3500 25kg", "recipe": "350"}, {"item": "10100014", "name": "Freeze Dried Instant Coffee FD 3502 25kg", "recipe": "352"}, {"item": "10100015", "name": "Freeze Dried Instant Coffee FD 3505 25kg", "recipe": "355"}, {"item": "10100010", "name": "Freeze Dried Instant Coffee FD 4000 25kg", "recipe": "400"}, {"item": "10100011", "name": "Freeze Dried Instant Coffee FD 4002 25kg", "recipe": "402"}, {"item": "10100012", "name": "Freeze Dried Instant Coffee FD 4005 25kg", "recipe": "405"}, {"item": "10100017", "name": "Freeze Dried Instant Coffee FD 5000 25kg", "recipe": "500"}, {"item": "11000131", "name": "Freeze Dried Instant Coffee FD-004-03 230kg", "recipe": "332"}, {"item": "11000132", "name": "Freeze Dried Instant Coffee FD-004-03 230kg", "recipe": "332"}, {"item": "11000164", "name": "Freeze Dried Instant Coffee FD-004-03 230kg Blue", "recipe": "332"}, {"item": "12000081", "name": "Freeze Dried Instant Coffee FDA 402", "recipe": "402A"}, {"item": "12000129", "name": "Freeze Dried Instant Coffee FDA 402 RFA", "recipe": "402AL"}, {"item": "12000093", "name": "Freeze Dried Instant Coffee FDAR 452B20 RFA 320kg", "recipe": "452B20"}, {"item": "12000086", "name": "Freeze Dried Instant Coffee FDAR 452B20 RFA 320kg Blue", "recipe": "452B20"}, {"item": "12000100", "name": "Freeze Dried Instant Coffee FDAR 452B20 RFA 320kg Blue", "recipe": "452B20"}, {"item": "12000084", "name": "Freeze Dried Instant Coffee FDAR 452B20 RFA 320kg White", "recipe": "452B20"}, {"item": "12000022", "name": "Freeze Dried Instant Coffee FDC 400", "recipe": "400C"}, {"item": "12000024", "name": "Freeze Dried Instant Coffee FDC 400", "recipe": "400C"}, {"item": "12000032", "name": "Freeze Dried Instant Coffee FDC 400", "recipe": "400C"}, {"item": "12000060", "name": "Freeze Dried Instant Coffee FDC 400 23kg", "recipe": "400C_LD"}, {"item": "12000061", "name": "Freeze Dried Instant Coffee FDC 400 23kg", "recipe": "400C_LD"}, {"item": "12000074", "name": "Freeze Dried Instant Coffee FDC 400 320kg", "recipe": "400C"}, {"item": "12000110", "name": "Freeze Dried Instant Coffee FDC 400 LD", "recipe": "400C_LD"}, {"item": "12000031", "name": "Freeze Dried Instant Coffee FDC 400I", "recipe": "400CI"}, {"item": "12000019", "name": "Freeze Dried Instant Coffee FDC 450", "recipe": "450C"}, {"item": "12000023", "name": "Freeze Dried Instant Coffee FDC 450", "recipe": "450C"}, {"item": "12000054", "name": "Freeze Dried Instant Coffee FDC 450", "recipe": "450C"}, {"item": "12000055", "name": "Freeze Dried Instant Coffee FDC 450", "recipe": "450C"}, {"item": "12000033", "name": "Freeze Dried Instant Coffee FDC 450I", "recipe": "450I"}, {"item": "12000026", "name": "Freeze Dried Instant Coffee FDC 450S", "recipe": "450SC"}, {"item": "12000018", "name": "Freeze Dried Instant Coffee FDC 452", "recipe": "452C"}, {"item": "12000058", "name": "Freeze Dried Instant Coffee FDC 452", "recipe": "452C"}, {"item": "12000059", "name": "Freeze Dried Instant Coffee FDC 452", "recipe": "452C"}, {"item": "12000029", "name": "Freeze Dried Instant Coffee FDC 452I", "recipe": "452CI"}, {"item": "12000030", "name": "Freeze Dried Instant Coffee FDC 452I", "recipe": "452CI"}, {"item": "12000066", "name": "Freeze Dried Instant Coffee FDCI 400 320kg", "recipe": "400CI"}, {"item": "12000070", "name": "Freeze Dried Instant Coffee FDCI 450", "recipe": "450CI"}, {"item": "12000062", "name": "Freeze Dried Instant Coffee FDCI 450 320kg", "recipe": "450CI"}, {"item": "12000063", "name": "Freeze Dried Instant Coffee FDCI 450 320kg", "recipe": "450CI"}, {"item": "12000020", "name": "Freeze Dried Instant Coffee FDCR2 450", "recipe": "450CR2"}, {"item": "12000021", "name": "Freeze Dried Instant Coffee FDCR2 450S", "recipe": "450SCR2"}, {"item": "12000028", "name": "Freeze Dried Instant Coffee FDR 3400D", "recipe": "400D"}, {"item": "12000009", "name": "Freeze Dried Instant Coffee FDR2 350", "recipe": "350"}, {"item": "12000010", "name": "Freeze Dried Instant Coffee FDR2 352", "recipe": "352"}, {"item": "12000011", "name": "Freeze Dried Instant Coffee FDR2 355", "recipe": "355"}, {"item": "12000007", "name": "Freeze Dried Instant Coffee FDR2 400", "recipe": "400"}, {"item": "12000090", "name": "Freeze Dried Instant Coffee FDR2 400", "recipe": "400"}, {"item": "12000088", "name": "Freeze Dried Instant Coffee FDR2 400 320kg", "recipe": "400"}, {"item": "12000134", "name": "Freeze Dried Instant Coffee FDR2 400 320KG Blue", "recipe": "400"}, {"item": "12000094", "name": "Freeze Dried Instant Coffee FDR2 400 RFA 320kg", "recipe": "400"}, {"item": "12000122", "name": "Freeze Dried Instant Coffee FDR2 400 RFA 320KG Blue", "recipe": "400"}, {"item": "12000008", "name": "Freeze Dried Instant Coffee FDR2 402", "recipe": "402"}, {"item": "12000136", "name": "Freeze Dried Instant Coffee FDR2 402", "recipe": "402"}, {"item": "12000003", "name": "Freeze Dried Instant Coffee FDR2 405", "recipe": "405"}, {"item": "12000002", "name": "Freeze Dried Instant Coffee FDR2 450", "recipe": "450"}, {"item": "12000015", "name": "Freeze Dried Instant Coffee FDR2 450", "recipe": "450"}, {"item": "12000017", "name": "Freeze Dried Instant Coffee FDR2 450", "recipe": "450"}, {"item": "12000050", "name": "Freeze Dried Instant Coffee FDR2 450", "recipe": "450"}, {"item": "12000051", "name": "Freeze Dried Instant Coffee FDR2 450", "recipe": "450"}, {"item": "12000076", "name": "Freeze Dried Instant Coffee FDR2 450", "recipe": "450"}, {"item": "12000034", "name": "Freeze Dried Instant Coffee FDR2 450 23kg", "recipe": "450_LD"}, {"item": "12000052", "name": "Freeze Dried Instant Coffee FDR2 450 23kg", "recipe": "450_LD"}, {"item": "12000053", "name": "Freeze Dried Instant Coffee FDR2 450 23kg", "recipe": "450_LD"}, {"item": "12000108", "name": "Freeze Dried Instant Coffee FDR2 450 LD", "recipe": "450_LD"}, {"item": "12000025", "name": "Freeze Dried Instant Coffee FDR2 450 RFA", "recipe": "450"}, {"item": "12000068", "name": "Freeze Dried Instant Coffee FDR2 450 RFA", "recipe": "450"}, {"item": "12000098", "name": "Freeze Dried Instant Coffee FDR2 450S", "recipe": "450S"}, {"item": "12000012", "name": "Freeze Dried Instant Coffee FDR2 450-S", "recipe": "450S"}, {"item": "12000001", "name": "Freeze Dried Instant Coffee FDR2 452", "recipe": "452"}, {"item": "12000014", "name": "Freeze Dried Instant Coffee FDR2 452", "recipe": "452"}, {"item": "12000016", "name": "Freeze Dried Instant Coffee FDR2 452", "recipe": "452"}, {"item": "12000027", "name": "Freeze Dried Instant Coffee FDR2 452", "recipe": "452"}, {"item": "12000056", "name": "Freeze Dried Instant Coffee FDR2 452", "recipe": "452"}, {"item": "12000057", "name": "Freeze Dried Instant Coffee FDR2 452", "recipe": "452"}, {"item": "12000106", "name": "Freeze Dried Instant Coffee FDR2 452 320kg Blue", "recipe": "452"}, {"item": "12000096", "name": "Freeze Dried Instant Coffee FDR2 452 RFA 320kg", "recipe": "452"}, {"item": "12000104", "name": "Freeze Dried Instant Coffee FDR2 452 RFA 320kg Blue", "recipe": "452"}, {"item": "12000013", "name": "Freeze Dried Instant Coffee FDR2 455", "recipe": "455"}, {"item": "12000005", "name": "Freeze Dried Instant Coffee FDR2 500", "recipe": "500"}, {"item": "12000004", "name": "Freeze Dried Instant Coffee FDR2 502", "recipe": "502"}, {"item": "12000092", "name": "Freeze Dried Instant Coffee FDR2 502", "recipe": "502"}, {"item": "12000006", "name": "Freeze Dried Instant Coffee FDR2 505", "recipe": "505"}, {"item": "12000064", "name": "Freeze Dried Instant Coffee FDR2 505", "recipe": "505"}, {"item": "12000065", "name": "Freeze Dried Instant Coffee FDR2 505", "recipe": "505"}, {"item": "12000083", "name": "Freeze Dried Instant Coffee FDRA 402", "recipe": "402AL"}, {"item": "12000120", "name": "Freeze Dried Instant Coffee FDRC 400", "recipe": "400RC (85/15)"}, {"item": "12000132", "name": "Freeze Dried Instant Coffee FDRC 400 320kg Blue", "recipe": "400RC (70/30)"}, {"item": "12000114", "name": "Freeze Dried Instant Coffee FDRC 400 320KG white", "recipe": "400RC (85/15)"}, {"item": "12000126", "name": "Freeze Dried Instant Coffee FDRC 400 320kg white", "recipe": "400RC (70/30)"}, {"item": "12000128", "name": "Freeze Dried Instant Coffee FDRC 400 320kg white", "recipe": "400RC (70/30)"}, {"item": "12000116", "name": "Freeze Dried Instant Coffee FDRC 450", "recipe": "450RC (85/15)"}, {"item": "12000124", "name": "Freeze Dried Instant Coffee FDRC 450", "recipe": "450RC (70/30)"}, {"item": "12000130", "name": "Freeze Dried Instant Coffee FDRC 450", "recipe": "450RC (70/30)"}, {"item": "12000072", "name": "Freeze Dried Instant Coffee FDRD 400", "recipe": "400D"}, {"item": "12000073", "name": "Freeze Dried Instant Coffee FDRD 400", "recipe": "400D"}, {"item": "12000077", "name": "Freeze Dried Instant Coffee FDRD 400 OS", "recipe": "400D"}, {"item": "12000078", "name": "Freeze Dried Instant Coffee FDRD 400 OS", "recipe": "400D"}, {"item": "12000112", "name": "Freeze Dried Instant Coffee FDRD 400 OS 320KG white", "recipe": "400D"}, {"item": "12000079", "name": "Freeze Dried Instant Coffee FDRD 400 OS RFA", "recipe": "400D"}, {"item": "12000080", "name": "Freeze Dried Instant Coffee FDRD 400 OS RFA", "recipe": "400D"}, {"item": "12000085", "name": "Freeze Dried Instant Coffee FDRD 400 OS RFA 320kg", "recipe": "400D"}, {"item": "12000127", "name": "Freeze Dried Instant Coffee FDRD 400 OS RFA 320kg white", "recipe": "400D"}, {"item": "11000001", "name": "Freeze Dried Instant Coffee Prima 02", "recipe": "452"}, {"item": "11000013", "name": "Freeze Dried Instant Coffee Prima 02", "recipe": "452"}, {"item": "11000020", "name": "Freeze Dried Instant Coffee Prima 02", "recipe": "452"}, {"item": "11000033", "name": "Freeze Dried Instant Coffee Prima 02", "recipe": "452"}, {"item": "11000050", "name": "Freeze Dried Instant Coffee Prima 02", "recipe": "452"}, {"item": "11000051", "name": "Freeze Dried Instant Coffee Prima 02", "recipe": "452"}, {"item": "11000115", "name": "Freeze Dried Instant Coffee Prima 02", "recipe": "452"}, {"item": "11300003", "name": "Freeze Dried Instant Coffee Prima 02", "recipe": "452"}, {"item": "11000121", "name": "Freeze Dried Instant Coffee Prima 02 R1", "recipe": "452"}, {"item": "11000122", "name": "Freeze Dried Instant Coffee Prima 02 R1", "recipe": "452"}, {"item": "11000017", "name": "Freeze Dried Instant Coffee Prima 02 RFA", "recipe": "452"}, {"item": "11000052", "name": "Freeze Dried Instant Coffee Prima 02 RFA", "recipe": "452"}, {"item": "11000053", "name": "Freeze Dried Instant Coffee Prima 02 RFA", "recipe": "452"}, {"item": "11000178", "name": "Freeze Dried Instant Coffee Prima 02 RFA Black", "recipe": "452"}, {"item": "11000082", "name": "Freeze Dried Instant Coffee Prima 02A", "recipe": "452Ang"}, {"item": "11000083", "name": "Freeze Dried Instant Coffee Prima 02A", "recipe": "452Ang"}, {"item": "11000038", "name": "Freeze Dried Instant Coffee Prima 02C", "recipe": "452C"}, {"item": "11000040", "name": "Freeze Dried Instant Coffee Prima 02C", "recipe": "452C"}, {"item": "11000054", "name": "Freeze Dried Instant Coffee Prima 02C", "recipe": "452C"}, {"item": "11000055", "name": "Freeze Dried Instant Coffee Prima 02C", "recipe": "452C"}, {"item": "11000144", "name": "Freeze Dried Instant Coffee Prima 02C", "recipe": "452C"}, {"item": "11300002", "name": "Freeze Dried Instant Coffee Prima 02C", "recipe": "452C"}, {"item": "11300004", "name": "Freeze Dried Instant Coffee Prima 02C", "recipe": "452C"}, {"item": "11000056", "name": "Freeze Dried Instant Coffee Prima 02C RFA", "recipe": "452C"}, {"item": "11000057", "name": "Freeze Dried Instant Coffee Prima 02C RFA", "recipe": "452C"}, {"item": "11000147", "name": "Freeze Dried Instant Coffee Prima 02I RFA", "recipe": "452I"}, {"item": "11000148", "name": "Freeze Dried Instant Coffee Prima 02I RFA", "recipe": "452I"}, {"item": "11000002", "name": "Freeze Dried Instant Coffee Prima 03", "recipe": "450"}, {"item": "11000138", "name": "Freeze Dried Instant Coffee Prima 03", "recipe": "450"}, {"item": "11000156", "name": "Freeze Dried Instant Coffee Prima 03 RFA", "recipe": "450"}, {"item": "11000150", "name": "Freeze Dried Instant Coffee Prima 03C", "recipe": "450C"}, {"item": "11000003", "name": "Freeze Dried Instant Coffee Prima 06", "recipe": "0"}, {"item": "11000004", "name": "Freeze Dried Instant Coffee Prima 08", "recipe": "502"}, {"item": "11000019", "name": "Freeze Dried Instant Coffee Prima 08", "recipe": "502"}, {"item": "11000024", "name": "Freeze Dried Instant Coffee Prima 08", "recipe": "502"}, {"item": "11000058", "name": "Freeze Dried Instant Coffee Prima 08", "recipe": "502"}, {"item": "11000059", "name": "Freeze Dried Instant Coffee Prima 08", "recipe": "502"}, {"item": "11000168", "name": "Freeze Dried Instant Coffee Prima 08", "recipe": "502"}, {"item": "11300008", "name": "Freeze Dried Instant Coffee Prima 08", "recipe": "502"}, {"item": "11000126", "name": "Freeze Dried Instant Coffee Prima 08 230kg", "recipe": "502"}, {"item": "11000160", "name": "Freeze Dried Instant Coffee Prima 08 230kg Blue", "recipe": "502"}, {"item": "11000045", "name": "Freeze Dried Instant Coffee Prima 08C", "recipe": "502C"}, {"item": "11000060", "name": "Freeze Dried Instant Coffee Prima 08C", "recipe": "502C"}, {"item": "11000061", "name": "Freeze Dried Instant Coffee Prima 08C", "recipe": "502C"}, {"item": "11300005", "name": "Freeze Dried Instant Coffee Prima 08C", "recipe": "502C"}, {"item": "11000005", "name": "Freeze Dried Instant Coffee Prima 10", "recipe": "500"}, {"item": "11000014", "name": "Freeze Dried Instant Coffee Prima 10", "recipe": "500"}, {"item": "11000021", "name": "Freeze Dried Instant Coffee Prima 10", "recipe": "500"}, {"item": "11000062", "name": "Freeze Dried Instant Coffee Prima 10", "recipe": "500"}, {"item": "11000063", "name": "Freeze Dried Instant Coffee Prima 10", "recipe": "500"}, {"item": "11000158", "name": "Freeze Dried Instant Coffee Prima 10 RFA", "recipe": "500"}, {"item": "11500002", "name": "Freeze Dried Instant Coffee Prima 10390", "recipe": "355"}, {"item": "11000152", "name": "Freeze Dried Instant Coffee Prima 10390 230kg", "recipe": "355"}, {"item": "11000162", "name": "Freeze Dried Instant Coffee Prima 10390 230kg Blue", "recipe": "355"}, {"item": "11000034", "name": "Freeze Dried Instant Coffee Prima 10C", "recipe": "500C"}, {"item": "11000064", "name": "Freeze Dried Instant Coffee Prima 10C", "recipe": "500C"}, {"item": "11000065", "name": "Freeze Dried Instant Coffee Prima 10C", "recipe": "500C"}, {"item": "11000104", "name": "Freeze Dried Instant Coffee Prima 10I", "recipe": "500I"}, {"item": "11000110", "name": "Freeze Dried Instant Coffee Prima 10I RFA", "recipe": "500I"}, {"item": "11000006", "name": "Freeze Dried Instant Coffee Prima 11", "recipe": "505"}, {"item": "11000027", "name": "Freeze Dried Instant Coffee Prima 11", "recipe": "505"}, {"item": "11000068", "name": "Freeze Dried Instant Coffee Prima 11", "recipe": "505"}, {"item": "11000069", "name": "Freeze Dried Instant Coffee Prima 11", "recipe": "505"}, {"item": "11000172", "name": "Freeze Dried Instant Coffee Prima 11 RFA", "recipe": "505"}, {"item": "11000035", "name": "Freeze Dried Instant Coffee Prima 11C", "recipe": "505C"}, {"item": "11000066", "name": "Freeze Dried Instant Coffee Prima 11C", "recipe": "505C"}, {"item": "11000067", "name": "Freeze Dried Instant Coffee Prima 11C", "recipe": "505C"}, {"item": "11000007", "name": "Freeze Dried Instant Coffee Prima 12", "recipe": "400"}, {"item": "11000046", "name": "Freeze Dried Instant Coffee Prima 12", "recipe": "400"}, {"item": "11000086", "name": "Freeze Dried Instant Coffee Prima 12", "recipe": "400"}, {"item": "11500001", "name": "Freeze Dried Instant Coffee Prima 12", "recipe": "400"}, {"item": "11000113", "name": "Freeze Dried Instant Coffee Prima 12 230kg", "recipe": "400"}, {"item": "11000114", "name": "Freeze Dried Instant Coffee Prima 12 230kg", "recipe": "400"}, {"item": "11000166", "name": "Freeze Dried Instant Coffee Prima 12 230kg Blue", "recipe": "400"}, {"item": "11000044", "name": "Freeze Dried Instant Coffee Prima 12C", "recipe": "400C"}, {"item": "11300007", "name": "Freeze Dried Instant Coffee Prima 12C", "recipe": "400C"}, {"item": "11000008", "name": "Freeze Dried Instant Coffee Prima 14", "recipe": "402"}, {"item": "11000012", "name": "Freeze Dried Instant Coffee Prima 15", "recipe": "405"}, {"item": "11000009", "name": "Freeze Dried Instant Coffee Prima 16", "recipe": "350"}, {"item": "11000010", "name": "Freeze Dried Instant Coffee Prima 17", "recipe": "352"}, {"item": "11000015", "name": "Freeze Dried Instant Coffee Prima 17", "recipe": "352"}, {"item": "11000022", "name": "Freeze Dried Instant Coffee Prima 17", "recipe": "352"}, {"item": "11000041", "name": "Freeze Dried Instant Coffee Prima 17", "recipe": "352"}, {"item": "11000070", "name": "Freeze Dried Instant Coffee Prima 17", "recipe": "352"}, {"item": "11000071", "name": "Freeze Dried Instant Coffee Prima 17", "recipe": "352"}, {"item": "11000117", "name": "Freeze Dried Instant Coffee Prima 17", "recipe": "352"}, {"item": "11000169", "name": "Freeze Dried Instant Coffee Prima 17 CT", "recipe": "352 CT"}, {"item": "11000135", "name": "Freeze Dried Instant Coffee Prima 17 Decaf", "recipe": "352D"}, {"item": "11000119", "name": "Freeze Dried Instant Coffee Prima 17 R1", "recipe": "352"}, {"item": "11000120", "name": "Freeze Dried Instant Coffee Prima 17 R1", "recipe": "352"}, {"item": "11000018", "name": "Freeze Dried Instant Coffee Prima 17 RFA", "recipe": "352"}, {"item": "11000018", "name": "Freeze Dried Instant Coffee Prima 17 RFA", "recipe": "352"}, {"item": "11000084", "name": "Freeze Dried Instant Coffee Prima 17 RFA", "recipe": "352"}, {"item": "11000085", "name": "Freeze Dried Instant Coffee Prima 17 RFA", "recipe": "352"}, {"item": "11000129", "name": "Freeze Dried Instant Coffee Prima 17 RFA Decaf", "recipe": "352D"}, {"item": "11000130", "name": "Freeze Dried Instant Coffee Prima 17 RFA Decaf", "recipe": "352D"}, {"item": "11000037", "name": "Freeze Dried Instant Coffee Prima 17C", "recipe": "352C"}, {"item": "11000039", "name": "Freeze Dried Instant Coffee Prima 17C", "recipe": "352C"}, {"item": "11000072", "name": "Freeze Dried Instant Coffee Prima 17C", "recipe": "352C"}, {"item": "11000073", "name": "Freeze Dried Instant Coffee Prima 17C", "recipe": "352C"}, {"item": "11000142", "name": "Freeze Dried Instant Coffee Prima 17C", "recipe": "352C"}, {"item": "11300001", "name": "Freeze Dried Instant Coffee Prima 17C", "recipe": "352C"}, {"item": "11300009", "name": "Freeze Dried Instant Coffee Prima 17C", "recipe": "352C"}, {"item": "11000108", "name": "Freeze Dried Instant Coffee Prima 17C CT", "recipe": "352C CT"}, {"item": "11000109", "name": "Freeze Dried Instant Coffee Prima 17C CT", "recipe": "352C CT"}, {"item": "11000074", "name": "Freeze Dried Instant Coffee Prima 17C RFA", "recipe": "352C"}, {"item": "11000075", "name": "Freeze Dried Instant Coffee Prima 17C RFA", "recipe": "352C"}, {"item": "11000146", "name": "Freeze Dried Instant Coffee Prima 17I RFA", "recipe": "352I"}, {"item": "11000011", "name": "Freeze Dried Instant Coffee Prima 18", "recipe": "355"}, {"item": "11000016", "name": "Freeze Dried Instant Coffee Prima 18", "recipe": "355"}, {"item": "11000023", "name": "Freeze Dried Instant Coffee Prima 18", "recipe": "355"}, {"item": "11000078", "name": "Freeze Dried Instant Coffee Prima 18", "recipe": "355"}, {"item": "11000079", "name": "Freeze Dried Instant Coffee Prima 18", "recipe": "355"}, {"item": "11000170", "name": "Freeze Dried Instant Coffee Prima 18 RFA", "recipe": "355"}, {"item": "11000036", "name": "Freeze Dried Instant Coffee Prima 18C", "recipe": "355C"}, {"item": "11000076", "name": "Freeze Dried Instant Coffee Prima 18C", "recipe": "355C"}, {"item": "11000077", "name": "Freeze Dried Instant Coffee Prima 18C", "recipe": "355C"}, {"item": "11000042", "name": "Freeze Dried Instant Coffee Prima 19", "recipe": "300"}, {"item": "11000080", "name": "Freeze Dried Instant Coffee Prima 19", "recipe": "300"}, {"item": "11000081", "name": "Freeze Dried Instant Coffee Prima 19", "recipe": "300"}, {"item": "11000176", "name": "Freeze Dried Instant Coffee Prima 19 RFA", "recipe": "300"}, {"item": "11000025", "name": "Freeze Dried Instant Coffee Prima 20", "recipe": "302"}, {"item": "11000106", "name": "Freeze Dried Instant Coffee Prima 20", "recipe": "302"}, {"item": "11000133", "name": "Freeze Dried Instant Coffee Prima 20 Decaf", "recipe": "302D"}, {"item": "11000043", "name": "Freeze Dried Instant Coffee Prima 20C", "recipe": "302C"}, {"item": "11300006", "name": "Freeze Dried Instant Coffee Prima 20C", "recipe": "302C"}, {"item": "11000026", "name": "Freeze Dried Instant Coffee Prima 21", "recipe": "305"}, {"item": "11000029", "name": "Freeze Dried Instant Coffee Prima 22", "recipe": "550"}, {"item": "11000128", "name": "Freeze Dried Instant Coffee Prima 22 230kg", "recipe": "550"}, {"item": "11000030", "name": "Freeze Dried Instant Coffee Prima 23", "recipe": "552"}, {"item": "11000031", "name": "Freeze Dried Instant Coffee Prima 24", "recipe": "555"}, {"item": "11000141", "name": "Freeze Dried Instant Coffee ZERO Decaf 302D", "recipe": "302D"}];
+const THRESHOLDS = [{"customer": "INS", "parameter": "1. Độ Ẩm (Halogen)", "unit": "%", "requirement": "≤ 3", "recipe": "-"}, {"customer": "INS", "parameter": "2. Tỷ trọng - mật độ chảy tự do", "unit": "g/L", "requirement": "220-240", "recipe": "-"}, {"customer": "INS", "parameter": "3. Độ màu", "unit": "ACN", "requirement": "Max 85", "recipe": "30/35/40"}, {"customer": "INS", "parameter": "3. Độ màu", "unit": "ACN", "requirement": "Max 88", "recipe": "45/50"}, {"customer": "INS", "parameter": "3. Độ màu", "unit": "ACN", "requirement": "Max 90", "recipe": "55"}, {"customer": "INS", "parameter": "4. Độ cặn", "unit": "-", "requirement": "≤ 2", "recipe": "-"}, {"customer": "INS", "parameter": "5. pH", "unit": "-", "requirement": "4.7-5.3", "recipe": "-"}, {"customer": "INS", "parameter": "6. Acidity", "unit": "-", "requirement": "3.7-4.5 (Accept to 4.7)", "recipe": "-"}, {"customer": "INS", "parameter": "7. Độ hòa tan", "unit": "-", "requirement": "V", "recipe": "-"}, {"customer": "INS", "parameter": "8. Kích thước hạt", "unit": "-", "requirement": "<0.5mm max 1%", "recipe": "-"}, {"customer": "INS", "parameter": "9. Ngoại vật", "unit": "-", "requirement": "Max 10 units < 1.00mm\nMax 1 unit > 1.0mm", "recipe": "-"}, {"customer": "LDC", "parameter": "1. Độ Ẩm (Halogen)", "unit": "%", "requirement": "≤ 3.5", "recipe": "-"}, {"customer": "LDC", "parameter": "2. Tỷ trọng - mật độ chảy tự do", "unit": "g/L", "requirement": "225-245", "recipe": "-"}, {"customer": "LDC", "parameter": "2. Tỷ trọng - mật độ chảy tự do", "unit": "g/L", "requirement": "200-220", "recipe": "Low Density"}, {"customer": "LDC", "parameter": "3. Độ màu", "unit": "ACN", "requirement": "Max 85", "recipe": "40/45"}, {"customer": "LDC", "parameter": "3. Độ màu", "unit": "ACN", "requirement": "Max 90", "recipe": "45LD/ 452B20"}, {"customer": "LDC", "parameter": "3. Độ màu", "unit": "ACN", "requirement": "Max 85", "recipe": "50"}, {"customer": "LDC", "parameter": "4. Độ cặn", "unit": "-", "requirement": "≤ 2", "recipe": "-"}, {"customer": "LDC", "parameter": "5. pH", "unit": "-", "requirement": "4.7-5.3", "recipe": "-"}, {"customer": "LDC", "parameter": "6. Acidity", "unit": "-", "requirement": "3.7-4.5 (Accept to 4.7)", "recipe": "-"}, {"customer": "LDC", "parameter": "7. Độ hòa tan", "unit": "-", "requirement": "V", "recipe": "-"}, {"customer": "LDC", "parameter": "8. Kích thước hạt", "unit": "-", "requirement": "<0.5mm max 1%", "recipe": "-"}, {"customer": "LDC", "parameter": "9. Ngoại vật", "unit": "-", "requirement": "Max 10 units < 1.00mm\nMax 1 unit > 1.0mm", "recipe": "-"}];
+
+const FIELD_MAPPING = [{"parameter": "Thông tin mẫu", "field": "Item code", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "Thông tin mẫu", "field": "Recipe", "format": "number", "type": "Dependent", "remark": "Phụ thuộc Item Code"}, {"parameter": "Thông tin mẫu", "field": "Batch", "format": "text", "type": "Independent", "remark": ""}, {"parameter": "Thông tin mẫu", "field": "Product Name", "format": "text", "type": "Dependent", "remark": "Phụ thuộc Item Code"}, {"parameter": "Thông tin mẫu", "field": "Customer", "format": "text", "type": "Independent", "remark": "Chọn: INS/LDC"}, {"parameter": "Thông tin mẫu", "field": "Ngày sản xuất", "format": "date", "type": "Dependent", "remark": "Phụ thuộc vào số thứ 2-3-4 số Batch là 3 số Julian date"}, {"parameter": "Thông tin mẫu", "field": "PO", "format": "number", "type": "Dependent", "remark": "Số đầu tiên: 6-LDC, 7-INS & 3 số cuối thì nhập (110)\nVD: X12600XXX"}, {"parameter": "Thông tin mẫu", "field": "SSCC", "format": "number", "type": "Dependent", "remark": "Số batch + 000 + 3 số cuối tự nhập"}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Khối lượng mẫu (g)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Nhiệt độ sấy (℃)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Thời gian sấy (mm:ss)", "format": "time", "type": "Independent", "remark": ""}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Kết quả ẩm (%)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Giá trị trung bình (%)", "format": "number", "type": "Dependent", "remark": "average 2 kết quả ẩm"}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Sự khác nhau", "format": "number", "type": "Dependent", "remark": "abs 2 kết quả ẩm"}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Range", "format": "text", "type": "Dependent", "remark": "Phụ thuộc vào bảng Thông tin Kết luận"}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Khối lượng bình (g)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Khối lượng mẫu(g)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Thể tích bình (L)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Kết quả tỷ trọng (g/L)", "format": "number", "type": "Dependent", "remark": "khối lượng mẫu/thể tích bình"}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Giá trị trung bình (g/L)", "format": "number", "type": "Dependent", "remark": "average 2 kết quả tỷ trọng"}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Sự khác nhau", "format": "number", "type": "Dependent", "remark": "abs 2 kết quả"}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Range", "format": "text", "type": "Dependent", "remark": "Phụ thuộc vào bảng Thông tin Kết luận"}, {"parameter": "3. Độ màu", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "3. Độ màu", "field": "Kết quả độ màu (ACN)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "3. Độ màu", "field": "Giá trị trung bình (ACN)", "format": "number", "type": "Dependent", "remark": "average 2 kết quả độ màu"}, {"parameter": "3. Độ màu", "field": "Sự khác nhau", "format": "number", "type": "Dependent", "remark": "abs 2 kết quả"}, {"parameter": "3. Độ màu", "field": "Range", "format": "text", "type": "Dependent", "remark": "Phụ thuộc vào bảng Thông tin Kết luận"}, {"parameter": "4. Độ cặn", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "4. Độ cặn", "field": "Khối lượng mẫu(g)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "4. Độ cặn", "field": "Thể tích nước (ml)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "4. Độ cặn", "field": "Kết quả độ cặn (Grade)", "format": "number", "type": "Independent", "remark": "Chọn 1/1.5/2/2.5/3"}, {"parameter": "4. Độ cặn", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định"}, {"parameter": "4. Độ cặn", "field": "Vị trí dán mẫu cặn", "format": "Picture", "type": "Independent", "remark": "Adding Picture"}, {"parameter": "5. pH", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "5. pH", "field": "Khối lượng mẫu(g)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "5. pH", "field": "Thể tích nước (ml)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "5. pH", "field": "Nhiệt độ mẫu 25±0.5 (℃)", "format": "number", "type": "Dependent", "remark": "Nằm ngoài range 24.5-25.5 -> tô đỏ"}, {"parameter": "5. pH", "field": "Kết quả pH", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "5. pH", "field": "Giá trị trung bình", "format": "number", "type": "Dependent", "remark": "average 2 kết quả pH"}, {"parameter": "5. pH", "field": "Sự khác nhau", "format": "number", "type": "Dependent", "remark": "abs 2 kết quả"}, {"parameter": "5. pH", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định"}, {"parameter": "6. Acidity", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "6. Acidity", "field": "Khối lượng mẫu(g)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "6. Acidity", "field": "Thể tích nước (ml)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "6. Acidity", "field": "Nồng độ NaOH", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "6. Acidity", "field": "Thể tích tiêu tốn", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "6. Acidity", "field": "Kết quả Acidity", "format": "number", "type": "Dependent", "remark": "Thể tích tiêu tốn * nồng độ NaOH/ 0.1"}, {"parameter": "6. Acidity", "field": "Giá trị trung bình", "format": "number", "type": "Dependent", "remark": "average 2 kết quả"}, {"parameter": "6. Acidity", "field": "Sự khác nhau", "format": "number", "type": "Dependent", "remark": "abs 2 kết quả"}, {"parameter": "6. Acidity", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định"}, {"parameter": "7. Độ hòa tan", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "7. Độ hòa tan", "field": "Khối lượng mẫu(g)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "7. Độ hòa tan", "field": "Thể tích nước (ml)", "format": "number", "type": "Independent", "remark": "Cố định: Nóng"}, {"parameter": "7. Độ hòa tan", "field": "Thể tích nước (ml)", "format": "number", "type": "Independent", "remark": "Cố định: Lạnh"}, {"parameter": "7. Độ hòa tan", "field": "Nhiệt độ mẫu (oC)", "format": "number", "type": "Dependent", "remark": "Nóng: Nằm ngoài range 96-98 -> tô đỏ"}, {"parameter": "7. Độ hòa tan", "field": "Nhiệt độ mẫu (oC)", "format": "number", "type": "Dependent", "remark": "Lạnh: Nằm ngoài range 18-20 -> tô đỏ"}, {"parameter": "7. Độ hòa tan", "field": "Thời gian khuấy", "format": "number", "type": "Independent", "remark": "Cố định: Nóng"}, {"parameter": "7. Độ hòa tan", "field": "Thời gian khuấy", "format": "number", "type": "Independent", "remark": "Cố định: Lạnh"}, {"parameter": "7. Độ hòa tan", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định"}, {"parameter": "7. Độ hòa tan", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định"}, {"parameter": "8. Kích thước hạt", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "8. Kích thước hạt", "field": "Khối lượng mẫu (g)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "8. Kích thước hạt", "field": "Biên độ (mm)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "8. Kích thước hạt", "field": "Thời gian (s)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "8. Kích thước hạt", "field": "Khối lượng mẫu sau sàng (g)", "format": "number", "type": "Dependent", "remark": "Công thức như File Excel"}, {"parameter": "8. Kích thước hạt", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định"}, {"parameter": "8. Kích thước hạt", "field": "Khối lượng sàng (g)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "8. Kích thước hạt", "field": "Khối lượng mẫu + sàng (g)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "8. Kích thước hạt", "field": "% mẫu trên sàng", "format": "number", "type": "Dependent", "remark": "Công thức như File Excel"}, {"parameter": "9. Ngoại vật", "field": "Khối lượng mẫu(g)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "9. Ngoại vật", "field": "Thể tích nước (ml)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "9. Ngoại vật", "field": "Kết quả", "format": "text", "type": "Independent", "remark": "Absent/Present (ghi cụ thể FB)"}, {"parameter": "9. Ngoại vật", "field": "Hình ảnh ngoại vật", "format": "Picture", "type": "Independent", "remark": "Adding Picture"}, {"parameter": "9. Ngoại vật", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định"}];
+
+function findItemByCode(code) {
+  if (!code) return null;
+  const c = String(code).trim();
+  return ITEM_CODES.find(i => i.item === c) || null;
+}
+
+// Một số chỉ tiêu (Độ màu, Tỷ trọng-LDC) có nhiều mức ngưỡng theo dải Recipe.
+// Đơn giản hoá: khớp theo 2 ký tự số đầu của Recipe với danh sách band; nếu
+// không khớp được thì lấy dòng đầu tiên làm mặc định.
+// GIẢ ĐỊNH CẦN QA XÁC NHẬN LẠI — xem ghi chú cuối phản hồi.
+function getThreshold(customer, parameterLabel, recipe) {
+  const rows = THRESHOLDS.filter(t => t.customer === customer && t.parameter === parameterLabel);
+  if (rows.length === 0) return null;
+  if (rows.length === 1) return rows[0];
+  if (recipe) {
+    const prefix2 = String(recipe).replace(/\D/g, '').slice(0, 2);
+    const match = rows.find(r =>
+      r.recipe.split('/').map(s => s.trim()).some(band => {
+        const bandDigits = band.replace(/\D/g, '').slice(0, 2);
+        return bandDigits && prefix2 && bandDigits === prefix2;
+      })
+    );
+    if (match) return match;
+  }
+  return rows[0];
+}
+
+/* ---------------- UTILS ---------------- */
+function toNumber(v) {
+  const n = parseFloat(v);
+  return isNaN(n) ? null : n;
+}
+function average(a, b) { return (a + b) / 2; }
+function diffAbs(a, b) { return Math.abs(a - b); }
+function formatNumber(n, digits = 2) {
+  return (n === null || n === undefined || isNaN(n)) ? '--' : n.toFixed(digits);
+}
+function formatDateVN(d) {
+  if (!d) return '--';
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return dd + '/' + mm + '/' + yyyy;
+}
+// Batch VD '62550110F1' -> ký tự vị trí 2-3-4 (1-indexed) = '255' = ngày thứ 255 trong năm.
+// Năm sản xuất lấy theo năm hiện tại (đã xác nhận ở Giai đoạn 1).
+function productionDateFromBatch(batch, refYear) {
+  if (!batch) return null;
+  const s = batch.trim();
+  if (s.length < 4) return null;
+  const dayCode = s.substring(1, 4);
+  const day = parseInt(dayCode, 10);
+  if (isNaN(day) || day < 1 || day > 366) return null;
+  const year = refYear || new Date().getFullYear();
+  const d = new Date(year, 0, 1);
+  d.setDate(d.getDate() + day - 1);
+  return d;
+}
+
+// Diễn giải chuỗi "Yêu cầu" (ngưỡng) từ bảng Thông tin kết luận.
+function parseRequirement(req) {
+  if (!req) return null;
+  const s = req.trim();
+  let m;
+  if ((m = s.match(/^≤\s*([\d.]+)$/))) return { type: 'max', max: parseFloat(m[1]) };
+  if ((m = s.match(/^Max\s*([\d.]+)$/i))) return { type: 'max', max: parseFloat(m[1]) };
+  if ((m = s.match(/^([\d.]+)\s*-\s*([\d.]+)\s*\(Accept to\s*([\d.]+)\)$/i)))
+    return { type: 'range-accept', min: parseFloat(m[1]), max: parseFloat(m[2]), acceptMax: parseFloat(m[3]) };
+  if ((m = s.match(/^([\d.]+)\s*-\s*([\d.]+)$/)))
+    return { type: 'range', min: parseFloat(m[1]), max: parseFloat(m[2]) };
+  if (s.toUpperCase() === 'V') return { type: 'exact', value: 'V' };
+  return null; // dạng đặc biệt (VD Ngoại vật) xử lý riêng, không qua hàm này
+}
+function checkRange(value, req) {
+  const spec = parseRequirement(req);
+  if (!spec || value === null) return 'pending';
+  switch (spec.type) {
+    case 'max': return value <= spec.max ? 'pass' : 'fail';
+    case 'range': return (value >= spec.min && value <= spec.max) ? 'pass' : 'fail';
+    case 'range-accept':
+      if (value >= spec.min && value <= spec.max) return 'pass';
+      if (value > spec.max && value <= spec.acceptMax) return 'accept';
+      return 'fail';
+    case 'exact': return value === spec.value ? 'pass' : 'fail';
+    default: return 'pending';
+  }
+}
+function setStatusBadge(el, status) {
+  if (!el) return;
+  const labels = { pass: 'Đạt', fail: 'Không đạt', accept: 'Chấp nhận', pending: '--' };
+  el.textContent = labels[status] || '--';
+  el.dataset.status = status;
+}
+// Cảnh báo đỏ (tô viền) khi 2 lần đo lệch quá "Độ lặp lại" cho phép — CHỈ cảnh báo trực
+// quan, không tự đổi Kết luận Đạt/Không đạt (đã xác nhận với người dùng).
+function applyRepeatabilityWarn(el, diff, parameterLabel) {
+  if (!el) return;
+  const maxDiff = getMaxDiff(parameterLabel);
+  const exceeded = maxDiff !== null && diff !== null && !isNaN(diff) && diff > maxDiff;
+  el.classList.toggle('field__input--warn', !!exceeded);
+}
+function escapeAttr(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+function toSingleLine(s) {
+  return String(s == null ? '' : s).replace(/\n/g, ' / ');
+}
+function csvEscape(v) {
+  const s = String(v === null || v === undefined ? '' : v);
+  if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+function downloadFile(filename, content, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/* ---------------- TOAST ---------------- */
+function toast(message, type) {
+  type = type || 'info';
+  const box = document.getElementById('toast-container');
+  if (!box) return;
+  const el = document.createElement('div');
+  el.className = 'toast toast--' + type;
+  el.textContent = message;
+  box.appendChild(el);
+  setTimeout(() => { el.classList.add('toast--out'); }, 2600);
+  setTimeout(() => { el.remove(); }, 3000);
+}
+
+/* ---------------- STORAGE (Phần 3) ----------------
+   Lớp trừu tượng lưu trữ: cố gắng dùng IndexedDB trước; nếu trình duyệt/ngữ
+   cảnh chặn (VD một số trình duyệt hạn chế IndexedDB khi mở file HTML trực
+   tiếp bằng file://), tự động chuyển sang localStorage — vẫn lưu được dữ
+   liệu văn bản (không lưu được ảnh đính kèm ở chế độ dự phòng này). */
+const Storage = (function () {
+  let mode = 'unknown'; // 'indexeddb' | 'localstorage'
+  let dbInstance = null;
+  const LS_PREFIX = 'labrecord_';
+
+  function idbOpen() {
+    return new Promise((resolve, reject) => {
+      if (!window.indexedDB) { reject(new Error('IndexedDB không khả dụng trên trình duyệt/ngữ cảnh này')); return; }
+      let req;
+      try {
+        req = indexedDB.open('lab_record_db', 1);
+      } catch (err) { reject(err); return; }
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains('records')) db.createObjectStore('records', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('attachments')) db.createObjectStore('attachments', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', { keyPath: 'key' });
+        if (!db.objectStoreNames.contains('auditLog')) db.createObjectStore('auditLog', { keyPath: 'id' });
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error || new Error('Không mở được IndexedDB'));
+      req.onblocked = () => reject(new Error('IndexedDB bị khoá (đang mở ở tab khác)'));
+    });
+  }
+
+  async function ensureDb() {
+    if (!dbInstance) dbInstance = await idbOpen();
+    return dbInstance;
+  }
+
+  function lsReadStore(name) {
+    try { return JSON.parse(localStorage.getItem(LS_PREFIX + name) || '{}'); } catch (e) { return {}; }
+  }
+  function lsWriteStore(name, obj) {
+    localStorage.setItem(LS_PREFIX + name, JSON.stringify(obj));
+  }
+  function keyOf(value) { return value.id !== undefined ? value.id : value.key; }
+
+  async function init() {
+    try {
+      await ensureDb();
+      mode = 'indexeddb';
+    } catch (err) {
+      console.warn('IndexedDB không dùng được, chuyển sang localStorage:', err.message);
+      mode = 'localstorage';
+    }
+    return mode;
+  }
+
+  async function put(storeName, value) {
+    if (mode === 'indexeddb') {
+      try {
+        const db = await ensureDb();
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction(storeName, 'readwrite');
+          tx.objectStore(storeName).put(value);
+          tx.oncomplete = resolve;
+          tx.onerror = () => reject(tx.error);
+          tx.onabort = () => reject(tx.error);
+        });
+        return true;
+      } catch (err) {
+        console.warn('IndexedDB put lỗi, chuyển sang localStorage:', err);
+        mode = 'localstorage';
+      }
+    }
+    try {
+      const data = lsReadStore(storeName);
+      // localStorage chỉ lưu JSON thuần — loại bỏ Blob (ảnh) nếu có.
+      const clone = JSON.parse(JSON.stringify(value, (k, v) => (v instanceof Blob ? undefined : v)));
+      data[keyOf(value)] = clone;
+      lsWriteStore(storeName, data);
+      return true;
+    } catch (err) {
+      console.error('localStorage put lỗi:', err);
+      toast('Không lưu được dữ liệu (bộ nhớ đầy hoặc trình duyệt chặn lưu trữ).', 'warn');
+      return false;
+    }
+  }
+
+  async function get(storeName, key) {
+    if (mode === 'indexeddb') {
+      try {
+        const db = await ensureDb();
+        return await new Promise((resolve, reject) => {
+          const tx = db.transaction(storeName, 'readonly');
+          const req = tx.objectStore(storeName).get(key);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => reject(req.error);
+        });
+      } catch (err) {
+        console.warn('IndexedDB get lỗi, chuyển sang localStorage:', err);
+        mode = 'localstorage';
+      }
+    }
+    const data = lsReadStore(storeName);
+    return data[key] || null;
+  }
+
+  async function getAll(storeName) {
+    if (mode === 'indexeddb') {
+      try {
+        const db = await ensureDb();
+        return await new Promise((resolve, reject) => {
+          const tx = db.transaction(storeName, 'readonly');
+          const req = tx.objectStore(storeName).getAll();
+          req.onsuccess = () => resolve(req.result || []);
+          req.onerror = () => reject(req.error);
+        });
+      } catch (err) {
+        console.warn('IndexedDB getAll lỗi, chuyển sang localStorage:', err);
+        mode = 'localstorage';
+      }
+    }
+    const data = lsReadStore(storeName);
+    return Object.values(data);
+  }
+
+  async function del(storeName, key) {
+    if (mode === 'indexeddb') {
+      try {
+        const db = await ensureDb();
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction(storeName, 'readwrite');
+          tx.objectStore(storeName).delete(key);
+          tx.oncomplete = resolve;
+          tx.onerror = () => reject(tx.error);
+        });
+        return true;
+      } catch (err) {
+        console.warn('IndexedDB delete lỗi, chuyển sang localStorage:', err);
+        mode = 'localstorage';
+      }
+    }
+    const data = lsReadStore(storeName);
+    delete data[key];
+    lsWriteStore(storeName, data);
+    return true;
+  }
+
+  return { init, put, get, getAll, delete: del, mode: () => mode };
+})();
+
+/* ---------------- AUDIT LOG (ghi vào Storage) ---------------- */
+const AuditLog = {
+  entries: [],
+  async log(action, detail) {
+    const userName = state.currentUser ? state.currentUser.name : '(chưa đăng nhập)';
+    const entry = { id: 'log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), time: new Date().toISOString(), action, detail, user: userName };
+    this.entries.unshift(entry);
+    await Storage.put('auditLog', entry).catch(() => {});
+    renderAuditLogList();
+  },
+  async loadAll() {
+    const all = await Storage.getAll('auditLog');
+    this.entries = all.sort((a, b) => new Date(b.time) - new Date(a.time));
+    renderAuditLogList();
+  }
+};
+
+function renderAuditLogList() {
+  const ul = document.getElementById('audit-log-list');
+  if (!ul) return;
+  const recent = AuditLog.entries.slice(0, 15);
+  ul.innerHTML = recent.length
+    ? recent.map(e => '<li><span>' + new Date(e.time).toLocaleString('vi-VN') + ' — ' + e.action + (e.detail && e.detail.batch ? ' (' + e.detail.batch + ')' : '') + '</span></li>').join('')
+    : '<li><span style="color:var(--text-faint);">Chưa có thao tác nào.</span></li>';
+}
+
+/* ---------------- STATE ---------------- */
+const state = {
+  records: [],            // cache các phiếu đã lưu (đồng bộ từ Storage)
+  filteredHistory: [],    // danh sách đang lọc trong tab Lịch sử (để xuất CSV đúng bộ lọc)
+  currentThresholds: {},  // parameterLabel -> requirement string, theo Customer đang chọn
+  editingRecordId: null,  // nếu đang mở lại 1 bản nháp để sửa tiếp, lưu id để ghi đè thay vì tạo phiếu mới
+  currentUser: null,      // { name, role } sau khi đăng nhập
+  blockEnteredAt: {},     // paramIndex(1-9) -> ISO timestamp lúc bắt đầu nhập khối chỉ tiêu đó
+};
+
+/* ---------------- DATA ENGINE: từng khối chỉ tiêu ---------------- */
+const form = document.getElementById('analysis-form');
+
+function paramStatusEl(n) {
+  return document.querySelector('#block-param-' + n + ' .param-summary__status');
+}
+
+function computeDoAm() {
+  const a = toNumber(form.elements['do_am_1_ket_qua'].value);
+  const b = toNumber(form.elements['do_am_2_ket_qua'].value);
+  const req = state.currentThresholds['1. Độ Ẩm (Halogen)'];
+  let status = 'pending';
+  if (a !== null && b !== null) {
+    const avg = average(a, b), diff = diffAbs(a, b);
+    form.elements['do_am_avg'].value = formatNumber(avg);
+    form.elements['do_am_diff'].value = formatNumber(diff);
+    status = checkRange(avg, req);
+    applyRepeatabilityWarn(form.elements['do_am_diff'], diff, '1. Độ Ẩm (Halogen)');
+  } else {
+    form.elements['do_am_avg'].value = '--';
+    form.elements['do_am_diff'].value = '--';
+    applyRepeatabilityWarn(form.elements['do_am_diff'], null, '1. Độ Ẩm (Halogen)');
+  }
+  setStatusBadge(paramStatusEl(1), status);
+  return status;
+}
+
+function computeTyTrong() {
+  const m1 = toNumber(form.elements['ty_trong_1_khoi_luong_mau'].value);
+  const v1 = toNumber(form.elements['ty_trong_1_the_tich_binh'].value);
+  const m2 = toNumber(form.elements['ty_trong_2_khoi_luong_mau'].value);
+  const v2 = toNumber(form.elements['ty_trong_2_the_tich_binh'].value);
+  const r1 = (m1 !== null && v1) ? m1 / v1 : null;
+  const r2 = (m2 !== null && v2) ? m2 / v2 : null;
+  form.elements['ty_trong_1_ket_qua'].value = r1 === null ? '--' : formatNumber(r1);
+  form.elements['ty_trong_2_ket_qua'].value = r2 === null ? '--' : formatNumber(r2);
+  const req = state.currentThresholds['2. Tỷ trọng - mật độ chảy tự do'];
+  let status = 'pending';
+  if (r1 !== null && r2 !== null) {
+    const avg = average(r1, r2), diff = diffAbs(r1, r2);
+    form.elements['ty_trong_avg'].value = formatNumber(avg);
+    form.elements['ty_trong_diff'].value = formatNumber(diff);
+    status = checkRange(avg, req);
+    applyRepeatabilityWarn(form.elements['ty_trong_diff'], diff, '2. Tỷ trọng - mật độ chảy tự do');
+  } else {
+    form.elements['ty_trong_avg'].value = '--';
+    form.elements['ty_trong_diff'].value = '--';
+    applyRepeatabilityWarn(form.elements['ty_trong_diff'], null, '2. Tỷ trọng - mật độ chảy tự do');
+  }
+  setStatusBadge(paramStatusEl(2), status);
+  return status;
+}
+
+function computeDoMau() {
+  const a = toNumber(form.elements['do_mau_1_ket_qua'].value);
+  const b = toNumber(form.elements['do_mau_2_ket_qua'].value);
+  const req = state.currentThresholds['3. Độ màu'];
+  let status = 'pending';
+  if (a !== null && b !== null) {
+    const avg = average(a, b), diff = diffAbs(a, b);
+    form.elements['do_mau_avg'].value = formatNumber(avg);
+    form.elements['do_mau_diff'].value = formatNumber(diff);
+    status = checkRange(avg, req);
+    applyRepeatabilityWarn(form.elements['do_mau_diff'], diff, '3. Độ màu');
+  } else {
+    form.elements['do_mau_avg'].value = '--';
+    form.elements['do_mau_diff'].value = '--';
+    applyRepeatabilityWarn(form.elements['do_mau_diff'], null, '3. Độ màu');
+  }
+  setStatusBadge(paramStatusEl(3), status);
+  return status;
+}
+
+function computeDoCan() {
+  const grade = toNumber(form.elements['do_can_ket_qua'].value);
+  const req = state.currentThresholds['4. Độ cặn'];
+  const status = grade !== null ? checkRange(grade, req) : 'pending';
+  setStatusBadge(paramStatusEl(4), status);
+  return status;
+}
+
+function computePh() {
+  const t1 = toNumber(form.elements['ph_1_nhiet_do'].value);
+  const t2 = toNumber(form.elements['ph_2_nhiet_do'].value);
+  form.elements['ph_1_nhiet_do'].classList.toggle('field__input--warn', t1 !== null && (t1 < 24.5 || t1 > 25.5));
+  form.elements['ph_2_nhiet_do'].classList.toggle('field__input--warn', t2 !== null && (t2 < 24.5 || t2 > 25.5));
+  const a = toNumber(form.elements['ph_1_ket_qua'].value);
+  const b = toNumber(form.elements['ph_2_ket_qua'].value);
+  const req = state.currentThresholds['5. pH'];
+  let status = 'pending';
+  if (a !== null && b !== null) {
+    const avg = average(a, b), diff = diffAbs(a, b);
+    form.elements['ph_avg'].value = formatNumber(avg);
+    form.elements['ph_diff'].value = formatNumber(diff);
+    status = checkRange(avg, req);
+    applyRepeatabilityWarn(form.elements['ph_diff'], diff, '5. pH');
+  } else {
+    form.elements['ph_avg'].value = '--';
+    form.elements['ph_diff'].value = '--';
+    applyRepeatabilityWarn(form.elements['ph_diff'], null, '5. pH');
+  }
+  setStatusBadge(paramStatusEl(5), status);
+  return status;
+}
+
+function computeAcidity() {
+  const naoh1 = toNumber(form.elements['acidity_1_nong_do_naoh'].value);
+  const vol1 = toNumber(form.elements['acidity_1_the_tich_tieu_ton'].value);
+  const naoh2 = toNumber(form.elements['acidity_2_nong_do_naoh'].value);
+  const vol2 = toNumber(form.elements['acidity_2_the_tich_tieu_ton'].value);
+  const r1 = (naoh1 !== null && vol1 !== null) ? (vol1 * naoh1 / 0.1) : null;
+  const r2 = (naoh2 !== null && vol2 !== null) ? (vol2 * naoh2 / 0.1) : null;
+  form.elements['acidity_1_ket_qua'].value = r1 === null ? '--' : formatNumber(r1);
+  form.elements['acidity_2_ket_qua'].value = r2 === null ? '--' : formatNumber(r2);
+  const req = state.currentThresholds['6. Acidity'];
+  let status = 'pending';
+  if (r1 !== null && r2 !== null) {
+    const avg = average(r1, r2), diff = diffAbs(r1, r2);
+    form.elements['acidity_avg'].value = formatNumber(avg);
+    form.elements['acidity_diff'].value = formatNumber(diff);
+    status = checkRange(avg, req);
+    applyRepeatabilityWarn(form.elements['acidity_diff'], diff, '6. Acidity');
+  } else {
+    form.elements['acidity_avg'].value = '--';
+    form.elements['acidity_diff'].value = '--';
+    applyRepeatabilityWarn(form.elements['acidity_diff'], null, '6. Acidity');
+  }
+  setStatusBadge(paramStatusEl(6), status);
+  return status;
+}
+
+function computeHoaTan() {
+  const tNong = toNumber(form.elements['hoa_tan_nong_nhiet_do'].value);
+  const tLanh = toNumber(form.elements['hoa_tan_lanh_nhiet_do'].value);
+  form.elements['hoa_tan_nong_nhiet_do'].classList.toggle('field__input--warn', tNong !== null && (tNong < 96 || tNong > 98));
+  form.elements['hoa_tan_lanh_nhiet_do'].classList.toggle('field__input--warn', tLanh !== null && (tLanh < 18 || tLanh > 20));
+  const kqNong = form.elements['hoa_tan_nong_ket_qua'].value;
+  const kqLanh = form.elements['hoa_tan_lanh_ket_qua'].value;
+  let status = 'pending';
+  if (kqNong && kqLanh) {
+    status = (kqNong === 'V' && kqLanh === 'V') ? 'pass' : 'fail';
+  }
+  setStatusBadge(paramStatusEl(7), status);
+  return status;
+}
+
+const SIEVE_COLS = ['400', '335', '280', '200', '140', '100', '050', 'lt050'];
+function computeKichThuoc() {
+  const retained = {};
+  let total = 0;
+  let anyFilled = false;
+  SIEVE_COLS.forEach(col => {
+    const w = toNumber(form.elements['sieve_' + col + '_w'].value);
+    const wt = toNumber(form.elements['sieve_' + col + '_wt'].value);
+    if (w !== null && wt !== null) {
+      retained[col] = Math.max(0, wt - w);
+      total += retained[col];
+      anyFilled = true;
+    } else {
+      retained[col] = null;
+    }
+  });
+  let ltPct = null;
+  SIEVE_COLS.forEach(col => {
+    const out = form.elements['sieve_' + col + '_pct'];
+    if (retained[col] !== null && total > 0) {
+      const pct = retained[col] / total * 100;
+      out.value = formatNumber(pct) + '%';
+      if (col === 'lt050') ltPct = pct;
+    } else {
+      out.value = '--';
+    }
+  });
+  form.elements['kich_thuoc_khoi_luong_sau_sang'].value = anyFilled ? formatNumber(total) : '--';
+  const status = ltPct !== null ? (ltPct <= 1 ? 'pass' : 'fail') : 'pending';
+  setStatusBadge(paramStatusEl(8), status);
+  return status;
+}
+
+function computeNgoaiVat() {
+  const kq = form.elements['ngoai_vat_ket_qua'].value;
+  // Đơn giản hoá: Absent = Đạt, Present = Không đạt.
+  // Quy tắc đếm số lượng/kích thước dị vật cụ thể (Max 10 units < 1mm...) cần QA xác nhận thêm.
+  const status = kq === 'Absent' ? 'pass' : (kq === 'Present' ? 'fail' : 'pending');
+  setStatusBadge(paramStatusEl(9), status);
+  return status;
+}
+
+function recomputeConclusion(statuses) {
+  const out = form.elements['ketLuan'];
+  if (statuses.some(s => s === 'fail')) {
+    out.value = 'Không đạt';
+    out.dataset.status = 'fail';
+  } else if (statuses.some(s => s === 'accept')) {
+    out.value = 'Chấp nhận có điều kiện';
+    out.dataset.status = 'accept';
+  } else if (statuses.every(s => s === 'pass')) {
+    out.value = 'Đạt';
+    out.dataset.status = 'pass';
+  } else {
+    out.value = '--';
+    out.dataset.status = 'pending';
+  }
+  const forceBtn = document.getElementById('btn-force-submit');
+  if (forceBtn) forceBtn.hidden = out.dataset.status !== 'pending';
+}
+
+function recomputeAll() {
+  const statuses = [
+    computeDoAm(), computeTyTrong(), computeDoMau(), computeDoCan(),
+    computePh(), computeAcidity(), computeHoaTan(), computeKichThuoc(), computeNgoaiVat()
+  ];
+  recomputeConclusion(statuses);
+  calcCompletion();
+}
+
+// % hoàn thành = số trường người dùng cần tự nhập (input/select, không tính trường
+// readonly/computed hay file) đã có giá trị / tổng số trường đó.
+function calcCompletion() {
+  const els = form.querySelectorAll('input, select');
+  let total = 0, filled = 0;
+  els.forEach(el => {
+    if (el.type === 'file' || el.type === 'hidden') return;
+    if (el.readOnly || el.disabled) return;
+    total++;
+    if (el.value && String(el.value).trim() !== '') filled++;
+  });
+  const pct = total ? Math.round(filled / total * 100) : 0;
+  const bar = document.getElementById('form-completion-bar');
+  const label = document.getElementById('form-completion-label');
+  if (bar) bar.style.width = pct + '%';
+  if (label) label.textContent = pct + '% hoàn thành (' + filled + '/' + total + ' trường)';
+  return pct;
+}
+
+/* ---------------- FORM: thông tin mẫu (lookup / parse) ---------------- */
+const PARAM_LABELS = [
+  '1. Độ Ẩm (Halogen)', '2. Tỷ trọng - mật độ chảy tự do', '3. Độ màu', '4. Độ cặn',
+  '5. pH', '6. Acidity', '7. Độ hòa tan', '8. Kích thước hạt', '9. Ngoại vật'
+];
+const PARAM_RANGE_OUTPUT = {
+  '1. Độ Ẩm (Halogen)': 'do_am_range',
+  '2. Tỷ trọng - mật độ chảy tự do': 'ty_trong_range',
+  '3. Độ màu': 'do_mau_range',
+  '4. Độ cặn': 'do_can_range',
+  '5. pH': 'ph_range',
+  '6. Acidity': 'acidity_range',
+  '7. Độ hòa tan': 'hoa_tan_range',
+  '8. Kích thước hạt': 'kich_thuoc_range',
+  '9. Ngoại vật': 'ngoai_vat_range'
+};
+
+function updateThresholdsForCustomer() {
+  const customer = form.elements['customer'].value;
+  const recipe = form.elements['recipe'].value;
+  state.currentThresholds = {};
+  PARAM_LABELS.forEach(label => {
+    const row = customer ? getThreshold(customer, label, recipe) : null;
+    state.currentThresholds[label] = row ? row.requirement : null;
+    const el = form.elements[PARAM_RANGE_OUTPUT[label]];
+    if (el) el.value = row ? row.requirement.replace(/\n/g, ' / ') : '--';
+  });
+  recomputeAll();
+}
+
+function onItemCodeChange() {
+  const code = form.elements['itemCode'].value;
+  const item = findItemByCode(code);
+  if (item) {
+    form.elements['recipe'].value = item.recipe;
+    form.elements['productName'].value = item.name;
+  } else {
+    form.elements['recipe'].value = '';
+    form.elements['productName'].value = '';
+    if (code) toast('Không tìm thấy Item Code "' + code + '" trong danh mục.', 'warn');
+  }
+  updateThresholdsForCustomer();
+}
+
+function onBatchChange() {
+  const batch = form.elements['batch'].value;
+  const d = productionDateFromBatch(batch);
+  form.elements['productionDate'].value = d ? formatDateVN(d) : '--';
+}
+
+// SSCC = PO + '000' + 3 số cuối tự nhập. Khi có PO, tự gợi ý sẵn phần đầu để người
+// dùng chỉ cần gõ tiếp 3 số cuối (không ghi đè nếu SSCC đã khớp tiền tố PO này rồi).
+function onPoChange() {
+  const po = form.elements['po'].value.trim();
+  const scEl = form.elements['sscc'];
+  const hint = document.getElementById('sscc-hint');
+  if (!po) { if (hint) hint.textContent = ''; return; }
+  const prefix = po + '000';
+  if (hint) hint.textContent = 'Gợi ý SSCC: ' + prefix + ' + 3 số cuối tự nhập';
+  if (!scEl.value || !scEl.value.startsWith(prefix)) {
+    scEl.value = prefix;
+  }
+}
+
+/* ---------------- NAVIGATION (Sidebar) ---------------- */
+function switchTab(tabName) {
+  document.querySelectorAll('.sidebar__item').forEach(btn => {
+    btn.classList.toggle('is-active', btn.dataset.tab === tabName);
+    btn.setAttribute('aria-current', btn.dataset.tab === tabName ? 'page' : 'false');
+  });
+  document.querySelectorAll('.panel').forEach(panel => {
+    panel.classList.toggle('is-active', panel.dataset.panel === tabName);
+  });
+  if (tabName === 'dashboard') renderDashboard();
+  if (tabName === 'history') renderHistoryTable();
+  if (tabName === 'itemcode') renderItemCodeTable();
+  if (tabName === 'spec') renderSpecTable();
+  if (tabName === 'repeatability') renderRepeatabilityTable();
+  if (tabName === 'parameters') renderParametersTable();
+  if (tabName === 'settings') { renderStaffList(); renderAuditLogList(); renderUsersTable(); }
+}
+
+/* ---------------- DASHBOARD ---------------- */
+function renderDashboard() {
+  const submitted = state.records.filter(r => !r.isDraft);
+
+  document.getElementById('stat-total').textContent = submitted.length || '0';
+  const passCount = submitted.filter(r => r.conclusion && r.conclusion.statusKey === 'pass').length;
+  document.getElementById('stat-pass-rate').textContent = submitted.length
+    ? Math.round(passCount / submitted.length * 100) + '%' : '--';
+
+  const todayStr = new Date().toDateString();
+  const todayCount = submitted.filter(r => new Date(r.meta.savedAt).toDateString() === todayStr).length;
+  document.getElementById('stat-today').textContent = todayCount || '0';
+
+  const now = new Date();
+  const failMonthCount = submitted.filter(r => {
+    const d = new Date(r.meta.savedAt);
+    return r.conclusion && r.conclusion.statusKey === 'fail' && d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).length;
+  document.getElementById('stat-fail-month').textContent = failMonthCount || '0';
+
+  const byDate = {};
+  submitted.forEach(r => {
+    const key = new Date(r.meta.savedAt).toLocaleDateString('vi-VN');
+    byDate[key] = (byDate[key] || 0) + 1;
+  });
+  const dateEntries = Object.entries(byDate).slice(-7);
+  document.getElementById('chart-by-date').innerHTML = dateEntries.length
+    ? '<ul class="simple-list">' + dateEntries.map(([d, c]) => '<li><span>' + d + '</span><span>' + c + ' phiếu</span></li>').join('') + '</ul>'
+    : '<span>Chưa có dữ liệu.</span>';
+
+  const byItem = {};
+  submitted.forEach(r => {
+    const key = (r.sampleInfo && r.sampleInfo.itemCode) || '(?)';
+    if (!byItem[key]) byItem[key] = { pass: 0, fail: 0 };
+    if (r.conclusion && r.conclusion.statusKey === 'pass') byItem[key].pass++;
+    else if (r.conclusion && r.conclusion.statusKey === 'fail') byItem[key].fail++;
+  });
+  const itemEntries = Object.entries(byItem);
+  document.getElementById('chart-by-item').innerHTML = itemEntries.length
+    ? '<ul class="simple-list">' + itemEntries.map(([code, c]) => '<li><span>' + code + '</span><span>Đạt ' + c.pass + ' / Không đạt ' + c.fail + '</span></li>').join('') + '</ul>'
+    : '<span>Chưa có dữ liệu.</span>';
+}
+
+/* ---------------- MODAL ---------------- */
+const Modal = {
+  overlay: null, body: null,
+  init() {
+    this.overlay = document.getElementById('modal-overlay');
+    this.body = document.getElementById('modal-body');
+    document.getElementById('modal-close').addEventListener('click', () => this.close());
+    this.overlay.addEventListener('click', (e) => { if (e.target === this.overlay) this.close(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !this.overlay.hidden) this.close(); });
+  },
+  open(html) {
+    this.body.innerHTML = html;
+    this.overlay.hidden = false;
+  },
+  close() {
+    this.overlay.hidden = true;
+    this.body.innerHTML = '';
+  }
+};
+
+function confirmModal(title, message) {
+  return new Promise((resolve) => {
+    Modal.open(
+      '<h2>' + title + '</h2><p>' + message + '</p>' +
+      '<div class="form-actions">' +
+      '<button type="button" class="btn btn--secondary" id="btn-confirm-no">Huỷ</button>' +
+      '<button type="button" class="btn btn--primary" id="btn-confirm-yes">Đồng ý</button>' +
+      '</div>'
+    );
+    document.getElementById('btn-confirm-yes').addEventListener('click', () => { Modal.close(); resolve(true); });
+    document.getElementById('btn-confirm-no').addEventListener('click', () => { Modal.close(); resolve(false); });
+  });
+}
+
+/* ---------------- ĐĂNG NHẬP / PHÂN QUYỀN ---------------- */
+function populateLoginUserSelect() {
+  const sel = document.getElementById('login-user');
+  sel.innerHTML = USERS.map(u => '<option value="' + escapeAttr(u.name) + '">' + u.name + ' — ' + ROLES[u.role].label + '</option>').join('');
+}
+function showLogin() {
+  populateLoginUserSelect();
+  document.getElementById('login-password').value = '';
+  document.getElementById('login-error').textContent = '';
+  document.getElementById('login-overlay').hidden = false;
+}
+function hideLogin() {
+  document.getElementById('login-overlay').hidden = true;
+}
+async function attemptLogin() {
+  const name = document.getElementById('login-user').value;
+  const pass = document.getElementById('login-password').value;
+  const user = USERS.find(u => u.name === name && u.password === pass);
+  if (!user) {
+    document.getElementById('login-error').textContent = 'Sai mật khẩu, vui lòng thử lại.';
+    return;
+  }
+  state.currentUser = { name: user.name, role: user.role };
+  try { sessionStorage.setItem('labrecord_session', JSON.stringify(state.currentUser)); } catch (e) {}
+  hideLogin();
+  updateHeaderUser();
+  applyRolePermissions();
+  AuditLog.log('login', {});
+  await checkAutoRecovery();
+  startAutoSave();
+}
+function logout() {
+  AuditLog.log('logout', {});
+  state.currentUser = null;
+  try { sessionStorage.removeItem('labrecord_session'); } catch (e) {}
+  if (autoSaveTimer) clearInterval(autoSaveTimer);
+  switchTab('dashboard');
+  showLogin();
+}
+function updateHeaderUser() {
+  const el = document.getElementById('current-user');
+  if (!state.currentUser) { el.textContent = 'Chưa đăng nhập'; return; }
+  el.innerHTML = '<span class="header-user-badge">Xin chào, <b>' + state.currentUser.name +
+    '</b> (' + ROLES[state.currentUser.role].label + ') <button type="button" class="btn btn--secondary" id="btn-logout">Đăng xuất</button></span>';
+  document.getElementById('btn-logout').addEventListener('click', logout);
+}
+// Ẩn các tab/khối chỉ Supervisor+/Admin mới được vào — CHỈ là điều hướng UI, KHÔNG phải
+// bảo mật thật (ứng dụng chạy offline, không có backend xác thực).
+function applyRolePermissions() {
+  const supervisorPlus = hasRole('supervisor');
+  const adminOnly = hasRole('admin');
+  document.querySelectorAll('[data-tab="itemcode"], [data-tab="spec"], [data-tab="repeatability"]').forEach(btn => {
+    btn.hidden = !supervisorPlus;
+  });
+  document.querySelectorAll('[data-tab="parameters"], [data-tab="settings"]').forEach(btn => {
+    btn.hidden = !adminOnly;
+  });
+  populateStaffSelects();
+}
+
+/* ---------------- QUẢN LÝ NGƯỜI DÙNG (Admin) ---------------- */
+function renderUsersTable() {
+  const ul = document.getElementById('users-list');
+  if (!ul) return;
+  ul.innerHTML = USERS.map((u, idx) =>
+    '<li><span>' + u.name + ' — ' + ROLES[u.role].label + '</span> <button type="button" class="btn btn--secondary btn-remove-user" data-idx="' + idx + '">Xoá</button></li>'
+  ).join('');
+  ul.querySelectorAll('.btn-remove-user').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.idx, 10);
+      if (USERS[idx].name === state.currentUser.name) { toast('Không thể tự xoá tài khoản đang đăng nhập.', 'warn'); return; }
+      USERS.splice(idx, 1);
+      persistUsers();
+      renderUsersTable();
+      AuditLog.log('remove-user', {});
+    });
+  });
+}
+
+/* ---------------- HISTORY ---------------- */
+function renderHistoryTable() {
+  const tbody = document.getElementById('history-table-body');
+  const search = document.getElementById('history-search').value.trim().toLowerCase();
+  const custFilter = document.getElementById('history-filter-customer').value;
+  const resultFilter = document.getElementById('history-filter-result').value;
+  const dateFilter = document.getElementById('history-filter-date').value;
+
+  const rows = state.records.filter(r => {
+    const s = r.sampleInfo || {};
+    if (search && !((s.batch || '').toLowerCase().includes(search) || (s.itemCode || '').toLowerCase().includes(search))) return false;
+    if (custFilter && s.customer !== custFilter) return false;
+    if (resultFilter && (!r.conclusion || r.conclusion.result !== resultFilter)) return false;
+    if (dateFilter) {
+      const d = new Date(r.meta.savedAt);
+      const dStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      if (dStr !== dateFilter) return false;
+    }
+    return true;
+  });
+  state.filteredHistory = rows;
+
+  tbody.innerHTML = '';
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-faint);">Chưa có phiếu nào phù hợp.</td></tr>';
+    return;
+  }
+  rows.slice().reverse().forEach(r => {
+    const s = r.sampleInfo || {};
+    const tr = document.createElement('tr');
+    let resultLabel = r.isDraft ? 'Nháp' : ((r.conclusion && r.conclusion.result) || '--');
+    if (r.forcedClose) resultLabel += ' ⚠Force';
+    const resultStatus = r.isDraft ? 'pending' : ((r.conclusion && r.conclusion.statusKey) || 'pending');
+    tr.innerHTML =
+      '<td>' + formatDateVN(new Date(r.meta.savedAt)) + '</td>' +
+      '<td>' + (s.itemCode || '--') + '</td>' +
+      '<td>' + (s.productName || '--') + '</td>' +
+      '<td>' + (s.batch || '--') + '</td>' +
+      '<td>' + (s.customer || '--') + '</td>' +
+      '<td><span class="param-summary__status" data-status="' + resultStatus + '">' + resultLabel + '</span></td>' +
+      '<td>' + (r.reviewedBy || '--') + '</td>' +
+      '<td><button type="button" class="btn btn--secondary btn-view-record" data-id="' + r.id + '">Xem</button></td>';
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('.btn-view-record').forEach(btn => {
+    btn.addEventListener('click', () => viewRecord(btn.dataset.id));
+  });
+}
+
+function paramSummaryLine(p) {
+  if (!p) return '';
+  const parts = [];
+  if (p.average !== undefined && p.average !== null) parts.push('TB: ' + formatNumber(p.average));
+  if (p.difference !== undefined && p.difference !== null) parts.push('Sai khác: ' + formatNumber(p.difference));
+  if (p.range) parts.push('Range: ' + p.range);
+  return parts.join(' · ') || '--';
+}
+
+const STATUS_LABELS = { pass: 'Đạt', fail: 'Không đạt', accept: 'Chấp nhận', pending: '--' };
+
+function renderRecordDetailHtml(r) {
+  const p = r.parameters || {};
+  const rows = [p.doAm, p.tyTrong, p.doMau, p.doCan, p.ph, p.acidity, p.hoaTan, p.kichThuoc, p.ngoaiVat];
+  const paramHtml = rows.map(item => {
+    if (!item) return '';
+    const timeStr = item.enteredAt ? new Date(item.enteredAt).toLocaleString('vi-VN') : '';
+    return '<div class="detail-param-row">' +
+      '<span class="detail-param-row__label">' + item.label + (timeStr ? '<br><small style="font-weight:400;color:var(--text-faint);">' + timeStr + '</small>' : '') + '</span>' +
+      '<span class="detail-param-row__value">' + paramSummaryLine(item) + '</span>' +
+      '<span class="param-summary__status" data-status="' + item.status + '">' + (STATUS_LABELS[item.status] || '--') + '</span>' +
+      '</div>';
+  }).join('');
+  const s = r.sampleInfo || {};
+  const badges = (r.isDraft ? ' <span style="font-size:0.7em;color:var(--accept-text);">(Nháp)</span>' : '') +
+    (r.forcedClose ? ' <span style="font-size:0.7em;color:var(--fail-text);">⚠ Force đóng report</span>' : '');
+
+  return '<h2>Phiếu ' + (s.batch || '(chưa có Batch)') + badges + '</h2>' +
+    '<p><b>Item Code:</b> ' + (s.itemCode || '--') + ' — ' + (s.productName || '') + '</p>' +
+    '<p><b>Customer:</b> ' + (s.customer || '--') + ' &nbsp; <b>Ngày SX:</b> ' + (s.productionDate || '--') + ' &nbsp; <b>PO:</b> ' + (s.po || '--') + ' &nbsp; <b>SSCC:</b> ' + (s.sscc || '--') + '</p>' +
+    '<div class="detail-param-list">' + paramHtml + '</div>' +
+    '<p><b>Kết luận:</b> <span class="param-summary__status" data-status="' + (r.conclusion ? r.conclusion.statusKey : 'pending') + '">' + (r.conclusion ? r.conclusion.result : '--') + '</span></p>' +
+    '<p><b>Ghi chú:</b> ' + (r.notes || '(không có)') + '</p>' +
+    '<p><b>Reviewed by:</b> ' + (r.reviewedBy || '--') + ' — ' + (r.reviewedDate || '--') + '</p>' +
+    '<div class="form-actions">' +
+    (r.isDraft ? '<button type="button" class="btn btn--secondary" id="btn-detail-resume">Tiếp tục chỉnh sửa</button>' : '') +
+    '<button type="button" class="btn btn--secondary" id="btn-detail-csv">Xuất Excel (CSV)</button>' +
+    '<button type="button" class="btn btn--secondary" id="btn-detail-print">In tóm tắt</button>' +
+    '<button type="button" class="btn btn--secondary" id="btn-detail-fullreport">Full Report (PDF)</button>' +
+    (hasRole('supervisor') ? '<button type="button" class="btn btn--secondary" id="btn-detail-delete">Xoá phiếu</button>' : '') +
+    '</div>';
+}
+
+function viewRecord(id) {
+  const r = state.records.find(x => String(x.id) === String(id));
+  if (!r) return;
+  Modal.open(renderRecordDetailHtml(r));
+  const csvBtn = document.getElementById('btn-detail-csv');
+  const printBtn = document.getElementById('btn-detail-print');
+  const fullReportBtn = document.getElementById('btn-detail-fullreport');
+  const delBtn = document.getElementById('btn-detail-delete');
+  const resumeBtn = document.getElementById('btn-detail-resume');
+  if (csvBtn) csvBtn.addEventListener('click', () => exportRecordCsv(r));
+  if (printBtn) printBtn.addEventListener('click', () => printRecord(r));
+  if (fullReportBtn) fullReportBtn.addEventListener('click', () => printFullReport(r));
+  if (resumeBtn) resumeBtn.addEventListener('click', () => {
+    state.editingRecordId = r.id;
+    applyRecordToForm(r);
+    Modal.close();
+    switchTab('form');
+    toast('Đã nạp lại phiếu nháp — tiếp tục chỉnh sửa.', 'info');
+  });
+  if (delBtn) delBtn.addEventListener('click', async () => {
+    const ok = await confirmModal('Xoá phiếu?', 'Bạn có chắc muốn xoá phiếu ' + (r.sampleInfo.batch || '') + '? Hành động này không thể hoàn tác.');
+    if (!ok) return;
+    await Storage.delete('records', r.id);
+    AuditLog.log('delete-record', { batch: r.sampleInfo.batch });
+    await loadRecordsCache();
+    renderHistoryTable();
+    renderDashboard();
+    toast('Đã xoá phiếu.', 'success');
+  });
+}
+
+/* ---------------- XUẤT CSV / IN PDF ---------------- */
+function exportRecordCsv(r) {
+  const lines = [];
+  lines.push(['Trường', 'Giá trị'].map(csvEscape).join(','));
+  Object.entries(r.sampleInfo || {}).forEach(([k, v]) => lines.push([k, v].map(csvEscape).join(',')));
+  lines.push('');
+  Object.values(r.parameters || {}).forEach(param => {
+    if (!param) return;
+    lines.push([param.label, ''].map(csvEscape).join(','));
+    if (param.reps) {
+      param.reps.forEach((rep, i) => {
+        Object.entries(rep).forEach(([k, v]) => lines.push([' Lần ' + (i + 1) + ' - ' + k, v].map(csvEscape).join(',')));
+      });
+    }
+    if (param.hot) Object.entries(param.hot).forEach(([k, v]) => lines.push([' Nóng - ' + k, v].map(csvEscape).join(',')));
+    if (param.cold) Object.entries(param.cold).forEach(([k, v]) => lines.push([' Lạnh - ' + k, v].map(csvEscape).join(',')));
+    if (param.average !== undefined) lines.push([' Trung bình', param.average].map(csvEscape).join(','));
+    if (param.difference !== undefined) lines.push([' Sai khác', param.difference].map(csvEscape).join(','));
+    if (param.range) lines.push([' Range', param.range].map(csvEscape).join(','));
+    if (param.attachments && param.attachments.length) lines.push([' Ảnh đính kèm', param.attachments.map(a => a.fileName).join('; ')].map(csvEscape).join(','));
+    lines.push([' Trạng thái', STATUS_LABELS[param.status] || param.status].map(csvEscape).join(','));
+  });
+  lines.push('');
+  lines.push(['Kết luận', r.conclusion ? r.conclusion.result : ''].map(csvEscape).join(','));
+  lines.push(['Ghi chú', r.notes || ''].map(csvEscape).join(','));
+  lines.push(['Reviewed by', r.reviewedBy || ''].map(csvEscape).join(','));
+  downloadFile('phieu_' + (r.sampleInfo.batch || r.id) + '.csv', '﻿' + lines.join('\n'), 'text/csv;charset=utf-8');
+  toast('Đã xuất file CSV.', 'success');
+}
+
+function exportHistoryCsv(records) {
+  if (!records || !records.length) { toast('Không có phiếu nào để xuất.', 'warn'); return; }
+  const header = ['Ngày nhập', 'Item Code', 'Product Name', 'Batch', 'Customer', 'Kết luận', 'Reviewed by'];
+  const lines = [header.map(csvEscape).join(',')];
+  records.forEach(r => {
+    const s = r.sampleInfo || {};
+    lines.push([
+      new Date(r.meta.savedAt).toLocaleString('vi-VN'),
+      s.itemCode, s.productName, s.batch, s.customer,
+      r.isDraft ? 'Nháp' : (r.conclusion ? r.conclusion.result : ''), r.reviewedBy
+    ].map(csvEscape).join(','));
+  });
+  downloadFile('lich_su_phieu.csv', '﻿' + lines.join('\n'), 'text/csv;charset=utf-8');
+  toast('Đã xuất file CSV.', 'success');
+}
+
+function printRecord(r) {
+  const printArea = document.getElementById('print-area');
+  printArea.innerHTML = renderRecordDetailHtml(r).replace(/<div class="form-actions">[\s\S]*?<\/div>/, '');
+  document.body.classList.add('is-printing');
+  window.print();
+  setTimeout(() => { document.body.classList.remove('is-printing'); printArea.innerHTML = ''; }, 300);
+}
+
+/* ---------------- FULL REPORT (Phần 6, mục 8): số liệu thô + giá trị nhập đầu, cho QA Lab Supervisor rà soát ---------------- */
+const KEY_LABELS = {
+  nguoiThucHien: 'Người thực hiện', khoiLuongMau: 'Khối lượng mẫu (g)', nhietDoSay: 'Nhiệt độ sấy (℃)',
+  thoiGianSay: 'Thời gian sấy', ketQua: 'Kết quả', khoiLuongBinh: 'Khối lượng bình (g)',
+  theTichBinh: 'Thể tích bình (L)', theTichNuoc: 'Thể tích nước (ml)', nhietDoMau: 'Nhiệt độ mẫu',
+  nongDoNaOH: 'Nồng độ NaOH', theTichTieuTon: 'Thể tích tiêu tốn', thoiGianKhuay: 'Thời gian khuấy (s)',
+  bienDo: 'Biên độ (mm)', thoiGian: 'Thời gian (s)'
+};
+function objRowsHtml(obj) {
+  return Object.entries(obj).map(([k, v]) =>
+    '<tr><td>' + (KEY_LABELS[k] || k) + '</td><td>' + (v === null || v === undefined || v === '' ? '--' : v) + '</td></tr>'
+  ).join('');
+}
+function renderFullReportHtml(r) {
+  const s = r.sampleInfo || {};
+  const p = r.parameters || {};
+  const order = [p.doAm, p.tyTrong, p.doMau, p.doCan, p.ph, p.acidity, p.hoaTan, p.kichThuoc, p.ngoaiVat];
+  const paramBlocks = order.map(item => {
+    if (!item) return '';
+    let rows = '';
+    if (item.reps) {
+      item.reps.forEach((rep, i) => { rows += '<tr><td colspan="2"><b>Lần đo ' + (i + 1) + '</b></td></tr>' + objRowsHtml(rep); });
+    }
+    if (item.hot) rows += '<tr><td colspan="2"><b>Nóng</b></td></tr>' + objRowsHtml(item.hot);
+    if (item.cold) rows += '<tr><td colspan="2"><b>Lạnh</b></td></tr>' + objRowsHtml(item.cold);
+    ['nguoiThucHien', 'khoiLuongMau', 'theTichNuoc', 'ketQua', 'bienDo', 'thoiGian'].forEach(k => {
+      if (item[k] !== undefined) rows += '<tr><td>' + (KEY_LABELS[k] || k) + '</td><td>' + item[k] + '</td></tr>';
+    });
+    if (item.sieve) {
+      rows += '<tr><td colspan="2"><b>Bảng rây</b></td></tr>';
+      item.sieve.forEach(row => {
+        rows += '<tr><td>' + row.mesh + '</td><td>Khối lượng sàng=' + row.khoiLuongSang + ', Mẫu+sàng=' + row.khoiLuongMauSang + ', %=' + row.phanTramTrenSang + '</td></tr>';
+      });
+    }
+    if (item.average !== undefined) rows += '<tr><td>Trung bình</td><td>' + formatNumber(item.average) + '</td></tr>';
+    if (item.difference !== undefined) rows += '<tr><td>Sai khác (2 lần đo)</td><td>' + formatNumber(item.difference) + '</td></tr>';
+    if (item.khoiLuongMauSauSang !== undefined) rows += '<tr><td>Khối lượng sau sàng (g)</td><td>' + formatNumber(item.khoiLuongMauSauSang) + '</td></tr>';
+    rows += '<tr><td>Range (ngưỡng)</td><td>' + (item.range || '--') + '</td></tr>';
+    rows += '<tr><td>Trạng thái</td><td>' + (STATUS_LABELS[item.status] || item.status) + '</td></tr>';
+    if (item.attachments && item.attachments.length) rows += '<tr><td>Ảnh đính kèm</td><td>' + item.attachments.map(a => a.fileName).join(', ') + '</td></tr>';
+    rows += '<tr><td>Thời gian bắt đầu nhập</td><td>' + (item.enteredAt ? new Date(item.enteredAt).toLocaleString('vi-VN') : '--') + '</td></tr>';
+    return '<h3>' + item.label + '</h3><table class="print-report-table"><tbody>' + rows + '</tbody></table>';
+  }).join('');
+
+  return '<h1>FULL REPORT — Phiếu ' + (s.batch || '') + '</h1>' +
+    '<p><b>Item Code:</b> ' + (s.itemCode || '--') + ' — ' + (s.productName || '') + ' &nbsp; <b>Recipe:</b> ' + (s.recipe || '--') + '</p>' +
+    '<p><b>Customer:</b> ' + (s.customer || '--') + ' &nbsp; <b>Ngày SX:</b> ' + (s.productionDate || '--') + ' &nbsp; <b>PO:</b> ' + (s.po || '--') + ' &nbsp; <b>SSCC:</b> ' + (s.sscc || '--') + '</p>' +
+    paramBlocks +
+    '<h3>Kết luận</h3>' +
+    '<p><b>Kết quả:</b> ' + (r.conclusion ? r.conclusion.result : '--') + (r.forcedClose ? ' — ⚠ Force đóng report (chưa đủ 9 chỉ tiêu)' : '') + '</p>' +
+    '<p><b>Ghi chú:</b> ' + (r.notes || '(không có)') + '</p>' +
+    '<p><b>Reviewed by:</b> ' + (r.reviewedBy || '--') + ' — ' + (r.reviewedDate || '--') + '</p>' +
+    '<p><b>Người tạo phiếu:</b> ' + (r.meta ? r.meta.createdBy : '--') + ' &nbsp; <b>Lưu lúc:</b> ' + (r.meta ? new Date(r.meta.savedAt).toLocaleString('vi-VN') : '--') + '</p>';
+}
+function printFullReport(r) {
+  const printArea = document.getElementById('print-area');
+  printArea.innerHTML = renderFullReportHtml(r);
+  document.body.classList.add('is-printing');
+  window.print();
+  setTimeout(() => { document.body.classList.remove('is-printing'); printArea.innerHTML = ''; }, 300);
+}
+
+/* ---------------- SETTINGS: nhân viên ---------------- */
+function renderStaffList() {
+  const ul = document.getElementById('staff-list');
+  ul.innerHTML = '';
+  STAFF.forEach((name, idx) => {
+    const li = document.createElement('li');
+    li.innerHTML = '<span>' + name + '</span> <button type="button" class="btn btn--secondary btn-remove-staff" data-idx="' + idx + '">Xoá</button>';
+    ul.appendChild(li);
+  });
+  ul.querySelectorAll('.btn-remove-staff').forEach(btn => {
+    btn.addEventListener('click', () => {
+      STAFF.splice(parseInt(btn.dataset.idx, 10), 1);
+      renderStaffList();
+      populateStaffSelects();
+      persistStaff();
+      AuditLog.log('remove-staff', {});
+    });
+  });
+}
+
+function populateStaffSelects() {
+  const selects = document.querySelectorAll('select[name$="_nguoi_thuc_hien"]');
+  selects.forEach(sel => {
+    const current = sel.value;
+    sel.innerHTML = '<option value="">--</option>' + STAFF.map(s => '<option value="' + s + '">' + s + '</option>').join('');
+    if (STAFF.includes(current)) sel.value = current;
+  });
+  // Reviewed by = người có quyền Supervisor/Admin (vai trò ký duyệt), không dùng chung
+  // danh sách "Người thực hiện" (nhân viên vận hành thiết bị) nữa.
+  const reviewerNames = USERS.filter(u => u.role === 'supervisor' || u.role === 'admin').map(u => u.name);
+  const rbSel = form.elements['reviewedBy'];
+  if (rbSel) {
+    const current = rbSel.value;
+    rbSel.innerHTML = '<option value="">--</option>' + reviewerNames.map(s => '<option value="' + s + '">' + s + '</option>').join('');
+    if (reviewerNames.includes(current)) rbSel.value = current;
+  }
+}
+
+/* ---------------- ITEM CODE (danh mục mã hàng) — xem + sửa/thêm/xoá ---------------- */
+function renderItemCodeTable() {
+  const tbody = document.getElementById('itemcode-table-body');
+  const search = (document.getElementById('itemcode-search').value || '').trim().toLowerCase();
+  const rows = ITEM_CODES
+    .map((it, idx) => ({ it, idx }))
+    .filter(({ it }) => !search ||
+      it.item.toLowerCase().includes(search) ||
+      it.name.toLowerCase().includes(search) ||
+      it.recipe.toLowerCase().includes(search));
+
+  document.getElementById('itemcode-count-note').textContent =
+    'Hiển thị ' + rows.length + ' / ' + ITEM_CODES.length + ' mã hàng.';
+
+  tbody.innerHTML = rows.map(({ it, idx }) =>
+    '<tr>' +
+    '<td><input type="text" class="field__input" data-idx="' + idx + '" data-field="item" value="' + escapeAttr(it.item) + '" /></td>' +
+    '<td><input type="text" class="field__input" data-idx="' + idx + '" data-field="name" value="' + escapeAttr(it.name) + '" /></td>' +
+    '<td><input type="text" class="field__input" data-idx="' + idx + '" data-field="recipe" value="' + escapeAttr(it.recipe) + '" /></td>' +
+    '<td><button type="button" class="btn btn--secondary btn-delete-itemcode" data-idx="' + idx + '">Xoá</button></td>' +
+    '</tr>'
+  ).join('');
+
+  tbody.querySelectorAll('input[data-field]').forEach(el => {
+    el.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.dataset.idx, 10);
+      ITEM_CODES[idx][e.target.dataset.field] = e.target.value.trim();
+      persistItemCodes();
+      AuditLog.log('edit-itemcode', { item: ITEM_CODES[idx].item });
+      toast('Đã cập nhật mã hàng.', 'success');
+    });
+  });
+  tbody.querySelectorAll('.btn-delete-itemcode').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const idx = parseInt(e.target.dataset.idx, 10);
+      const ok = await confirmModal('Xoá mã hàng?', 'Xoá Item Code "' + ITEM_CODES[idx].item + '" khỏi danh mục?');
+      if (!ok) return;
+      ITEM_CODES.splice(idx, 1);
+      persistItemCodes();
+      AuditLog.log('delete-itemcode', {});
+      renderItemCodeTable();
+      toast('Đã xoá mã hàng.', 'success');
+    });
+  });
+}
+
+/* ---------------- ĐỘ LẶP LẠI — xem + sửa dung sai tối đa mỗi chỉ tiêu ---------------- */
+function renderRepeatabilityTable() {
+  const tbody = document.getElementById('repeatability-table-body');
+  tbody.innerHTML = REPEATABILITY.map((r, idx) =>
+    '<tr>' +
+    '<td>' + r.parameter + '</td>' +
+    '<td>' + r.unit + '</td>' +
+    '<td><input type="number" step="any" class="field__input" data-idx="' + idx + '" value="' + r.maxDiff + '" /></td>' +
+    '<td><button type="button" class="btn btn--secondary btn-delete-repeat" data-idx="' + idx + '">Xoá</button></td>' +
+    '</tr>'
+  ).join('');
+  document.getElementById('repeat-parameter-list').innerHTML =
+    PARAM_LABELS.map(p => '<option value="' + escapeAttr(p) + '"></option>').join('');
+  tbody.querySelectorAll('.btn-delete-repeat').forEach(btn => {
+    btn.addEventListener('click', () => {
+      REPEATABILITY.splice(parseInt(btn.dataset.idx, 10), 1);
+      persistRepeatability();
+      renderRepeatabilityTable();
+      recomputeAll();
+      AuditLog.log('delete-repeatability', {});
+    });
+  });
+  tbody.querySelectorAll('input[data-idx]').forEach(el => {
+    el.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.dataset.idx, 10);
+      const v = toNumber(e.target.value);
+      if (v === null) { toast('Giá trị không hợp lệ.', 'warn'); e.target.value = REPEATABILITY[idx].maxDiff; return; }
+      REPEATABILITY[idx].maxDiff = v;
+      persistRepeatability();
+      recomputeAll();
+      toast('Đã cập nhật độ lặp lại.', 'success');
+    });
+  });
+}
+function persistRepeatability() { return Storage.put('settings', { key: 'repeatability', value: REPEATABILITY }); }
+
+/* ---------------- SPEC. (Bảng ngưỡng kết luận) — xem + sửa/thêm/xoá ---------------- */
+function specSelectHtml(idx, field, options, current) {
+  return '<select class="field__input" data-idx="' + idx + '" data-field="' + field + '">' +
+    options.map(o => '<option value="' + escapeAttr(o) + '"' + (o === current ? ' selected' : '') + '>' + o + '</option>').join('') +
+    '</select>';
+}
+
+function renderSpecTable() {
+  const tbody = document.getElementById('spec-table-body');
+  tbody.innerHTML = THRESHOLDS.map((t, idx) =>
+    '<tr>' +
+    '<td>' + specSelectHtml(idx, 'customer', ['INS', 'LDC'], t.customer) + '</td>' +
+    '<td>' + specSelectHtml(idx, 'parameter', PARAM_LABELS, t.parameter) + '</td>' +
+    '<td><input type="text" class="field__input" data-idx="' + idx + '" data-field="unit" value="' + escapeAttr(t.unit) + '" /></td>' +
+    '<td><input type="text" class="field__input" data-idx="' + idx + '" data-field="requirement" value="' + escapeAttr(toSingleLine(t.requirement)) + '" /></td>' +
+    '<td><input type="text" class="field__input" data-idx="' + idx + '" data-field="recipe" value="' + escapeAttr(t.recipe) + '" /></td>' +
+    '<td><button type="button" class="btn btn--secondary btn-delete-spec" data-idx="' + idx + '">Xoá</button></td>' +
+    '</tr>'
+  ).join('');
+
+  tbody.querySelectorAll('input[data-field], select[data-field]').forEach(el => {
+    el.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.dataset.idx, 10);
+      THRESHOLDS[idx][e.target.dataset.field] = e.target.value;
+      updateThresholdsForCustomer();
+      persistThresholds();
+      toast('Đã cập nhật ngưỡng.', 'success');
+    });
+  });
+  tbody.querySelectorAll('.btn-delete-spec').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const idx = parseInt(e.target.dataset.idx, 10);
+      THRESHOLDS.splice(idx, 1);
+      AuditLog.log('delete-spec-row', {});
+      renderSpecTable();
+      updateThresholdsForCustomer();
+      persistThresholds();
+      toast('Đã xoá dòng ngưỡng.', 'success');
+    });
+  });
+}
+
+function populateSpecParameterSelect() {
+  const sel = document.getElementById('spec-new-parameter');
+  sel.innerHTML = PARAM_LABELS.map(p => '<option value="' + escapeAttr(p) + '">' + p + '</option>').join('');
+}
+
+/* ---------------- PARAMETERS (tham chiếu trường dữ liệu) — xem + sửa mô tả/kiểu dữ liệu ---------------- */
+function paramFieldSelectHtml(idx, field, options, current) {
+  return '<select class="field__input" data-idx="' + idx + '" data-field="' + field + '">' +
+    options.map(o => '<option value="' + escapeAttr(o) + '"' + (o === current ? ' selected' : '') + '>' + o + '</option>').join('') +
+    '</select>';
+}
+
+function renderParametersTable() {
+  const tbody = document.getElementById('parameters-table-body');
+  const formatOptions = ['number', 'text', 'date', 'time', 'Picture'];
+  const typeOptions = ['Independent', 'Dependent'];
+  tbody.innerHTML = FIELD_MAPPING.map((f, idx) =>
+    '<tr>' +
+    '<td>' + f.parameter + '</td>' +
+    '<td>' + f.field + '</td>' +
+    '<td>' + paramFieldSelectHtml(idx, 'format', formatOptions, f.format) + '</td>' +
+    '<td>' + paramFieldSelectHtml(idx, 'type', typeOptions, f.type) + '</td>' +
+    '<td><input type="text" class="field__input" data-idx="' + idx + '" data-field="remark" value="' + escapeAttr(f.remark) + '" /></td>' +
+    '</tr>'
+  ).join('');
+
+  tbody.querySelectorAll('input[data-field], select[data-field]').forEach(el => {
+    el.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.dataset.idx, 10);
+      FIELD_MAPPING[idx][e.target.dataset.field] = e.target.value;
+      persistFieldMapping();
+      toast('Đã lưu.', 'success');
+    });
+  });
+}
+
+/* ---------------- MASTER DATA: nạp/lưu vào Storage ---------------- */
+async function loadMasterDataFromDb() {
+  const staffDoc = await Storage.get('settings', 'staff');
+  if (staffDoc && Array.isArray(staffDoc.value) && staffDoc.value.length) STAFF = staffDoc.value;
+  const thresholdsDoc = await Storage.get('settings', 'thresholds');
+  if (thresholdsDoc && Array.isArray(thresholdsDoc.value) && thresholdsDoc.value.length) {
+    THRESHOLDS.length = 0; THRESHOLDS.push(...thresholdsDoc.value);
+  }
+  const fieldMapDoc = await Storage.get('settings', 'fieldMapping');
+  if (fieldMapDoc && Array.isArray(fieldMapDoc.value) && fieldMapDoc.value.length) {
+    FIELD_MAPPING.length = 0; FIELD_MAPPING.push(...fieldMapDoc.value);
+  }
+  const itemCodesDoc = await Storage.get('settings', 'itemCodes');
+  if (itemCodesDoc && Array.isArray(itemCodesDoc.value) && itemCodesDoc.value.length) {
+    ITEM_CODES.length = 0; ITEM_CODES.push(...itemCodesDoc.value);
+  }
+  const usersDoc = await Storage.get('settings', 'users');
+  if (usersDoc && Array.isArray(usersDoc.value) && usersDoc.value.length) USERS = usersDoc.value;
+  const repeatDoc = await Storage.get('settings', 'repeatability');
+  if (repeatDoc && Array.isArray(repeatDoc.value) && repeatDoc.value.length) {
+    REPEATABILITY.length = 0; REPEATABILITY.push(...repeatDoc.value);
+  }
+  const themeDoc = await Storage.get('settings', 'theme');
+  if (themeDoc && themeDoc.value) {
+    document.documentElement.dataset.theme = themeDoc.value;
+    const sel = document.getElementById('theme-select');
+    if (sel) sel.value = themeDoc.value;
+  }
+}
+function persistStaff() { return Storage.put('settings', { key: 'staff', value: STAFF }); }
+function persistThresholds() { return Storage.put('settings', { key: 'thresholds', value: THRESHOLDS }); }
+function persistFieldMapping() { return Storage.put('settings', { key: 'fieldMapping', value: FIELD_MAPPING }); }
+function persistItemCodes() { return Storage.put('settings', { key: 'itemCodes', value: ITEM_CODES }); }
+function persistUsers() { return Storage.put('settings', { key: 'users', value: USERS }); }
+function persistTheme(v) { return Storage.put('settings', { key: 'theme', value: v }); }
+
+async function loadRecordsCache() {
+  const all = await Storage.getAll('records');
+  state.records = all.filter(r => r.id !== 'draft_current');
+}
+
+/* ---------------- ĐÍNH KÈM ẢNH (Blob trong IndexedDB; bỏ qua nếu đang ở chế độ dự phòng localStorage) ---------------- */
+let attachmentFallbackWarned = false;
+async function storeAttachment(file) {
+  if (!file) return null;
+  if (file.size > 5 * 1024 * 1024) {
+    toast('Ảnh "' + file.name + '" vượt quá 5MB, vui lòng chọn ảnh nhỏ hơn.', 'warn');
+    return null;
+  }
+  if (Storage.mode() !== 'indexeddb' && !attachmentFallbackWarned) {
+    attachmentFallbackWarned = true;
+    toast('Trình duyệt đang dùng bộ nhớ dự phòng — ảnh đính kèm sẽ không được lưu lại.', 'warn');
+  }
+  const id = 'att_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  const ok = await Storage.put('attachments', { id, blob: file, name: file.name, type: file.type, savedAt: new Date().toISOString() });
+  return ok ? { fileRef: id, fileName: file.name, fileType: file.type } : null;
+}
+async function storeAttachments(files) {
+  const results = [];
+  for (const file of (files || [])) {
+    const ref = await storeAttachment(file);
+    if (ref) results.push(ref);
+  }
+  return results;
+}
+
+/* ---------------- ĐA ẢNH: chọn/chụp nhiều lần, cộng dồn vào 1 thư viện xem trước ----------------
+   <input type="file" multiple> tự thay thế toàn bộ FileList mỗi lần chọn, nên cần tự cộng dồn
+   vào mảng riêng (photoStore) để hỗ trợ chụp nhiều ảnh qua nhiều lần bấm camera. */
+const photoStore = { do_can_anh: [], ngoai_vat_anh: [] };
+function renderPhotoGallery(name) {
+  const box = document.getElementById('gallery-' + name);
+  if (!box) return;
+  box.innerHTML = photoStore[name].map((f, i) =>
+    '<div class="photo-thumb"><img src="' + URL.createObjectURL(f) + '" alt="" />' +
+    '<button type="button" class="photo-thumb__remove" data-name="' + name + '" data-idx="' + i + '" title="Xoá ảnh">✕</button></div>'
+  ).join('');
+  box.querySelectorAll('.photo-thumb__remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      photoStore[btn.dataset.name].splice(parseInt(btn.dataset.idx, 10), 1);
+      renderPhotoGallery(btn.dataset.name);
+    });
+  });
+}
+function initPhotoInput(name) {
+  const input = form.elements[name];
+  if (!input) return;
+  input.addEventListener('change', () => {
+    const files = Array.from(input.files || []);
+    photoStore[name].push(...files);
+    input.value = ''; // reset để lần chọn/chụp sau được cộng dồn thay vì thay thế
+    renderPhotoGallery(name);
+  });
+}
+function clearPhotoStore() {
+  Object.keys(photoStore).forEach(name => {
+    photoStore[name] = [];
+    renderPhotoGallery(name);
+  });
+}
+
+/* ---------------- FORM: thu thập đầy đủ dữ liệu phiếu (Phần 3 schema) ---------------- */
+async function buildFullRecord(isDraft, existingId, forced) {
+  const g = (name) => (form.elements[name] ? form.elements[name].value : '');
+  const num = (name) => toNumber(g(name));
+  const statusOf = (n) => { const el = paramStatusEl(n); return el ? el.dataset.status : 'pending'; };
+
+  const sampleInfo = {
+    itemCode: g('itemCode'), recipe: g('recipe'), productName: g('productName'),
+    customer: g('customer'), batch: g('batch'), productionDate: g('productionDate'),
+    po: g('po'), sscc: g('sscc')
+  };
+
+  const doCanImgs = await storeAttachments(photoStore['do_can_anh']);
+  const ngoaiVatImgs = await storeAttachments(photoStore['ngoai_vat_anh']);
+
+  const parameters = {
+    doAm: {
+      label: '1. Độ Ẩm (Halogen)', unit: '%',
+      reps: [
+        { nguoiThucHien: g('do_am_1_nguoi_thuc_hien'), khoiLuongMau: num('do_am_1_khoi_luong_mau'), nhietDoSay: num('do_am_1_nhiet_do_say'), thoiGianSay: g('do_am_1_thoi_gian_say'), ketQua: num('do_am_1_ket_qua') },
+        { nguoiThucHien: g('do_am_2_nguoi_thuc_hien'), khoiLuongMau: num('do_am_2_khoi_luong_mau'), nhietDoSay: num('do_am_2_nhiet_do_say'), thoiGianSay: g('do_am_2_thoi_gian_say'), ketQua: num('do_am_2_ket_qua') }
+      ],
+      average: toNumber(g('do_am_avg')), difference: toNumber(g('do_am_diff')), range: g('do_am_range'), status: statusOf(1)
+    },
+    tyTrong: {
+      label: '2. Tỷ trọng - mật độ chảy tự do', unit: 'g/L',
+      reps: [
+        { nguoiThucHien: g('ty_trong_1_nguoi_thuc_hien'), khoiLuongBinh: num('ty_trong_1_khoi_luong_binh'), khoiLuongMau: num('ty_trong_1_khoi_luong_mau'), theTichBinh: num('ty_trong_1_the_tich_binh'), ketQua: toNumber(g('ty_trong_1_ket_qua')) },
+        { nguoiThucHien: g('ty_trong_2_nguoi_thuc_hien'), khoiLuongBinh: num('ty_trong_2_khoi_luong_binh'), khoiLuongMau: num('ty_trong_2_khoi_luong_mau'), theTichBinh: num('ty_trong_2_the_tich_binh'), ketQua: toNumber(g('ty_trong_2_ket_qua')) }
+      ],
+      average: toNumber(g('ty_trong_avg')), difference: toNumber(g('ty_trong_diff')), range: g('ty_trong_range'), status: statusOf(2)
+    },
+    doMau: {
+      label: '3. Độ màu', unit: 'ACN',
+      reps: [
+        { nguoiThucHien: g('do_mau_1_nguoi_thuc_hien'), ketQua: num('do_mau_1_ket_qua') },
+        { nguoiThucHien: g('do_mau_2_nguoi_thuc_hien'), ketQua: num('do_mau_2_ket_qua') }
+      ],
+      average: toNumber(g('do_mau_avg')), difference: toNumber(g('do_mau_diff')), range: g('do_mau_range'), status: statusOf(3)
+    },
+    doCan: {
+      label: '4. Độ cặn', unit: 'Grade',
+      nguoiThucHien: g('do_can_nguoi_thuc_hien'), khoiLuongMau: num('do_can_khoi_luong_mau'),
+      theTichNuoc: num('do_can_the_tich_nuoc'), ketQua: num('do_can_ket_qua'), range: g('do_can_range'), status: statusOf(4),
+      attachments: doCanImgs
+    },
+    ph: {
+      label: '5. pH', unit: '-',
+      reps: [
+        { nguoiThucHien: g('ph_1_nguoi_thuc_hien'), khoiLuongMau: num('ph_1_khoi_luong_mau'), theTichNuoc: num('ph_1_the_tich_nuoc'), nhietDoMau: num('ph_1_nhiet_do'), ketQua: num('ph_1_ket_qua') },
+        { nguoiThucHien: g('ph_2_nguoi_thuc_hien'), khoiLuongMau: num('ph_2_khoi_luong_mau'), theTichNuoc: num('ph_2_the_tich_nuoc'), nhietDoMau: num('ph_2_nhiet_do'), ketQua: num('ph_2_ket_qua') }
+      ],
+      average: toNumber(g('ph_avg')), difference: toNumber(g('ph_diff')), range: g('ph_range'), status: statusOf(5)
+    },
+    acidity: {
+      label: '6. Acidity', unit: '-',
+      reps: [
+        { nguoiThucHien: g('acidity_1_nguoi_thuc_hien'), khoiLuongMau: num('acidity_1_khoi_luong_mau'), theTichNuoc: num('acidity_1_the_tich_nuoc'), nongDoNaOH: num('acidity_1_nong_do_naoh'), theTichTieuTon: num('acidity_1_the_tich_tieu_ton'), ketQua: toNumber(g('acidity_1_ket_qua')) },
+        { nguoiThucHien: g('acidity_2_nguoi_thuc_hien'), khoiLuongMau: num('acidity_2_khoi_luong_mau'), theTichNuoc: num('acidity_2_the_tich_nuoc'), nongDoNaOH: num('acidity_2_nong_do_naoh'), theTichTieuTon: num('acidity_2_the_tich_tieu_ton'), ketQua: toNumber(g('acidity_2_ket_qua')) }
+      ],
+      average: toNumber(g('acidity_avg')), difference: toNumber(g('acidity_diff')), range: g('acidity_range'), status: statusOf(6)
+    },
+    hoaTan: {
+      label: '7. Độ hòa tan', unit: 'V/X',
+      hot: { nguoiThucHien: g('hoa_tan_nong_nguoi_thuc_hien'), khoiLuongMau: num('hoa_tan_nong_khoi_luong_mau'), theTichNuoc: num('hoa_tan_nong_the_tich_nuoc'), nhietDoMau: num('hoa_tan_nong_nhiet_do'), thoiGianKhuay: num('hoa_tan_nong_thoi_gian'), ketQua: g('hoa_tan_nong_ket_qua') },
+      cold: { nguoiThucHien: g('hoa_tan_lanh_nguoi_thuc_hien'), khoiLuongMau: num('hoa_tan_lanh_khoi_luong_mau'), theTichNuoc: num('hoa_tan_lanh_the_tich_nuoc'), nhietDoMau: num('hoa_tan_lanh_nhiet_do'), thoiGianKhuay: num('hoa_tan_lanh_thoi_gian'), ketQua: g('hoa_tan_lanh_ket_qua') },
+      range: g('hoa_tan_range'), status: statusOf(7)
+    },
+    kichThuoc: {
+      label: '8. Kích thước hạt', unit: '%',
+      nguoiThucHien: g('kich_thuoc_nguoi_thuc_hien'), khoiLuongMau: num('kich_thuoc_khoi_luong_mau'),
+      bienDo: num('kich_thuoc_bien_do'), thoiGian: num('kich_thuoc_thoi_gian'),
+      khoiLuongMauSauSang: toNumber(g('kich_thuoc_khoi_luong_sau_sang')), range: g('kich_thuoc_range'),
+      sieve: SIEVE_COLS.map(col => ({
+        mesh: col, khoiLuongSang: num('sieve_' + col + '_w'), khoiLuongMauSang: num('sieve_' + col + '_wt'),
+        phanTramTrenSang: (() => { const v = g('sieve_' + col + '_pct'); return v === '--' ? null : parseFloat(v); })()
+      })),
+      status: statusOf(8)
+    },
+    ngoaiVat: {
+      label: '9. Ngoại vật', unit: '-',
+      khoiLuongMau: num('ngoai_vat_khoi_luong_mau'), theTichNuoc: num('ngoai_vat_the_tich_nuoc'),
+      ketQua: g('ngoai_vat_ket_qua'), range: g('ngoai_vat_range'), status: statusOf(9),
+      attachments: ngoaiVatImgs
+    }
+  };
+
+  // Ghi thời gian thực lúc bắt đầu nhập mỗi khối chỉ tiêu (state.blockEnteredAt được
+  // cập nhật ngay khi có input đầu tiên trong khối đó — xem listener 'input' ở BOOTSTRAP).
+  const PARAM_KEY_BY_INDEX = { 1: 'doAm', 2: 'tyTrong', 3: 'doMau', 4: 'doCan', 5: 'ph', 6: 'acidity', 7: 'hoaTan', 8: 'kichThuoc', 9: 'ngoaiVat' };
+  Object.entries(PARAM_KEY_BY_INDEX).forEach(([n, key]) => {
+    if (parameters[key]) parameters[key].enteredAt = state.blockEnteredAt[n] || null;
+  });
+
+  const now = new Date().toISOString();
+  return {
+    id: existingId || ('rec_' + Date.now()),
+    isDraft: !!isDraft,
+    sampleInfo,
+    parameters,
+    notes: g('ghiChu'),
+    conclusion: { result: g('ketLuan'), statusKey: form.elements['ketLuan'].dataset.status || 'pending' },
+    reviewedBy: g('reviewedBy'),
+    reviewedDate: g('reviewedDate'),
+    meta: { createdBy: state.currentUser ? state.currentUser.name : '(?)', savedAt: now, updatedAt: now },
+    forcedClose: !!forced
+  };
+}
+
+function setFieldValue(name, value) {
+  const el = form.elements[name];
+  if (el != null && value !== undefined && value !== null) el.value = value;
+}
+
+// Nạp 1 bản ghi đã lưu trở lại form (dùng cho Auto Recovery và "Tiếp tục chỉnh sửa" nháp).
+// Lưu ý: trình duyệt không cho gán lại giá trị <input type="file"> bằng JS vì lý do bảo mật,
+// nên ảnh đính kèm trước đó sẽ không tự hiện lại trong ô chọn file — cần chọn lại nếu muốn thay ảnh.
+function applyRecordToForm(record) {
+  if (!record) return;
+  const s = record.sampleInfo || {};
+  setFieldValue('itemCode', s.itemCode);
+  setFieldValue('recipe', s.recipe);
+  setFieldValue('productName', s.productName);
+  setFieldValue('customer', s.customer);
+  setFieldValue('batch', s.batch);
+  setFieldValue('productionDate', s.productionDate);
+  setFieldValue('po', s.po);
+  setFieldValue('sscc', s.sscc);
+
+  const p = record.parameters || {};
+  if (p.doAm && p.doAm.reps) {
+    setFieldValue('do_am_1_nguoi_thuc_hien', p.doAm.reps[0].nguoiThucHien);
+    setFieldValue('do_am_1_khoi_luong_mau', p.doAm.reps[0].khoiLuongMau);
+    setFieldValue('do_am_1_nhiet_do_say', p.doAm.reps[0].nhietDoSay);
+    setFieldValue('do_am_1_thoi_gian_say', p.doAm.reps[0].thoiGianSay);
+    setFieldValue('do_am_1_ket_qua', p.doAm.reps[0].ketQua);
+    setFieldValue('do_am_2_nguoi_thuc_hien', p.doAm.reps[1].nguoiThucHien);
+    setFieldValue('do_am_2_khoi_luong_mau', p.doAm.reps[1].khoiLuongMau);
+    setFieldValue('do_am_2_nhiet_do_say', p.doAm.reps[1].nhietDoSay);
+    setFieldValue('do_am_2_thoi_gian_say', p.doAm.reps[1].thoiGianSay);
+    setFieldValue('do_am_2_ket_qua', p.doAm.reps[1].ketQua);
+  }
+  if (p.tyTrong && p.tyTrong.reps) {
+    setFieldValue('ty_trong_1_nguoi_thuc_hien', p.tyTrong.reps[0].nguoiThucHien);
+    setFieldValue('ty_trong_1_khoi_luong_binh', p.tyTrong.reps[0].khoiLuongBinh);
+    setFieldValue('ty_trong_1_khoi_luong_mau', p.tyTrong.reps[0].khoiLuongMau);
+    setFieldValue('ty_trong_1_the_tich_binh', p.tyTrong.reps[0].theTichBinh);
+    setFieldValue('ty_trong_2_nguoi_thuc_hien', p.tyTrong.reps[1].nguoiThucHien);
+    setFieldValue('ty_trong_2_khoi_luong_binh', p.tyTrong.reps[1].khoiLuongBinh);
+    setFieldValue('ty_trong_2_khoi_luong_mau', p.tyTrong.reps[1].khoiLuongMau);
+    setFieldValue('ty_trong_2_the_tich_binh', p.tyTrong.reps[1].theTichBinh);
+  }
+  if (p.doMau && p.doMau.reps) {
+    setFieldValue('do_mau_1_nguoi_thuc_hien', p.doMau.reps[0].nguoiThucHien);
+    setFieldValue('do_mau_1_ket_qua', p.doMau.reps[0].ketQua);
+    setFieldValue('do_mau_2_nguoi_thuc_hien', p.doMau.reps[1].nguoiThucHien);
+    setFieldValue('do_mau_2_ket_qua', p.doMau.reps[1].ketQua);
+  }
+  if (p.doCan) {
+    setFieldValue('do_can_nguoi_thuc_hien', p.doCan.nguoiThucHien);
+    setFieldValue('do_can_khoi_luong_mau', p.doCan.khoiLuongMau);
+    setFieldValue('do_can_the_tich_nuoc', p.doCan.theTichNuoc);
+    setFieldValue('do_can_ket_qua', p.doCan.ketQua);
+  }
+  if (p.ph && p.ph.reps) {
+    setFieldValue('ph_1_nguoi_thuc_hien', p.ph.reps[0].nguoiThucHien);
+    setFieldValue('ph_1_khoi_luong_mau', p.ph.reps[0].khoiLuongMau);
+    setFieldValue('ph_1_the_tich_nuoc', p.ph.reps[0].theTichNuoc);
+    setFieldValue('ph_1_nhiet_do', p.ph.reps[0].nhietDoMau);
+    setFieldValue('ph_1_ket_qua', p.ph.reps[0].ketQua);
+    setFieldValue('ph_2_nguoi_thuc_hien', p.ph.reps[1].nguoiThucHien);
+    setFieldValue('ph_2_khoi_luong_mau', p.ph.reps[1].khoiLuongMau);
+    setFieldValue('ph_2_the_tich_nuoc', p.ph.reps[1].theTichNuoc);
+    setFieldValue('ph_2_nhiet_do', p.ph.reps[1].nhietDoMau);
+    setFieldValue('ph_2_ket_qua', p.ph.reps[1].ketQua);
+  }
+  if (p.acidity && p.acidity.reps) {
+    setFieldValue('acidity_1_nguoi_thuc_hien', p.acidity.reps[0].nguoiThucHien);
+    setFieldValue('acidity_1_khoi_luong_mau', p.acidity.reps[0].khoiLuongMau);
+    setFieldValue('acidity_1_the_tich_nuoc', p.acidity.reps[0].theTichNuoc);
+    setFieldValue('acidity_1_nong_do_naoh', p.acidity.reps[0].nongDoNaOH);
+    setFieldValue('acidity_1_the_tich_tieu_ton', p.acidity.reps[0].theTichTieuTon);
+    setFieldValue('acidity_2_nguoi_thuc_hien', p.acidity.reps[1].nguoiThucHien);
+    setFieldValue('acidity_2_khoi_luong_mau', p.acidity.reps[1].khoiLuongMau);
+    setFieldValue('acidity_2_the_tich_nuoc', p.acidity.reps[1].theTichNuoc);
+    setFieldValue('acidity_2_nong_do_naoh', p.acidity.reps[1].nongDoNaOH);
+    setFieldValue('acidity_2_the_tich_tieu_ton', p.acidity.reps[1].theTichTieuTon);
+  }
+  if (p.hoaTan) {
+    if (p.hoaTan.hot) {
+      setFieldValue('hoa_tan_nong_nguoi_thuc_hien', p.hoaTan.hot.nguoiThucHien);
+      setFieldValue('hoa_tan_nong_khoi_luong_mau', p.hoaTan.hot.khoiLuongMau);
+      setFieldValue('hoa_tan_nong_the_tich_nuoc', p.hoaTan.hot.theTichNuoc);
+      setFieldValue('hoa_tan_nong_nhiet_do', p.hoaTan.hot.nhietDoMau);
+      setFieldValue('hoa_tan_nong_thoi_gian', p.hoaTan.hot.thoiGianKhuay);
+      setFieldValue('hoa_tan_nong_ket_qua', p.hoaTan.hot.ketQua);
+    }
+    if (p.hoaTan.cold) {
+      setFieldValue('hoa_tan_lanh_nguoi_thuc_hien', p.hoaTan.cold.nguoiThucHien);
+      setFieldValue('hoa_tan_lanh_khoi_luong_mau', p.hoaTan.cold.khoiLuongMau);
+      setFieldValue('hoa_tan_lanh_the_tich_nuoc', p.hoaTan.cold.theTichNuoc);
+      setFieldValue('hoa_tan_lanh_nhiet_do', p.hoaTan.cold.nhietDoMau);
+      setFieldValue('hoa_tan_lanh_thoi_gian', p.hoaTan.cold.thoiGianKhuay);
+      setFieldValue('hoa_tan_lanh_ket_qua', p.hoaTan.cold.ketQua);
+    }
+  }
+  if (p.kichThuoc) {
+    setFieldValue('kich_thuoc_nguoi_thuc_hien', p.kichThuoc.nguoiThucHien);
+    setFieldValue('kich_thuoc_khoi_luong_mau', p.kichThuoc.khoiLuongMau);
+    setFieldValue('kich_thuoc_bien_do', p.kichThuoc.bienDo);
+    setFieldValue('kich_thuoc_thoi_gian', p.kichThuoc.thoiGian);
+    (p.kichThuoc.sieve || []).forEach(row => {
+      setFieldValue('sieve_' + row.mesh + '_w', row.khoiLuongSang);
+      setFieldValue('sieve_' + row.mesh + '_wt', row.khoiLuongMauSang);
+    });
+  }
+  if (p.ngoaiVat) {
+    setFieldValue('ngoai_vat_khoi_luong_mau', p.ngoaiVat.khoiLuongMau);
+    setFieldValue('ngoai_vat_the_tich_nuoc', p.ngoaiVat.theTichNuoc);
+    setFieldValue('ngoai_vat_ket_qua', p.ngoaiVat.ketQua);
+  }
+
+  setFieldValue('ghiChu', record.notes);
+  setFieldValue('reviewedBy', record.reviewedBy);
+  setFieldValue('reviewedDate', record.reviewedDate);
+
+  const PARAM_KEY_BY_INDEX2 = { 1: 'doAm', 2: 'tyTrong', 3: 'doMau', 4: 'doCan', 5: 'ph', 6: 'acidity', 7: 'hoaTan', 8: 'kichThuoc', 9: 'ngoaiVat' };
+  state.blockEnteredAt = {};
+  Object.entries(PARAM_KEY_BY_INDEX2).forEach(([n, key]) => {
+    if (p[key] && p[key].enteredAt) state.blockEnteredAt[n] = p[key].enteredAt;
+  });
+
+  updateThresholdsForCustomer();
+}
+
+function resetForm() {
+  form.reset();
+  state.editingRecordId = null;
+  ['do_am_avg', 'do_am_diff', 'ty_trong_avg', 'ty_trong_diff', 'do_mau_avg', 'do_mau_diff',
+    'ph_avg', 'ph_diff', 'acidity_avg', 'acidity_diff', 'kich_thuoc_khoi_luong_sau_sang']
+    .forEach(n => { if (form.elements[n]) form.elements[n].value = '--'; });
+  SIEVE_COLS.forEach(col => { form.elements['sieve_' + col + '_pct'].value = '--'; });
+  form.elements['ketLuan'].value = '--';
+  form.elements['ketLuan'].dataset.status = 'pending';
+  form.elements['reviewedDate'].value = '--';
+  document.querySelectorAll('.param-summary__status').forEach(el => setStatusBadge(el, 'pending'));
+  document.getElementById('autosave-status').textContent = '';
+  clearPhotoStore();
+  state.blockEnteredAt = {};
+  document.getElementById('btn-force-submit').hidden = true;
+  updateThresholdsForCustomer();
+}
+
+function handleReviewedByChange() {
+  const val = form.elements['reviewedBy'].value;
+  form.elements['reviewedDate'].value = val ? formatDateVN(new Date()) : '--';
+}
+
+/* ---------------- VALIDATION (Phần 5) ---------------- */
+function validateBeforeSubmit() {
+  const itemCode = form.elements['itemCode'].value.trim();
+  const batch = form.elements['batch'].value.trim();
+  const customer = form.elements['customer'].value;
+  if (!itemCode || !batch) return 'Vui lòng nhập Item Code và Batch trước khi lưu.';
+  if (!findItemByCode(itemCode)) return 'Item Code "' + itemCode + '" không có trong danh mục — kiểm tra lại trước khi lưu.';
+  if (!customer) return 'Vui lòng chọn Customer.';
+  if (!/^[A-Za-z0-9]{4,}$/.test(batch)) return 'Batch không hợp lệ (cần ít nhất 4 ký tự chữ/số, không khoảng trắng).';
+  return null;
+}
+
+// Lưu phiếu chính thức. forced=true (nút "Force đóng Report") bỏ qua yêu cầu phải hoàn tất
+// đủ 9 chỉ tiêu — vẫn giữ nguyên các kiểm tra định danh cơ bản (Item Code/Batch/Customer).
+async function submitRecord(forced) {
+  const err = validateBeforeSubmit();
+  if (err) { toast(err, 'warn'); return; }
+
+  if (!forced && form.elements['ketLuan'].dataset.status === 'pending') {
+    toast('Phiếu chưa đầy đủ (còn chỉ tiêu chưa hoàn tất) — dùng nút "Force đóng Report" nếu cần đóng phiếu ngay.', 'warn');
+    return;
+  }
+
+  const batch = form.elements['batch'].value.trim();
+  const dup = state.records.find(r => !r.isDraft && r.sampleInfo && r.sampleInfo.batch === batch && r.id !== state.editingRecordId);
+  if (dup) {
+    const proceed = await confirmModal('Trùng Batch', 'Batch "' + batch + '" đã có phiếu chính thức lưu trước đó. Vẫn lưu thêm bản mới?');
+    if (!proceed) return;
+  }
+
+  const id = state.editingRecordId || ('rec_' + Date.now());
+  const record = await buildFullRecord(false, id, forced);
+  const savedOk = await Storage.put('records', record);
+  if (!savedOk) return;
+  await Storage.delete('records', 'draft_current');
+  AuditLog.log(forced ? 'force-submit-record' : 'submit-record', { batch: record.sampleInfo.batch });
+  toast((forced ? 'Đã Force đóng phiếu ' : 'Đã lưu phiếu ') + record.sampleInfo.batch, forced ? 'warn' : 'success');
+  resetForm();
+  await loadRecordsCache();
+  renderDashboard();
+  switchTab('history');
+}
+
+/* ---------------- BACKUP / RESTORE (Phần 3) ---------------- */
+async function exportBackup() {
+  const records = (await Storage.getAll('records')).filter(r => r.id !== 'draft_current');
+  const backup = {
+    exportedAt: new Date().toISOString(),
+    version: CONFIG.version,
+    staff: STAFF,
+    thresholds: THRESHOLDS,
+    fieldMapping: FIELD_MAPPING,
+    records
+  };
+  downloadFile('lab_record_backup_' + Date.now() + '.json', JSON.stringify(backup, null, 2), 'application/json');
+  AuditLog.log('export-backup', { count: records.length });
+  toast('Đã xuất file backup (' + records.length + ' phiếu).', 'success');
+}
+
+async function importBackupFile(file) {
+  let data;
+  try {
+    const text = await file.text();
+    data = JSON.parse(text);
+  } catch (err) {
+    toast('File backup lỗi hoặc không đúng định dạng JSON.', 'warn');
+    return;
+  }
+  if (!data || typeof data !== 'object' || !Array.isArray(data.records)) {
+    toast('File backup thiếu dữ liệu "records" — không đúng định dạng.', 'warn');
+    return;
+  }
+  const ok = await confirmModal(
+    'Nhập dữ liệu backup?',
+    'Sẽ ghi đè Nhân viên/Ngưỡng/Parameters hiện tại (nếu có trong file) và thêm ' + data.records.length + ' phiếu từ file backup. Tiếp tục?'
+  );
+  if (!ok) return;
+  try {
+    if (Array.isArray(data.staff) && data.staff.length) { STAFF = data.staff; await persistStaff(); }
+    if (Array.isArray(data.thresholds) && data.thresholds.length) { THRESHOLDS.length = 0; THRESHOLDS.push(...data.thresholds); await persistThresholds(); }
+    if (Array.isArray(data.fieldMapping) && data.fieldMapping.length) { FIELD_MAPPING.length = 0; FIELD_MAPPING.push(...data.fieldMapping); await persistFieldMapping(); }
+    for (const rec of data.records) { await Storage.put('records', rec); }
+    await loadRecordsCache();
+    populateStaffSelects();
+    renderDashboard();
+    AuditLog.log('import-backup', { count: data.records.length });
+    toast('Đã nhập backup thành công (' + data.records.length + ' phiếu).', 'success');
+  } catch (err) {
+    console.error('importBackupFile lỗi:', err);
+    toast('Có lỗi khi nhập backup: ' + err.message, 'warn');
+  }
+}
+
+/* ---------------- AUTO SAVE / AUTO RECOVERY (Phần 3) ---------------- */
+let autoSaveTimer = null;
+function startAutoSave() {
+  if (autoSaveTimer) clearInterval(autoSaveTimer);
+  autoSaveTimer = setInterval(async () => {
+    const active = document.querySelector('.panel.is-active');
+    if (!active || active.dataset.panel !== 'form') return;
+    if (!form.elements['itemCode'].value && !form.elements['batch'].value) return;
+    const draft = await buildFullRecord(true, 'draft_current');
+    const ok = await Storage.put('records', draft);
+    const el = document.getElementById('autosave-status');
+    if (ok && el) el.textContent = 'Đã tự lưu lúc ' + new Date().toLocaleTimeString('vi-VN');
+  }, 20000);
+}
+
+async function checkAutoRecovery() {
+  const draft = await Storage.get('records', 'draft_current');
+  if (draft && draft.sampleInfo && (draft.sampleInfo.itemCode || draft.sampleInfo.batch)) {
+    Modal.open(
+      '<h2>Khôi phục phiếu đang nhập dở?</h2>' +
+      '<p>Phát hiện dữ liệu chưa lưu chính thức từ phiên làm việc trước (Item Code: ' + (draft.sampleInfo.itemCode || '--') + ', Batch: ' + (draft.sampleInfo.batch || '--') + ').</p>' +
+      '<div class="form-actions">' +
+      '<button type="button" class="btn btn--secondary" id="btn-recovery-discard">Bỏ qua</button>' +
+      '<button type="button" class="btn btn--primary" id="btn-recovery-restore">Khôi phục</button>' +
+      '</div>'
+    );
+    document.getElementById('btn-recovery-restore').addEventListener('click', () => {
+      Modal.close();
+      switchTab('form');
+      applyRecordToForm(draft);
+      toast('Đã khôi phục phiếu đang nhập dở.', 'success');
+    });
+    document.getElementById('btn-recovery-discard').addEventListener('click', async () => {
+      await Storage.delete('records', 'draft_current');
+      Modal.close();
+    });
+  }
+}
+
+function updateStorageModeNote() {
+  const el = document.getElementById('storage-mode-note');
+  if (!el) return;
+  el.textContent = Storage.mode() === 'indexeddb'
+    ? 'Đang lưu bền bằng IndexedDB — dữ liệu vẫn còn sau khi tải lại trang.'
+    : 'IndexedDB không khả dụng — đang dùng localStorage dự phòng (dữ liệu vẫn giữ được, nhưng KHÔNG lưu được ảnh đính kèm).';
+}
+
+/* ---------------- BOOTSTRAP ---------------- */
+document.addEventListener('DOMContentLoaded', async () => {
+  Modal.init();
+
+  await Storage.init();
+  updateStorageModeNote();
+  try {
+    await loadMasterDataFromDb();
+  } catch (err) {
+    console.error('loadMasterDataFromDb lỗi:', err);
+  }
+  await AuditLog.loadAll();
+
+  populateSpecParameterSelect();
+  updateThresholdsForCustomer();
+  await loadRecordsCache();
+  renderDashboard();
+
+  // Đăng nhập: khôi phục phiên trong sessionStorage (mất khi đóng tab/trình duyệt — hợp lý
+  // cho máy/tablet dùng chung), nếu không có/không hợp lệ thì bắt buộc đăng nhập lại.
+  document.getElementById('btn-login').addEventListener('click', attemptLogin);
+  document.getElementById('login-password').addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptLogin(); });
+  let restored = null;
+  try { restored = JSON.parse(sessionStorage.getItem('labrecord_session') || 'null'); } catch (e) {}
+  if (restored && USERS.some(u => u.name === restored.name && u.role === restored.role)) {
+    state.currentUser = restored;
+    updateHeaderUser();
+    applyRolePermissions();
+    checkAutoRecovery().then(() => startAutoSave());
+  } else {
+    showLogin();
+  }
+
+  // Cài đặt > Quản lý người dùng (Admin)
+  document.getElementById('btn-add-user').addEventListener('click', () => {
+    const name = document.getElementById('user-new-name').value.trim();
+    const password = document.getElementById('user-new-password').value.trim();
+    const role = document.getElementById('user-new-role').value;
+    if (!name || !password) { toast('Vui lòng nhập tên và mật khẩu.', 'warn'); return; }
+    if (USERS.some(u => u.name === name)) { toast('Tên đăng nhập đã tồn tại.', 'warn'); return; }
+    USERS.push({ name, password, role });
+    document.getElementById('user-new-name').value = '';
+    document.getElementById('user-new-password').value = '';
+    persistUsers();
+    renderUsersTable();
+    populateStaffSelects();
+    AuditLog.log('add-user', { name, role });
+    toast('Đã thêm người dùng ' + name + '.', 'success');
+  });
+
+  // Điều hướng
+  document.querySelectorAll('.sidebar__item').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+  document.getElementById('btn-new-record').addEventListener('click', () => {
+    resetForm();
+    switchTab('form');
+  });
+
+  // Thông tin mẫu
+  form.elements['itemCode'].addEventListener('change', onItemCodeChange);
+  form.elements['itemCode'].addEventListener('blur', onItemCodeChange);
+  form.elements['batch'].addEventListener('change', onBatchChange);
+  form.elements['batch'].addEventListener('blur', onBatchChange);
+  form.elements['po'].addEventListener('change', onPoChange);
+  form.elements['po'].addEventListener('blur', onPoChange);
+  form.elements['customer'].addEventListener('change', updateThresholdsForCustomer);
+  form.elements['reviewedBy'].addEventListener('change', handleReviewedByChange);
+  initPhotoInput('do_can_anh');
+  initPhotoInput('ngoai_vat_anh');
+
+  // Recompute khi bất kỳ input/select nào trong form thay đổi.
+  // Nghe cả 'input' và 'change' vì một số trình duyệt/thiết bị (đặc biệt <select>
+  // trên các WebView cũ) không bắn 'input' một cách nhất quán khi đổi lựa chọn.
+  ['input', 'change'].forEach(evt => {
+    form.addEventListener(evt, (e) => {
+      if (e.target.matches('input, select')) {
+        recomputeAll();
+        const card = e.target.closest('.param-card');
+        if (card) {
+          const n = card.dataset.param;
+          if (n && !state.blockEnteredAt[n]) state.blockEnteredAt[n] = new Date().toISOString();
+        }
+      }
+    });
+  });
+
+  // Lưu nháp / Submit
+  document.getElementById('btn-save-draft').addEventListener('click', async () => {
+    const id = state.editingRecordId || ('rec_' + Date.now());
+    const record = await buildFullRecord(true, id);
+    const ok = await Storage.put('records', record);
+    if (ok) {
+      state.editingRecordId = id;
+      await Storage.delete('records', 'draft_current');
+      AuditLog.log('save-draft', { batch: record.sampleInfo.batch });
+      toast('Đã lưu nháp phiếu ' + (record.sampleInfo.batch || ''), 'success');
+      await loadRecordsCache();
+      renderDashboard();
+    }
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await submitRecord(false);
+  });
+  document.getElementById('btn-force-submit').addEventListener('click', async () => {
+    const ok = await confirmModal(
+      'Force đóng Report?',
+      'Phiếu còn chỉ tiêu chưa hoàn tất (Kết luận đang để trống). Force sẽ vẫn lưu phiếu và đánh dấu "⚠ Force" để Supervisor/Admin biết cần rà soát lại. Tiếp tục?'
+    );
+    if (!ok) return;
+    await submitRecord(true);
+  });
+
+  // Lịch sử: filter + xuất CSV
+  ['history-search', 'history-filter-customer', 'history-filter-result', 'history-filter-date'].forEach(id => {
+    document.getElementById(id).addEventListener('input', renderHistoryTable);
+    document.getElementById(id).addEventListener('change', renderHistoryTable);
+  });
+  document.getElementById('btn-export-history-csv').addEventListener('click', () => {
+    exportHistoryCsv(state.filteredHistory);
+  });
+
+  // Item Code: tìm kiếm + thêm mã hàng mới
+  document.getElementById('itemcode-search').addEventListener('input', renderItemCodeTable);
+  document.getElementById('btn-add-itemcode').addEventListener('click', () => {
+    const item = document.getElementById('itemcode-new-item').value.trim();
+    const name = document.getElementById('itemcode-new-name').value.trim();
+    const recipe = document.getElementById('itemcode-new-recipe').value.trim() || '-';
+    if (!item || !name) { toast('Vui lòng nhập Item Code và Product Name.', 'warn'); return; }
+    if (findItemByCode(item)) { toast('Item Code "' + item + '" đã tồn tại trong danh mục.', 'warn'); return; }
+    ITEM_CODES.push({ item, name, recipe });
+    document.getElementById('itemcode-new-item').value = '';
+    document.getElementById('itemcode-new-name').value = '';
+    document.getElementById('itemcode-new-recipe').value = '';
+    persistItemCodes();
+    AuditLog.log('add-itemcode', { item });
+    renderItemCodeTable();
+    toast('Đã thêm mã hàng ' + item + '.', 'success');
+  });
+
+  // Độ lặp lại: thêm chỉ tiêu mới
+  document.getElementById('btn-add-repeat').addEventListener('click', () => {
+    const parameter = document.getElementById('repeat-new-parameter').value.trim();
+    const unit = document.getElementById('repeat-new-unit').value.trim() || '-';
+    const maxDiff = toNumber(document.getElementById('repeat-new-maxdiff').value);
+    if (!parameter || maxDiff === null) { toast('Nhập tên chỉ tiêu và chênh lệch tối đa hợp lệ.', 'warn'); return; }
+    if (REPEATABILITY.some(r => r.parameter === parameter)) { toast('Chỉ tiêu này đã có trong bảng.', 'warn'); return; }
+    REPEATABILITY.push({ parameter, unit, maxDiff });
+    ['repeat-new-parameter', 'repeat-new-unit', 'repeat-new-maxdiff'].forEach(id => { document.getElementById(id).value = ''; });
+    persistRepeatability();
+    renderRepeatabilityTable();
+    recomputeAll();
+    AuditLog.log('add-repeatability', { parameter });
+    toast('Đã thêm chỉ tiêu.', 'success');
+  });
+
+  // Spec.: thêm dòng ngưỡng mới
+  document.getElementById('btn-add-spec').addEventListener('click', () => {
+    const customer = document.getElementById('spec-new-customer').value;
+    const parameter = document.getElementById('spec-new-parameter').value;
+    const unit = document.getElementById('spec-new-unit').value.trim();
+    const requirement = document.getElementById('spec-new-requirement').value.trim();
+    const recipe = document.getElementById('spec-new-recipe').value.trim() || '-';
+    if (!requirement) { toast('Vui lòng nhập Yêu cầu (ngưỡng).', 'warn'); return; }
+    THRESHOLDS.push({ customer, parameter, unit, requirement, recipe });
+    document.getElementById('spec-new-unit').value = '';
+    document.getElementById('spec-new-requirement').value = '';
+    document.getElementById('spec-new-recipe').value = '';
+    AuditLog.log('add-spec-row', { customer, parameter });
+    renderSpecTable();
+    updateThresholdsForCustomer();
+    persistThresholds();
+    toast('Đã thêm dòng ngưỡng.', 'success');
+  });
+
+  // Cài đặt: thêm nhân viên
+  document.getElementById('btn-add-staff').addEventListener('click', () => {
+    const input = document.getElementById('staff-new-name');
+    const name = input.value.trim();
+    if (!name) return;
+    if (STAFF.includes(name)) { toast('Nhân viên đã tồn tại.', 'warn'); return; }
+    STAFF.push(name);
+    input.value = '';
+    renderStaffList();
+    populateStaffSelects();
+    persistStaff();
+    AuditLog.log('add-staff', { name });
+  });
+
+  // Cài đặt: theme
+  document.getElementById('theme-select').addEventListener('change', (e) => {
+    document.documentElement.dataset.theme = e.target.value;
+    persistTheme(e.target.value);
+  });
+
+  // Cài đặt: backup/restore
+  document.getElementById('btn-export-backup').addEventListener('click', exportBackup);
+  document.getElementById('input-import-backup').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) importBackupFile(file);
+    e.target.value = '';
+  });
+
+  renderStaffList();
+  // Auto Recovery + Auto Save chỉ chạy SAU khi đăng nhập thành công (xem attemptLogin
+  // và nhánh khôi phục phiên phía trên) — tránh hiện modal khôi phục phía sau màn đăng nhập.
+});
+
+  </script>
+</body>
+</html>
