@@ -854,6 +854,12 @@ body {
             <option value="Không đạt">Không đạt</option>
           </select>
           <select class="field__input" id="history-filter-type"></select>
+          <select class="field__input" id="history-filter-approval">
+            <option value="">Tất cả phê duyệt</option>
+            <option value="approved">Approve</option>
+            <option value="not_approved">Not Approve</option>
+            <option value="rejected">Reject</option>
+          </select>
           <input type="date" class="field__input" id="history-filter-date" />
           <button type="button" class="btn btn--secondary" id="btn-export-history-csv">Xuất CSV</button>
         </div>
@@ -869,6 +875,7 @@ body {
                 <th>Batch</th>
                 <th>Customer</th>
                 <th>Kết luận</th>
+                <th>Phê duyệt</th>
                 <th>Reviewed by</th>
                 <th></th>
               </tr>
@@ -2204,6 +2211,28 @@ function renderUsersTable() {
 }
 
 /* ---------------- HISTORY ---------------- */
+/* ---------------- PHÊ DUYỆT PHIẾU: Approve / Not Approve / Reject (chỉ Supervisor+ được duyệt) ---------------- */
+const APPROVAL_LABELS = { approved: 'Approve', not_approved: 'Not Approve', rejected: 'Reject' };
+const APPROVAL_BADGE = { approved: 'pass', not_approved: 'pending', rejected: 'fail' };
+function approvalOf(r) { return r.approval || { status: 'not_approved' }; }
+function approvalBadgeHtml(r) {
+  if (r.isDraft) return '<span class="param-summary__status" data-status="pending">--</span>';
+  const st = approvalOf(r).status;
+  return '<span class="param-summary__status" data-status="' + APPROVAL_BADGE[st] + '">' + APPROVAL_LABELS[st] + '</span>';
+}
+async function setApproval(r, status) {
+  if (!hasRole('supervisor')) { toast('Chỉ Supervisor/Admin mới được phê duyệt phiếu.', 'warn'); return; }
+  if (r.isDraft) { toast('Phiếu nháp chưa thể phê duyệt.', 'warn'); return; }
+  r.approval = status === 'not_approved' ? { status } : { status, by: state.currentUser.name, at: new Date().toISOString() };
+  r.meta.updatedAt = new Date().toISOString();
+  if (!(await Storage.put('records', r))) return;
+  AuditLog.log('approval-' + status, { batch: (r.sampleInfo && r.sampleInfo.batch) || '' });
+  toast('Đã chuyển trạng thái phê duyệt: ' + APPROVAL_LABELS[status] + '.', 'success');
+  await loadRecordsCache();
+  renderHistoryTable();
+  viewRecord(r.id);
+}
+
 function renderHistoryTable() {
   const tbody = document.getElementById('history-table-body');
   const search = document.getElementById('history-search').value.trim().toLowerCase();
@@ -2211,10 +2240,12 @@ function renderHistoryTable() {
   const resultFilter = document.getElementById('history-filter-result').value;
   const dateFilter = document.getElementById('history-filter-date').value;
   const typeFilter = document.getElementById('history-filter-type').value;
+  const approvalFilter = document.getElementById('history-filter-approval').value;
 
   const rows = state.records.filter(r => {
     const s = r.sampleInfo || {};
     if (typeFilter && typeOf(r) !== typeFilter) return false;
+    if (approvalFilter && (r.isDraft || approvalOf(r).status !== approvalFilter)) return false;
     if (search && !((s.batch || '').toLowerCase().includes(search) || (s.itemCode || '').toLowerCase().includes(search))) return false;
     if (custFilter && s.customer !== custFilter) return false;
     if (resultFilter && (!r.conclusion || r.conclusion.result !== resultFilter)) return false;
@@ -2229,7 +2260,7 @@ function renderHistoryTable() {
 
   tbody.innerHTML = '';
   if (rows.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-faint);">Chưa có phiếu nào phù hợp.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-faint);">Chưa có phiếu nào phù hợp.</td></tr>';
     return;
   }
   rows.slice().reverse().forEach(r => {
@@ -2246,6 +2277,7 @@ function renderHistoryTable() {
       '<td>' + (s.batch || '--') + '</td>' +
       '<td>' + (s.customer || '--') + '</td>' +
       '<td><span class="param-summary__status" data-status="' + resultStatus + '">' + resultLabel + '</span></td>' +
+      '<td>' + approvalBadgeHtml(r) + '</td>' +
       '<td>' + (r.reviewedBy || '--') + '</td>' +
       '<td><button type="button" class="btn btn--secondary btn-view-record" data-id="' + r.id + '">Xem</button></td>';
     tbody.appendChild(tr);
@@ -2297,7 +2329,13 @@ function renderRecordDetailHtml(r) {
     '<p><b>Kết luận:</b> <span class="param-summary__status" data-status="' + (r.conclusion ? r.conclusion.statusKey : 'pending') + '">' + (r.conclusion ? r.conclusion.result : '--') + '</span></p>' +
     '<p><b>Ghi chú:</b> ' + (r.notes || '(không có)') + '</p>' +
     '<p><b>Reviewed by:</b> ' + (r.reviewedBy || '--') + ' — ' + (r.reviewedDate || '--') + '</p>' +
+    (r.isDraft ? '' : '<p><b>Phê duyệt:</b> ' + approvalBadgeHtml(r) +
+      (approvalOf(r).by ? ' &nbsp; <small>bởi ' + escapeAttr(approvalOf(r).by) + ' lúc ' + new Date(approvalOf(r).at).toLocaleString('vi-VN') + '</small>' : '') + '</p>') +
     '<div class="form-actions">' +
+    (!r.isDraft && hasRole('supervisor') ?
+      '<button type="button" class="btn btn--secondary" id="btn-approve">Approve</button>' +
+      '<button type="button" class="btn btn--secondary" id="btn-reject">Reject</button>' +
+      '<button type="button" class="btn btn--secondary" id="btn-unapprove">Not Approve</button>' : '') +
     (r.isDraft ? '<button type="button" class="btn btn--secondary" id="btn-detail-resume">Tiếp tục chỉnh sửa</button>' : '') +
     '<button type="button" class="btn btn--secondary" id="btn-detail-csv">Xuất Excel (CSV)</button>' +
     '<button type="button" class="btn btn--secondary" id="btn-detail-print">In tóm tắt</button>' +
@@ -2315,6 +2353,10 @@ function viewRecord(id) {
   const fullReportBtn = document.getElementById('btn-detail-fullreport');
   const delBtn = document.getElementById('btn-detail-delete');
   const resumeBtn = document.getElementById('btn-detail-resume');
+  [['btn-approve', 'approved'], ['btn-reject', 'rejected'], ['btn-unapprove', 'not_approved']].forEach(([id, st]) => {
+    const b = document.getElementById(id);
+    if (b) { b.disabled = approvalOf(r).status === st; b.addEventListener('click', () => setApproval(r, st)); }
+  });
   if (csvBtn) csvBtn.addEventListener('click', () => exportRecordCsv(r));
   if (printBtn) printBtn.addEventListener('click', () => printRecord(r));
   if (fullReportBtn) fullReportBtn.addEventListener('click', () => printFullReport(r));
@@ -2364,13 +2406,14 @@ function exportRecordCsv(r) {
   lines.push(['Kết luận', r.conclusion ? r.conclusion.result : ''].map(csvEscape).join(','));
   lines.push(['Ghi chú', r.notes || ''].map(csvEscape).join(','));
   lines.push(['Reviewed by', r.reviewedBy || ''].map(csvEscape).join(','));
+  lines.push(['Phê duyệt', r.isDraft ? '' : APPROVAL_LABELS[approvalOf(r).status] + (approvalOf(r).by ? ' — ' + approvalOf(r).by : '')].map(csvEscape).join(','));
   downloadFile('phieu_' + (r.sampleInfo.batch || r.id) + '.csv', '﻿' + lines.join('\n'), 'text/csv;charset=utf-8');
   toast('Đã xuất file CSV.', 'success');
 }
 
 function exportHistoryCsv(records) {
   if (!records || !records.length) { toast('Không có phiếu nào để xuất.', 'warn'); return; }
-  const header = ['Ngày nhập', 'Loại sản phẩm', 'Item Code', 'Product Name', 'Batch', 'Customer', 'Kết luận', 'Reviewed by'];
+  const header = ['Ngày nhập', 'Loại sản phẩm', 'Item Code', 'Product Name', 'Batch', 'Customer', 'Kết luận', 'Phê duyệt', 'Reviewed by'];
   const lines = [header.map(csvEscape).join(',')];
   records.forEach(r => {
     const s = r.sampleInfo || {};
@@ -2378,7 +2421,8 @@ function exportHistoryCsv(records) {
       new Date(r.meta.savedAt).toLocaleString('vi-VN'),
       PRODUCT_TYPES[typeOf(r)],
       s.itemCode, s.productName, s.batch, s.customer,
-      r.isDraft ? 'Nháp' : (r.conclusion ? r.conclusion.result : ''), r.reviewedBy
+      r.isDraft ? 'Nháp' : (r.conclusion ? r.conclusion.result : ''),
+      r.isDraft ? '' : APPROVAL_LABELS[approvalOf(r).status], r.reviewedBy
     ].map(csvEscape).join(','));
   });
   downloadFile('lich_su_phieu.csv', '﻿' + lines.join('\n'), 'text/csv;charset=utf-8');
@@ -2445,6 +2489,7 @@ function renderFullReportHtml(r) {
     '<p><b>Kết quả:</b> ' + (r.conclusion ? r.conclusion.result : '--') + (r.forcedClose ? ' — ⚠ Force đóng report (chưa đủ 9 chỉ tiêu)' : '') + '</p>' +
     '<p><b>Ghi chú:</b> ' + (r.notes || '(không có)') + '</p>' +
     '<p><b>Reviewed by:</b> ' + (r.reviewedBy || '--') + ' — ' + (r.reviewedDate || '--') + '</p>' +
+    '<p><b>Phê duyệt:</b> ' + (r.isDraft ? '--' : APPROVAL_LABELS[approvalOf(r).status] + (approvalOf(r).by ? ' — ' + approvalOf(r).by + ' (' + new Date(approvalOf(r).at).toLocaleString('vi-VN') + ')' : '')) + '</p>' +
     '<p><b>Người tạo phiếu:</b> ' + (r.meta ? r.meta.createdBy : '--') + ' &nbsp; <b>Lưu lúc:</b> ' + (r.meta ? new Date(r.meta.savedAt).toLocaleString('vi-VN') : '--') + '</p>';
 }
 function printFullReport(r) {
@@ -3130,7 +3175,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Lịch sử: filter + xuất CSV
   document.getElementById('dash-type-filter').addEventListener('change', renderDashboard);
-  ['history-search', 'history-filter-customer', 'history-filter-result', 'history-filter-type', 'history-filter-date'].forEach(id => {
+  ['history-search', 'history-filter-customer', 'history-filter-result', 'history-filter-type', 'history-filter-approval', 'history-filter-date'].forEach(id => {
     document.getElementById(id).addEventListener('input', renderHistoryTable);
     document.getElementById(id).addEventListener('change', renderHistoryTable);
   });
