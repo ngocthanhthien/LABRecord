@@ -298,6 +298,10 @@ body {
 .field__label {
   color: var(--text);
 }
+.type-bar { margin-bottom: 0.75rem; }
+.field--inline { flex-direction: row; align-items: center; gap: 0.6rem; }
+.field--inline .field__input { min-width: 12rem; }
+.empty-type-note { margin: 0; color: var(--text-muted); font-size: 0.9rem; }
 .field__hint {
   font-size: 0.75rem;
   color: var(--text-faint);
@@ -745,6 +749,10 @@ body {
       <!-- ---------- PANEL: TỔNG QUAN (Dashboard) ---------- -->
       <section class="panel is-active" id="panel-dashboard" data-panel="dashboard">
         <h1 class="panel__title">Tổng quan</h1>
+        <div class="type-bar">
+          <label class="field field--inline"><span class="field__label">Loại sản phẩm</span>
+            <select class="field__input" id="dash-type-filter"></select></label>
+        </div>
 
         <div class="stat-grid">
           <div class="stat-card">
@@ -781,6 +789,11 @@ body {
       <section class="panel" id="panel-form" data-panel="form">
         <h1 class="panel__title">Phiếu ghi nhận kết quả phân tích</h1>
 
+        <div class="type-bar">
+          <label class="field field--inline"><span class="field__label">Loại sản phẩm / loại kiểm tra</span>
+            <select class="field__input" id="form-product-type"></select></label>
+        </div>
+
         <div class="completion-row">
           <div class="completion-bar"><div class="completion-bar__fill" id="form-completion-bar" style="width:0%"></div></div>
           <span class="completion-label" id="form-completion-label">0% hoàn thành</span>
@@ -788,449 +801,8 @@ body {
 
         <form id="analysis-form" class="analysis-form">
 
-          <!-- Khối: Thông tin mẫu -->
-          <fieldset class="card" id="block-sample-info">
-            <legend class="card__title">Thông tin mẫu</legend>
-            <div class="field-grid">
-              <label class="field">
-                <span class="field__label">Item Code</span>
-                <input type="number" inputmode="numeric" name="itemCode" class="field__input" placeholder="VD: 11000050" />
-              </label>
-              <label class="field">
-                <span class="field__label">Recipe</span>
-                <input type="text" name="recipe" class="field__input" readonly placeholder="Tự động" />
-              </label>
-              <label class="field">
-                <span class="field__label">Product Name</span>
-                <input type="text" name="productName" class="field__input" readonly placeholder="Tự động" />
-              </label>
-              <label class="field">
-                <span class="field__label">Customer</span>
-                <select name="customer" class="field__input">
-                  <option value="">-- Chọn --</option>
-                  <option value="INS">INS</option>
-                  <option value="LDC">LDC</option>
-                </select>
-              </label>
-              <label class="field">
-                <span class="field__label">Batch</span>
-                <input type="text" name="batch" class="field__input" placeholder="VD: 62550110F1" />
-              </label>
-              <label class="field">
-                <span class="field__label">Ngày sản xuất</span>
-                <input type="text" name="productionDate" class="field__input" readonly placeholder="Tự động từ Batch" />
-              </label>
-              <label class="field">
-                <span class="field__label">PO</span>
-                <input type="number" inputmode="numeric" name="po" class="field__input" placeholder="VD: 712600110" />
-              </label>
-              <label class="field">
-                <span class="field__label">SSCC</span>
-                <input type="text" name="sscc" class="field__input" placeholder="VD: 71260011000027" />
-                <span class="field__hint" id="sscc-hint"></span>
-              </label>
-            </div>
-          </fieldset>
-
-          <!-- Khối chỉ tiêu 1: Độ Ẩm (Halogen) -->
-          <fieldset class="card param-card" id="block-param-1" data-param="1">
-            <legend class="card__title">1. Độ Ẩm (Halogen)</legend>
-            <table class="param-table">
-              <thead>
-                <tr>
-                  <th>Người thực hiện</th>
-                  <th>Khối lượng mẫu (g)</th>
-                  <th>Nhiệt độ sấy (℃)</th>
-                  <th>Thời gian sấy (mm:ss)</th>
-                  <th>Kết quả ẩm (%)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="param-table__row" data-rep="1">
-                  <td><select class="field__input" name="do_am_1_nguoi_thuc_hien"><option value="">--</option></select></td>
-                  <td><input type="number" step="any" class="field__input" name="do_am_1_khoi_luong_mau" /></td>
-                  <td><input type="number" step="any" class="field__input" name="do_am_1_nhiet_do_say" value="114" /></td>
-                  <td><input type="text" class="field__input" name="do_am_1_thoi_gian_say" placeholder="mm:ss" /></td>
-                  <td><input type="number" step="any" class="field__input" name="do_am_1_ket_qua" /></td>
-                </tr>
-                <tr class="param-table__row" data-rep="2">
-                  <td><select class="field__input" name="do_am_2_nguoi_thuc_hien"><option value="">--</option></select></td>
-                  <td><input type="number" step="any" class="field__input" name="do_am_2_khoi_luong_mau" /></td>
-                  <td><input type="number" step="any" class="field__input" name="do_am_2_nhiet_do_say" value="114" /></td>
-                  <td><input type="text" class="field__input" name="do_am_2_thoi_gian_say" placeholder="mm:ss" /></td>
-                  <td><input type="number" step="any" class="field__input" name="do_am_2_ket_qua" /></td>
-                </tr>
-              </tbody>
-            </table>
-            <div class="param-summary">
-              <span>Giá trị trung bình (%): <output name="do_am_avg">--</output></span>
-              <span>Sự khác nhau: <output name="do_am_diff">--</output></span>
-              <span>Range: <output name="do_am_range">≤ 3</output></span>
-              <span class="param-summary__status" data-status="pending">--</span>
-            </div>
-          </fieldset>
-
-          <!-- Khối chỉ tiêu 2: Tỷ trọng - mật độ chảy tự do -->
-          <fieldset class="card param-card" id="block-param-2" data-param="2">
-            <legend class="card__title">2. Tỷ trọng - mật độ chảy tự do</legend>
-            <table class="param-table">
-              <thead>
-                <tr>
-                  <th>Người thực hiện</th>
-                  <th>Khối lượng bình (g)</th>
-                  <th>Khối lượng mẫu (g)</th>
-                  <th>Thể tích bình (L)</th>
-                  <th>Kết quả tỷ trọng (g/L)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="param-table__row" data-rep="1">
-                  <td><select class="field__input" name="ty_trong_1_nguoi_thuc_hien"><option value="">--</option></select></td>
-                  <td><input type="number" step="any" class="field__input" name="ty_trong_1_khoi_luong_binh" /></td>
-                  <td><input type="number" step="any" class="field__input" name="ty_trong_1_khoi_luong_mau" /></td>
-                  <td><input type="number" step="any" class="field__input" name="ty_trong_1_the_tich_binh" value="0.205" /></td>
-                  <td><output class="field__input field__input--computed" name="ty_trong_1_ket_qua">--</output></td>
-                </tr>
-                <tr class="param-table__row" data-rep="2">
-                  <td><select class="field__input" name="ty_trong_2_nguoi_thuc_hien"><option value="">--</option></select></td>
-                  <td><input type="number" step="any" class="field__input" name="ty_trong_2_khoi_luong_binh" /></td>
-                  <td><input type="number" step="any" class="field__input" name="ty_trong_2_khoi_luong_mau" /></td>
-                  <td><input type="number" step="any" class="field__input" name="ty_trong_2_the_tich_binh" value="0.205" /></td>
-                  <td><output class="field__input field__input--computed" name="ty_trong_2_ket_qua">--</output></td>
-                </tr>
-              </tbody>
-            </table>
-            <div class="param-summary">
-              <span>Giá trị trung bình (g/L): <output name="ty_trong_avg">--</output></span>
-              <span>Sự khác nhau: <output name="ty_trong_diff">--</output></span>
-              <span>Range: <output name="ty_trong_range">220-240</output></span>
-              <span class="param-summary__status" data-status="pending">--</span>
-            </div>
-          </fieldset>
-
-          <!-- Khối chỉ tiêu 3: Độ màu -->
-          <fieldset class="card param-card" id="block-param-3" data-param="3">
-            <legend class="card__title">3. Độ màu</legend>
-            <table class="param-table">
-              <thead>
-                <tr>
-                  <th>Người thực hiện</th>
-                  <th>Kết quả độ màu (ACN)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="param-table__row" data-rep="1">
-                  <td><select class="field__input" name="do_mau_1_nguoi_thuc_hien"><option value="">--</option></select></td>
-                  <td><input type="number" step="any" class="field__input" name="do_mau_1_ket_qua" /></td>
-                </tr>
-                <tr class="param-table__row" data-rep="2">
-                  <td><select class="field__input" name="do_mau_2_nguoi_thuc_hien"><option value="">--</option></select></td>
-                  <td><input type="number" step="any" class="field__input" name="do_mau_2_ket_qua" /></td>
-                </tr>
-              </tbody>
-            </table>
-            <div class="param-summary">
-              <span>Giá trị trung bình (ACN): <output name="do_mau_avg">--</output></span>
-              <span>Sự khác nhau: <output name="do_mau_diff">--</output></span>
-              <span>Range: <output name="do_mau_range">Max 88</output></span>
-              <span class="param-summary__status" data-status="pending">--</span>
-            </div>
-          </fieldset>
-
-          <!-- Khối chỉ tiêu 4: Độ cặn -->
-          <fieldset class="card param-card" id="block-param-4" data-param="4">
-            <legend class="card__title">4. Độ cặn</legend>
-            <div class="field-grid">
-              <label class="field">
-                <span class="field__label">Người thực hiện</span>
-                <select class="field__input" name="do_can_nguoi_thuc_hien"><option value="">--</option></select>
-              </label>
-              <label class="field">
-                <span class="field__label">Khối lượng mẫu (g)</span>
-                <input type="number" step="any" class="field__input" name="do_can_khoi_luong_mau" value="3" />
-              </label>
-              <label class="field">
-                <span class="field__label">Thể tích nước (ml)</span>
-                <input type="number" step="any" class="field__input" name="do_can_the_tich_nuoc" value="300" />
-              </label>
-              <label class="field">
-                <span class="field__label">Kết quả độ cặn (Grade)</span>
-                <select class="field__input" name="do_can_ket_qua">
-                  <option value="">--</option>
-                  <option value="1">1</option>
-                  <option value="1.5">1.5</option>
-                  <option value="2">2</option>
-                  <option value="2.5">2.5</option>
-                  <option value="3">3</option>
-                </select>
-              </label>
-              <label class="field">
-                <span class="field__label">Range</span>
-                <output class="field__input" name="do_can_range">≤ 2</output>
-              </label>
-            </div>
-            <label class="field field--upload">
-              <span class="field__label">Vị trí dán mẫu cặn (ảnh — có thể chọn/chụp nhiều)</span>
-              <input type="file" accept="image/*" capture="environment" multiple class="field__input" name="do_can_anh" />
-            </label>
-            <div class="photo-gallery" id="gallery-do_can_anh"></div>
-            <div class="param-summary">
-              <span class="param-summary__status" data-status="pending">--</span>
-            </div>
-          </fieldset>
-
-          <!-- Khối chỉ tiêu 5: pH -->
-          <fieldset class="card param-card" id="block-param-5" data-param="5">
-            <legend class="card__title">5. pH</legend>
-            <table class="param-table">
-              <thead>
-                <tr>
-                  <th>Người thực hiện</th>
-                  <th>Khối lượng mẫu (g)</th>
-                  <th>Thể tích nước (ml)</th>
-                  <th>Nhiệt độ mẫu 25±0.5 (℃)</th>
-                  <th>Kết quả pH</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="param-table__row" data-rep="1">
-                  <td><select class="field__input" name="ph_1_nguoi_thuc_hien"><option value="">--</option></select></td>
-                  <td><input type="number" step="any" class="field__input" name="ph_1_khoi_luong_mau" value="1.5" /></td>
-                  <td><input type="number" step="any" class="field__input" name="ph_1_the_tich_nuoc" value="100" /></td>
-                  <td><input type="number" step="any" class="field__input" name="ph_1_nhiet_do" /></td>
-                  <td><input type="number" step="any" class="field__input" name="ph_1_ket_qua" /></td>
-                </tr>
-                <tr class="param-table__row" data-rep="2">
-                  <td><select class="field__input" name="ph_2_nguoi_thuc_hien"><option value="">--</option></select></td>
-                  <td><input type="number" step="any" class="field__input" name="ph_2_khoi_luong_mau" value="1.5" /></td>
-                  <td><input type="number" step="any" class="field__input" name="ph_2_the_tich_nuoc" value="100" /></td>
-                  <td><input type="number" step="any" class="field__input" name="ph_2_nhiet_do" /></td>
-                  <td><input type="number" step="any" class="field__input" name="ph_2_ket_qua" /></td>
-                </tr>
-              </tbody>
-            </table>
-            <div class="param-summary">
-              <span>Giá trị trung bình: <output name="ph_avg">--</output></span>
-              <span>Sự khác nhau: <output name="ph_diff">--</output></span>
-              <span>Range: <output name="ph_range">4.7-5.3</output></span>
-              <span class="param-summary__status" data-status="pending">--</span>
-            </div>
-          </fieldset>
-
-          <!-- Khối chỉ tiêu 6: Acidity -->
-          <fieldset class="card param-card" id="block-param-6" data-param="6">
-            <legend class="card__title">6. Acidity</legend>
-            <table class="param-table">
-              <thead>
-                <tr>
-                  <th>Người thực hiện</th>
-                  <th>Khối lượng mẫu (g)</th>
-                  <th>Thể tích nước (ml)</th>
-                  <th>Nồng độ NaOH</th>
-                  <th>Thể tích tiêu tốn</th>
-                  <th>Kết quả Acidity</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="param-table__row" data-rep="1">
-                  <td><select class="field__input" name="acidity_1_nguoi_thuc_hien"><option value="">--</option></select></td>
-                  <td><input type="number" step="any" class="field__input" name="acidity_1_khoi_luong_mau" value="1.4" /></td>
-                  <td><input type="number" step="any" class="field__input" name="acidity_1_the_tich_nuoc" value="100" /></td>
-                  <td><input type="number" step="any" class="field__input" name="acidity_1_nong_do_naoh" /></td>
-                  <td><input type="number" step="any" class="field__input" name="acidity_1_the_tich_tieu_ton" /></td>
-                  <td><output class="field__input field__input--computed" name="acidity_1_ket_qua">--</output></td>
-                </tr>
-                <tr class="param-table__row" data-rep="2">
-                  <td><select class="field__input" name="acidity_2_nguoi_thuc_hien"><option value="">--</option></select></td>
-                  <td><input type="number" step="any" class="field__input" name="acidity_2_khoi_luong_mau" value="1.4" /></td>
-                  <td><input type="number" step="any" class="field__input" name="acidity_2_the_tich_nuoc" value="100" /></td>
-                  <td><input type="number" step="any" class="field__input" name="acidity_2_nong_do_naoh" /></td>
-                  <td><input type="number" step="any" class="field__input" name="acidity_2_the_tich_tieu_ton" /></td>
-                  <td><output class="field__input field__input--computed" name="acidity_2_ket_qua">--</output></td>
-                </tr>
-              </tbody>
-            </table>
-            <div class="param-summary">
-              <span>Giá trị trung bình: <output name="acidity_avg">--</output></span>
-              <span>Sự khác nhau: <output name="acidity_diff">--</output></span>
-              <span>Range: <output name="acidity_range">3.7-4.5 (Accept to 4.7)</output></span>
-              <span class="param-summary__status" data-status="pending">--</span>
-            </div>
-          </fieldset>
-
-          <!-- Khối chỉ tiêu 7: Độ hòa tan -->
-          <fieldset class="card param-card" id="block-param-7" data-param="7">
-            <legend class="card__title">7. Độ hòa tan</legend>
-            <table class="param-table">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>Người thực hiện</th>
-                  <th>Khối lượng mẫu (g)</th>
-                  <th>Thể tích nước (ml)</th>
-                  <th>Nhiệt độ mẫu (℃)</th>
-                  <th>Thời gian khuấy (s)</th>
-                  <th>Kết quả (V/X)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="param-table__row" data-rep="hot">
-                  <td>Nóng</td>
-                  <td><select class="field__input" name="hoa_tan_nong_nguoi_thuc_hien"><option value="">--</option></select></td>
-                  <td><input type="number" step="any" class="field__input" name="hoa_tan_nong_khoi_luong_mau" value="2.5" /></td>
-                  <td><input type="number" step="any" class="field__input" name="hoa_tan_nong_the_tich_nuoc" value="150" /></td>
-                  <td><input type="number" step="any" class="field__input" name="hoa_tan_nong_nhiet_do" /></td>
-                  <td><input type="number" step="any" class="field__input" name="hoa_tan_nong_thoi_gian" value="30" /></td>
-                  <td>
-                    <select class="field__input" name="hoa_tan_nong_ket_qua">
-                      <option value="">--</option>
-                      <option value="V">V</option>
-                      <option value="X">X</option>
-                    </select>
-                  </td>
-                </tr>
-                <tr class="param-table__row" data-rep="cold">
-                  <td>Lạnh</td>
-                  <td><select class="field__input" name="hoa_tan_lanh_nguoi_thuc_hien"><option value="">--</option></select></td>
-                  <td><input type="number" step="any" class="field__input" name="hoa_tan_lanh_khoi_luong_mau" value="2.5" /></td>
-                  <td><input type="number" step="any" class="field__input" name="hoa_tan_lanh_the_tich_nuoc" value="50" /></td>
-                  <td><input type="number" step="any" class="field__input" name="hoa_tan_lanh_nhiet_do" /></td>
-                  <td><input type="number" step="any" class="field__input" name="hoa_tan_lanh_thoi_gian" value="180" /></td>
-                  <td>
-                    <select class="field__input" name="hoa_tan_lanh_ket_qua">
-                      <option value="">--</option>
-                      <option value="V">V</option>
-                      <option value="X">X</option>
-                    </select>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <div class="param-summary">
-              <span>Range: <output name="hoa_tan_range">V</output></span>
-              <span class="param-summary__status" data-status="pending">--</span>
-            </div>
-          </fieldset>
-
-          <!-- Khối chỉ tiêu 8: Kích thước hạt -->
-          <fieldset class="card param-card" id="block-param-8" data-param="8">
-            <legend class="card__title">8. Kích thước hạt</legend>
-            <div class="field-grid">
-              <label class="field">
-                <span class="field__label">Người thực hiện</span>
-                <select class="field__input" name="kich_thuoc_nguoi_thuc_hien"><option value="">--</option></select>
-              </label>
-              <label class="field">
-                <span class="field__label">Khối lượng mẫu (g)</span>
-                <input type="number" step="any" class="field__input" name="kich_thuoc_khoi_luong_mau" value="100" />
-              </label>
-              <label class="field">
-                <span class="field__label">Biên độ (mm)</span>
-                <input type="number" step="any" class="field__input" name="kich_thuoc_bien_do" value="70" />
-              </label>
-              <label class="field">
-                <span class="field__label">Thời gian (s)</span>
-                <input type="number" step="any" class="field__input" name="kich_thuoc_thoi_gian" value="120" />
-              </label>
-              <label class="field">
-                <span class="field__label">Khối lượng mẫu sau sàng (g)</span>
-                <output class="field__input field__input--computed" name="kich_thuoc_khoi_luong_sau_sang">--</output>
-              </label>
-              <label class="field">
-                <span class="field__label">Range</span>
-                <output class="field__input" name="kich_thuoc_range">&lt;0.5mm max 1%</output>
-              </label>
-            </div>
-
-            <table class="param-table sieve-table">
-              <thead>
-                <tr>
-                  <th>Cỡ lưới</th>
-                  <th>4.00 mm</th>
-                  <th>3.35 mm</th>
-                  <th>2.80 mm</th>
-                  <th>2.00 mm</th>
-                  <th>1.40 mm</th>
-                  <th>1.00 mm</th>
-                  <th>0.50 mm</th>
-                  <th>&lt;0.5mm</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Khối lượng sàng (g)</td>
-                  <td><input type="number" step="any" class="field__input" name="sieve_400_w" /></td>
-                  <td><input type="number" step="any" class="field__input" name="sieve_335_w" /></td>
-                  <td><input type="number" step="any" class="field__input" name="sieve_280_w" /></td>
-                  <td><input type="number" step="any" class="field__input" name="sieve_200_w" /></td>
-                  <td><input type="number" step="any" class="field__input" name="sieve_140_w" /></td>
-                  <td><input type="number" step="any" class="field__input" name="sieve_100_w" /></td>
-                  <td><input type="number" step="any" class="field__input" name="sieve_050_w" /></td>
-                  <td><input type="number" step="any" class="field__input" name="sieve_lt050_w" /></td>
-                </tr>
-                <tr>
-                  <td>Khối lượng mẫu + sàng (g)</td>
-                  <td><input type="number" step="any" class="field__input" name="sieve_400_wt" /></td>
-                  <td><input type="number" step="any" class="field__input" name="sieve_335_wt" /></td>
-                  <td><input type="number" step="any" class="field__input" name="sieve_280_wt" /></td>
-                  <td><input type="number" step="any" class="field__input" name="sieve_200_wt" /></td>
-                  <td><input type="number" step="any" class="field__input" name="sieve_140_wt" /></td>
-                  <td><input type="number" step="any" class="field__input" name="sieve_100_wt" /></td>
-                  <td><input type="number" step="any" class="field__input" name="sieve_050_wt" /></td>
-                  <td><input type="number" step="any" class="field__input" name="sieve_lt050_wt" /></td>
-                </tr>
-                <tr>
-                  <td>% mẫu trên sàng</td>
-                  <td><output class="field__input field__input--computed" name="sieve_400_pct">--</output></td>
-                  <td><output class="field__input field__input--computed" name="sieve_335_pct">--</output></td>
-                  <td><output class="field__input field__input--computed" name="sieve_280_pct">--</output></td>
-                  <td><output class="field__input field__input--computed" name="sieve_200_pct">--</output></td>
-                  <td><output class="field__input field__input--computed" name="sieve_140_pct">--</output></td>
-                  <td><output class="field__input field__input--computed" name="sieve_100_pct">--</output></td>
-                  <td><output class="field__input field__input--computed" name="sieve_050_pct">--</output></td>
-                  <td><output class="field__input field__input--computed" name="sieve_lt050_pct">--</output></td>
-                </tr>
-              </tbody>
-            </table>
-            <div class="param-summary">
-              <span class="param-summary__status" data-status="pending">--</span>
-            </div>
-          </fieldset>
-
-          <!-- Khối chỉ tiêu 9: Ngoại vật -->
-          <fieldset class="card param-card" id="block-param-9" data-param="9">
-            <legend class="card__title">9. Ngoại vật</legend>
-            <div class="field-grid">
-              <label class="field">
-                <span class="field__label">Khối lượng mẫu (g)</span>
-                <input type="number" step="any" class="field__input" name="ngoai_vat_khoi_luong_mau" value="50" />
-              </label>
-              <label class="field">
-                <span class="field__label">Thể tích nước (ml)</span>
-                <input type="number" step="any" class="field__input" name="ngoai_vat_the_tich_nuoc" value="500" />
-              </label>
-              <label class="field">
-                <span class="field__label">Kết quả</span>
-                <select class="field__input" name="ngoai_vat_ket_qua">
-                  <option value="">--</option>
-                  <option value="Absent">Absent</option>
-                  <option value="Present">Present</option>
-                </select>
-              </label>
-              <label class="field">
-                <span class="field__label">Range</span>
-                <output class="field__input" name="ngoai_vat_range">Max 10 units &lt; 1.00mm / Max 1 unit &gt; 1.0mm</output>
-              </label>
-            </div>
-            <label class="field field--upload">
-              <span class="field__label">Hình ảnh ngoại vật (có thể chọn/chụp nhiều)</span>
-              <input type="file" accept="image/*" capture="environment" multiple class="field__input" name="ngoai_vat_anh" />
-            </label>
-            <div class="photo-gallery" id="gallery-ngoai_vat_anh"></div>
-            <div class="param-summary">
-              <span class="param-summary__status" data-status="pending">--</span>
-            </div>
-          </fieldset>
+          <!-- Thông tin mẫu + các khối chỉ tiêu: dựng động theo loại sản phẩm (xem TYPE_CONFIG) -->
+          <div id="form-dynamic"></div>
 
           <!-- Khối: Ghi chú + Kết luận + Reviewed by -->
           <fieldset class="card" id="block-conclusion">
@@ -1281,6 +853,7 @@ body {
             <option value="Đạt">Đạt</option>
             <option value="Không đạt">Không đạt</option>
           </select>
+          <select class="field__input" id="history-filter-type"></select>
           <input type="date" class="field__input" id="history-filter-date" />
           <button type="button" class="btn btn--secondary" id="btn-export-history-csv">Xuất CSV</button>
         </div>
@@ -1290,6 +863,7 @@ body {
             <thead>
               <tr>
                 <th>Ngày nhập</th>
+                <th>Loại</th>
                 <th>Item Code</th>
                 <th>Product Name</th>
                 <th>Batch</th>
@@ -1309,7 +883,11 @@ body {
       <!-- ---------- PANEL: ITEM CODE (Danh mục mã hàng) ---------- -->
       <section class="panel" id="panel-itemcode" data-panel="itemcode">
         <h1 class="panel__title">Item Code — Danh mục mã hàng</h1>
-        <p class="panel__desc">Tra cứu, thêm mã hàng mới hoặc cập nhật Recipe khi có thay đổi. Sửa trực tiếp trong bảng, áp dụng ngay cho tra cứu tự động ở tab Nhập liệu.</p>
+        <p class="panel__desc">Tra cứu, thêm mã hàng mới hoặc cập nhật Recipe khi có thay đổi. Danh mục riêng cho từng loại sản phẩm. Sửa trực tiếp trong bảng, áp dụng ngay cho tra cứu tự động ở tab Nhập liệu.</p>
+        <div class="type-bar">
+          <label class="field field--inline"><span class="field__label">Loại sản phẩm</span>
+            <select class="field__input admin-type-select"></select></label>
+        </div>
 
         <div class="card">
           <div class="settings-add-row settings-add-row--wrap">
@@ -1341,15 +919,18 @@ body {
       <!-- ---------- PANEL: SPEC. (Bảng ngưỡng kết luận) ---------- -->
       <section class="panel" id="panel-spec" data-panel="spec">
         <h1 class="panel__title">Spec. — Bảng ngưỡng kết luận</h1>
-        <p class="panel__desc">Thiết lập ngưỡng Đạt/Không đạt theo Customer + Chỉ tiêu (+ Recipe nếu có nhiều mức). Sửa trực tiếp trong bảng, áp dụng ngay cho tính kết luận ở tab Nhập liệu.</p>
+        <p class="panel__desc">Thiết lập ngưỡng Đạt/Không đạt theo Customer + Chỉ tiêu (+ Recipe nếu có nhiều mức). Sửa trực tiếp trong bảng, áp dụng ngay cho tính kết luận ở tab Nhập liệu. Ngưỡng được thiết lập riêng cho từng loại sản phẩm.</p>
+        <div class="type-bar">
+          <label class="field field--inline"><span class="field__label">Loại sản phẩm</span>
+            <select class="field__input admin-type-select"></select></label>
+        </div>
 
         <div class="card">
           <div class="settings-add-row settings-add-row--wrap">
-            <select class="field__input" id="spec-new-customer">
-              <option value="INS">INS</option>
-              <option value="LDC">LDC</option>
-            </select>
-            <select class="field__input" id="spec-new-parameter"></select>
+            <input type="text" class="field__input" id="spec-new-customer" list="spec-customer-list" placeholder="Customer (VD: INS)" />
+            <datalist id="spec-customer-list"></datalist>
+            <input type="text" class="field__input" id="spec-new-parameter" list="spec-parameter-list" placeholder="Chỉ tiêu (chọn hoặc gõ tên mới)" />
+            <datalist id="spec-parameter-list"></datalist>
             <input type="text" class="field__input" id="spec-new-unit" placeholder="Đơn vị" />
             <input type="text" class="field__input" id="spec-new-requirement" placeholder="Yêu cầu (VD: ≤ 3, 220-240, Max 88)" />
             <input type="text" class="field__input" id="spec-new-recipe" placeholder="Recipe (- nếu không giới hạn)" />
@@ -1377,9 +958,22 @@ body {
       <!-- ---------- PANEL: PARAMETERS (Thiết lập thông tin trường dữ liệu) ---------- -->
       <section class="panel" id="panel-parameters" data-panel="parameters">
         <h1 class="panel__title">Parameters — Thiết lập thông tin trường dữ liệu</h1>
-        <p class="panel__desc">Bảng tham chiếu toàn bộ trường dữ liệu của phiếu (theo Field Mapping gốc). Có thể sửa Kiểu dữ liệu / Independent-Dependent / Ghi chú để lưu tài liệu nội bộ — sửa ở đây KHÔNG tự đổi cấu trúc form Nhập liệu.</p>
+        <p class="panel__desc">Bảng tham chiếu toàn bộ trường dữ liệu của phiếu (theo Field Mapping gốc). Có thể sửa Kiểu dữ liệu / Independent-Dependent / Ghi chú để lưu tài liệu nội bộ — sửa ở đây KHÔNG tự đổi cấu trúc form Nhập liệu. Mỗi loại sản phẩm có bảng riêng.</p>
+        <div class="type-bar">
+          <label class="field field--inline"><span class="field__label">Loại sản phẩm</span>
+            <select class="field__input admin-type-select"></select></label>
+        </div>
 
         <div class="card">
+          <div class="settings-add-row settings-add-row--wrap">
+            <input type="text" class="field__input" id="param-new-parameter" list="param-parameter-list" placeholder="Chỉ tiêu (hoặc 'Thông tin mẫu')" />
+            <datalist id="param-parameter-list"></datalist>
+            <input type="text" class="field__input" id="param-new-field" placeholder="Tên trường" />
+            <select class="field__input" id="param-new-format"><option>number</option><option>text</option><option>date</option><option>time</option><option>Picture</option></select>
+            <select class="field__input" id="param-new-type"><option>Independent</option><option>Dependent</option></select>
+            <input type="text" class="field__input" id="param-new-remark" placeholder="Ghi chú" />
+            <button type="button" class="btn btn--secondary" id="btn-add-param">+ Thêm trường</button>
+          </div>
           <div class="table-wrapper">
             <table class="data-table" id="parameters-table">
               <thead>
@@ -1389,6 +983,7 @@ body {
                   <th>Kiểu dữ liệu</th>
                   <th>Independent/Dependent</th>
                   <th>Ghi chú</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody id="parameters-table-body"></tbody>
@@ -1400,7 +995,11 @@ body {
       <!-- ---------- PANEL: ĐỘ LẶP LẠI (dung sai giữa 2 lần đo) ---------- -->
       <section class="panel" id="panel-repeatability" data-panel="repeatability">
         <h1 class="panel__title">Độ lặp lại phương pháp đo</h1>
-        <p class="panel__desc">Chênh lệch tối đa cho phép giữa 2 lần đo lặp lại. Nếu "Sự khác nhau" vượt ngưỡng này, ô đó tô đỏ cảnh báo — <b>không</b> tự động đổi Kết luận Đạt/Không đạt (vẫn tính theo Trung bình như hiện tại), chỉ nhắc người đo kiểm tra lại thao tác.</p>
+        <p class="panel__desc">Chênh lệch tối đa cho phép giữa 2 lần đo lặp lại. Nếu "Sự khác nhau" vượt ngưỡng này, ô đó tô đỏ cảnh báo — <b>không</b> tự động đổi Kết luận Đạt/Không đạt (vẫn tính theo Trung bình như hiện tại), chỉ nhắc người đo kiểm tra lại thao tác. Thiết lập riêng cho từng loại sản phẩm.</p>
+        <div class="type-bar">
+          <label class="field field--inline"><span class="field__label">Loại sản phẩm</span>
+            <select class="field__input admin-type-select"></select></label>
+        </div>
         <div class="card">
           <div class="settings-add-row settings-add-row--wrap">
             <input type="text" class="field__input" id="repeat-new-parameter" list="repeat-parameter-list" placeholder="Chỉ tiêu (chọn hoặc gõ tên mới)" />
@@ -1610,7 +1209,7 @@ let REPEATABILITY = [
   { parameter: '6. Acidity', unit: '-', maxDiff: 0.05 }
 ];
 function getMaxDiff(parameterLabel) {
-  const row = REPEATABILITY.find(r => r.parameter === parameterLabel);
+  const row = REPEATABILITY.find(r => r.parameter === parameterLabel && typeOf(r) === state.formType);
   return row ? row.maxDiff : null;
 }
 
@@ -1620,18 +1219,19 @@ const THRESHOLDS = [{"customer": "INS", "parameter": "1. Độ Ẩm (Halogen)", 
 
 const FIELD_MAPPING = [{"parameter": "Thông tin mẫu", "field": "Item code", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "Thông tin mẫu", "field": "Recipe", "format": "number", "type": "Dependent", "remark": "Phụ thuộc Item Code"}, {"parameter": "Thông tin mẫu", "field": "Batch", "format": "text", "type": "Independent", "remark": ""}, {"parameter": "Thông tin mẫu", "field": "Product Name", "format": "text", "type": "Dependent", "remark": "Phụ thuộc Item Code"}, {"parameter": "Thông tin mẫu", "field": "Customer", "format": "text", "type": "Independent", "remark": "Chọn: INS/LDC"}, {"parameter": "Thông tin mẫu", "field": "Ngày sản xuất", "format": "date", "type": "Dependent", "remark": "Phụ thuộc vào số thứ 2-3-4 số Batch là 3 số Julian date"}, {"parameter": "Thông tin mẫu", "field": "PO", "format": "number", "type": "Dependent", "remark": "Số đầu tiên: 6-LDC, 7-INS & 3 số cuối thì nhập (110)\nVD: X12600XXX"}, {"parameter": "Thông tin mẫu", "field": "SSCC", "format": "number", "type": "Dependent", "remark": "Số batch + 000 + 3 số cuối tự nhập"}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Khối lượng mẫu (g)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Nhiệt độ sấy (℃)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Thời gian sấy (mm:ss)", "format": "time", "type": "Independent", "remark": ""}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Kết quả ẩm (%)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Giá trị trung bình (%)", "format": "number", "type": "Dependent", "remark": "average 2 kết quả ẩm"}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Sự khác nhau", "format": "number", "type": "Dependent", "remark": "abs 2 kết quả ẩm"}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Range", "format": "text", "type": "Dependent", "remark": "Phụ thuộc vào bảng Thông tin Kết luận"}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Khối lượng bình (g)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Khối lượng mẫu(g)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Thể tích bình (L)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Kết quả tỷ trọng (g/L)", "format": "number", "type": "Dependent", "remark": "khối lượng mẫu/thể tích bình"}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Giá trị trung bình (g/L)", "format": "number", "type": "Dependent", "remark": "average 2 kết quả tỷ trọng"}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Sự khác nhau", "format": "number", "type": "Dependent", "remark": "abs 2 kết quả"}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Range", "format": "text", "type": "Dependent", "remark": "Phụ thuộc vào bảng Thông tin Kết luận"}, {"parameter": "3. Độ màu", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "3. Độ màu", "field": "Kết quả độ màu (ACN)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "3. Độ màu", "field": "Giá trị trung bình (ACN)", "format": "number", "type": "Dependent", "remark": "average 2 kết quả độ màu"}, {"parameter": "3. Độ màu", "field": "Sự khác nhau", "format": "number", "type": "Dependent", "remark": "abs 2 kết quả"}, {"parameter": "3. Độ màu", "field": "Range", "format": "text", "type": "Dependent", "remark": "Phụ thuộc vào bảng Thông tin Kết luận"}, {"parameter": "4. Độ cặn", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "4. Độ cặn", "field": "Khối lượng mẫu(g)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "4. Độ cặn", "field": "Thể tích nước (ml)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "4. Độ cặn", "field": "Kết quả độ cặn (Grade)", "format": "number", "type": "Independent", "remark": "Chọn 1/1.5/2/2.5/3"}, {"parameter": "4. Độ cặn", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định"}, {"parameter": "4. Độ cặn", "field": "Vị trí dán mẫu cặn", "format": "Picture", "type": "Independent", "remark": "Adding Picture"}, {"parameter": "5. pH", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "5. pH", "field": "Khối lượng mẫu(g)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "5. pH", "field": "Thể tích nước (ml)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "5. pH", "field": "Nhiệt độ mẫu 25±0.5 (℃)", "format": "number", "type": "Dependent", "remark": "Nằm ngoài range 24.5-25.5 -> tô đỏ"}, {"parameter": "5. pH", "field": "Kết quả pH", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "5. pH", "field": "Giá trị trung bình", "format": "number", "type": "Dependent", "remark": "average 2 kết quả pH"}, {"parameter": "5. pH", "field": "Sự khác nhau", "format": "number", "type": "Dependent", "remark": "abs 2 kết quả"}, {"parameter": "5. pH", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định"}, {"parameter": "6. Acidity", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "6. Acidity", "field": "Khối lượng mẫu(g)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "6. Acidity", "field": "Thể tích nước (ml)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "6. Acidity", "field": "Nồng độ NaOH", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "6. Acidity", "field": "Thể tích tiêu tốn", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "6. Acidity", "field": "Kết quả Acidity", "format": "number", "type": "Dependent", "remark": "Thể tích tiêu tốn * nồng độ NaOH/ 0.1"}, {"parameter": "6. Acidity", "field": "Giá trị trung bình", "format": "number", "type": "Dependent", "remark": "average 2 kết quả"}, {"parameter": "6. Acidity", "field": "Sự khác nhau", "format": "number", "type": "Dependent", "remark": "abs 2 kết quả"}, {"parameter": "6. Acidity", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định"}, {"parameter": "7. Độ hòa tan", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "7. Độ hòa tan", "field": "Khối lượng mẫu(g)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "7. Độ hòa tan", "field": "Thể tích nước (ml)", "format": "number", "type": "Independent", "remark": "Cố định: Nóng"}, {"parameter": "7. Độ hòa tan", "field": "Thể tích nước (ml)", "format": "number", "type": "Independent", "remark": "Cố định: Lạnh"}, {"parameter": "7. Độ hòa tan", "field": "Nhiệt độ mẫu (oC)", "format": "number", "type": "Dependent", "remark": "Nóng: Nằm ngoài range 96-98 -> tô đỏ"}, {"parameter": "7. Độ hòa tan", "field": "Nhiệt độ mẫu (oC)", "format": "number", "type": "Dependent", "remark": "Lạnh: Nằm ngoài range 18-20 -> tô đỏ"}, {"parameter": "7. Độ hòa tan", "field": "Thời gian khuấy", "format": "number", "type": "Independent", "remark": "Cố định: Nóng"}, {"parameter": "7. Độ hòa tan", "field": "Thời gian khuấy", "format": "number", "type": "Independent", "remark": "Cố định: Lạnh"}, {"parameter": "7. Độ hòa tan", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định"}, {"parameter": "7. Độ hòa tan", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định"}, {"parameter": "8. Kích thước hạt", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "8. Kích thước hạt", "field": "Khối lượng mẫu (g)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "8. Kích thước hạt", "field": "Biên độ (mm)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "8. Kích thước hạt", "field": "Thời gian (s)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "8. Kích thước hạt", "field": "Khối lượng mẫu sau sàng (g)", "format": "number", "type": "Dependent", "remark": "Công thức như File Excel"}, {"parameter": "8. Kích thước hạt", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định"}, {"parameter": "8. Kích thước hạt", "field": "Khối lượng sàng (g)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "8. Kích thước hạt", "field": "Khối lượng mẫu + sàng (g)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "8. Kích thước hạt", "field": "% mẫu trên sàng", "format": "number", "type": "Dependent", "remark": "Công thức như File Excel"}, {"parameter": "9. Ngoại vật", "field": "Khối lượng mẫu(g)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "9. Ngoại vật", "field": "Thể tích nước (ml)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "9. Ngoại vật", "field": "Kết quả", "format": "text", "type": "Independent", "remark": "Absent/Present (ghi cụ thể FB)"}, {"parameter": "9. Ngoại vật", "field": "Hình ảnh ngoại vật", "format": "Picture", "type": "Independent", "remark": "Adding Picture"}, {"parameter": "9. Ngoại vật", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định"}];
 
-function findItemByCode(code) {
+function findItemByCodeIn(type, code) {
   if (!code) return null;
   const c = String(code).trim();
-  return ITEM_CODES.find(i => i.item === c) || null;
+  return ITEM_CODES.find(i => i.item === c && typeOf(i) === type) || null;
 }
+function findItemByCode(code) { return findItemByCodeIn(state.formType, code); }
 
 // Một số chỉ tiêu (Độ màu, Tỷ trọng-LDC) có nhiều mức ngưỡng theo dải Recipe.
 // Đơn giản hoá: khớp theo 2 ký tự số đầu của Recipe với danh sách band; nếu
 // không khớp được thì lấy dòng đầu tiên làm mặc định.
 // GIẢ ĐỊNH CẦN QA XÁC NHẬN LẠI — xem ghi chú cuối phản hồi.
-function getThreshold(customer, parameterLabel, recipe) {
-  const rows = THRESHOLDS.filter(t => t.customer === customer && t.parameter === parameterLabel);
+function getThreshold(type, customer, parameterLabel, recipe) {
+  const rows = THRESHOLDS.filter(t => typeOf(t) === type && t.customer === customer && t.parameter === parameterLabel);
   if (rows.length === 0) return null;
   if (rows.length === 1) return rows[0];
   if (recipe) {
@@ -1935,208 +1535,352 @@ const state = {
   records: [],            // cache các phiếu đã lưu (đồng bộ từ Storage)
   filteredHistory: [],    // danh sách đang lọc trong tab Lịch sử (để xuất CSV đúng bộ lọc)
   currentThresholds: {},  // parameterLabel -> requirement string, theo Customer đang chọn
+  formType: 'powder',     // loại sản phẩm đang nhập ở tab Nhập liệu
+  adminType: 'powder',    // loại sản phẩm đang xem/sửa ở các tab Item Code / Spec. / Độ lặp lại / Parameters
   editingRecordId: null,  // nếu đang mở lại 1 bản nháp để sửa tiếp, lưu id để ghi đè thay vì tạo phiếu mới
   currentUser: null,      // { name, role } sau khi đăng nhập
   blockEnteredAt: {},     // paramIndex(1-9) -> ISO timestamp lúc bắt đầu nhập khối chỉ tiêu đó
 };
 
-/* ---------------- DATA ENGINE: từng khối chỉ tiêu ---------------- */
+/* ---------------- LOẠI SẢN PHẨM + CẤU HÌNH FORM (Form Engine) ----------------
+   Mỗi loại sản phẩm (Powder / Coffee Oil / Liquid) là 1 cấu hình gồm:
+   - sampleFields: các trường "Thông tin mẫu" (kèm hành vi tự động: tra Item Code, ngày Julian từ Batch, gợi ý SSCC từ PO)
+   - blocks: danh sách khối chỉ tiêu, mỗi khối thuộc 1 "kiểu khối" trong BLOCK_KINDS
+     (pair = 2 lần đo số, single = 1 giá trị, hotCold = nóng/lạnh, sieve = bảng rây).
+   Thêm loại/chỉ tiêu mới = thêm cấu hình; chỉ cần thêm kiểu khối mới khi có chỉ tiêu có cách đo hoàn toàn khác. */
+const PRODUCT_TYPES = { powder: 'Powder', coffeeOil: 'Coffee Oil', liquid: 'Liquid' };
+const DEFAULT_TYPE = 'powder';
+const typeOf = (row) => (row && row.productType) || DEFAULT_TYPE;
+
+const STAFF_COL = { key: 'nguoi_thuc_hien', rec: 'nguoiThucHien', label: 'Người thực hiện', input: 'staff' };
+const SIEVE_COLS_POWDER = [
+  { key: '400', label: '4.00 mm' }, { key: '335', label: '3.35 mm' }, { key: '280', label: '2.80 mm' },
+  { key: '200', label: '2.00 mm' }, { key: '140', label: '1.40 mm' }, { key: '100', label: '1.00 mm' },
+  { key: '050', label: '0.50 mm' }, { key: 'lt050', label: '<0.5mm' }
+];
+
+const TYPE_CONFIG = {
+  powder: {
+    sampleFields: [
+      { name: 'itemCode', label: 'Item Code', input: 'number', placeholder: 'VD: 11000050', required: true, behavior: 'itemLookup' },
+      { name: 'recipe', label: 'Recipe', input: 'readonly', placeholder: 'Tự động' },
+      { name: 'productName', label: 'Product Name', input: 'readonly', placeholder: 'Tự động' },
+      { name: 'customer', label: 'Customer', input: 'select', options: ['INS', 'LDC'], required: true, thresholdKey: true },
+      { name: 'batch', label: 'Batch', input: 'text', placeholder: 'VD: 62550110F1', required: true, behavior: 'julianBatch' },
+      { name: 'productionDate', label: 'Ngày sản xuất', input: 'readonly', placeholder: 'Tự động từ Batch' },
+      { name: 'po', label: 'PO', input: 'number', placeholder: 'VD: 712600110', behavior: 'ssccFromPo' },
+      { name: 'sscc', label: 'SSCC', input: 'text', placeholder: 'VD: 71260011000027', hintId: 'sscc-hint' }
+    ],
+    blocks: [
+      { key: 'doAm', label: '1. Độ Ẩm (Halogen)', prefix: 'do_am', kind: 'pair', unit: '%', avgLabel: 'Giá trị trung bình (%)',
+        cols: [STAFF_COL,
+          { key: 'khoi_luong_mau', rec: 'khoiLuongMau', label: 'Khối lượng mẫu (g)', input: 'number' },
+          { key: 'nhiet_do_say', rec: 'nhietDoSay', label: 'Nhiệt độ sấy (℃)', input: 'number', def: 114 },
+          { key: 'thoi_gian_say', rec: 'thoiGianSay', label: 'Thời gian sấy (mm:ss)', input: 'text', placeholder: 'mm:ss' },
+          { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả ẩm (%)', input: 'number', result: true }] },
+      { key: 'tyTrong', label: '2. Tỷ trọng - mật độ chảy tự do', prefix: 'ty_trong', kind: 'pair', unit: 'g/L', avgLabel: 'Giá trị trung bình (g/L)',
+        cols: [STAFF_COL,
+          { key: 'khoi_luong_binh', rec: 'khoiLuongBinh', label: 'Khối lượng bình (g)', input: 'number' },
+          { key: 'khoi_luong_mau', rec: 'khoiLuongMau', label: 'Khối lượng mẫu (g)', input: 'number' },
+          { key: 'the_tich_binh', rec: 'theTichBinh', label: 'Thể tích bình (L)', input: 'number', def: 0.205 },
+          { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả tỷ trọng (g/L)', input: 'computed', result: true,
+            formula: (n) => { const m = n('khoi_luong_mau'), v = n('the_tich_binh'); return (m !== null && v) ? m / v : null; } }] },
+      { key: 'doMau', label: '3. Độ màu', prefix: 'do_mau', kind: 'pair', unit: 'ACN', avgLabel: 'Giá trị trung bình (ACN)',
+        cols: [STAFF_COL,
+          { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả độ màu (ACN)', input: 'number', result: true }] },
+      { key: 'doCan', label: '4. Độ cặn', prefix: 'do_can', kind: 'single', unit: 'Grade', evaluate: 'numericRange',
+        fields: [STAFF_COL,
+          { key: 'khoi_luong_mau', rec: 'khoiLuongMau', label: 'Khối lượng mẫu (g)', input: 'number', def: 3 },
+          { key: 'the_tich_nuoc', rec: 'theTichNuoc', label: 'Thể tích nước (ml)', input: 'number', def: 300 },
+          { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả độ cặn (Grade)', input: 'select', options: ['1', '1.5', '2', '2.5', '3'], numeric: true, result: true }],
+        photos: { name: 'do_can_anh', label: 'Vị trí dán mẫu cặn (ảnh — có thể chọn/chụp nhiều)' } },
+      { key: 'ph', label: '5. pH', prefix: 'ph', kind: 'pair', unit: '-', avgLabel: 'Giá trị trung bình',
+        cols: [STAFF_COL,
+          { key: 'khoi_luong_mau', rec: 'khoiLuongMau', label: 'Khối lượng mẫu (g)', input: 'number', def: 1.5 },
+          { key: 'the_tich_nuoc', rec: 'theTichNuoc', label: 'Thể tích nước (ml)', input: 'number', def: 100 },
+          { key: 'nhiet_do', rec: 'nhietDoMau', label: 'Nhiệt độ mẫu 25±0.5 (℃)', input: 'number', warn: { min: 24.5, max: 25.5 } },
+          { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả pH', input: 'number', result: true }] },
+      { key: 'acidity', label: '6. Acidity', prefix: 'acidity', kind: 'pair', unit: '-', avgLabel: 'Giá trị trung bình',
+        cols: [STAFF_COL,
+          { key: 'khoi_luong_mau', rec: 'khoiLuongMau', label: 'Khối lượng mẫu (g)', input: 'number', def: 1.4 },
+          { key: 'the_tich_nuoc', rec: 'theTichNuoc', label: 'Thể tích nước (ml)', input: 'number', def: 100 },
+          { key: 'nong_do_naoh', rec: 'nongDoNaOH', label: 'Nồng độ NaOH', input: 'number' },
+          { key: 'the_tich_tieu_ton', rec: 'theTichTieuTon', label: 'Thể tích tiêu tốn', input: 'number' },
+          { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả Acidity', input: 'computed', result: true,
+            formula: (n) => { const naoh = n('nong_do_naoh'), vol = n('the_tich_tieu_ton'); return (naoh !== null && vol !== null) ? vol * naoh / 0.1 : null; } }] },
+      { key: 'hoaTan', label: '7. Độ hòa tan', prefix: 'hoa_tan', kind: 'hotCold', unit: 'V/X',
+        rows: [
+          { key: 'nong', rec: 'hot', label: 'Nóng', defs: { the_tich_nuoc: 150, thoi_gian: 30 }, warn: { min: 96, max: 98 } },
+          { key: 'lanh', rec: 'cold', label: 'Lạnh', defs: { the_tich_nuoc: 50, thoi_gian: 180 }, warn: { min: 18, max: 20 } }],
+        cols: [STAFF_COL,
+          { key: 'khoi_luong_mau', rec: 'khoiLuongMau', label: 'Khối lượng mẫu (g)', input: 'number', def: 2.5 },
+          { key: 'the_tich_nuoc', rec: 'theTichNuoc', label: 'Thể tích nước (ml)', input: 'number' },
+          { key: 'nhiet_do', rec: 'nhietDoMau', label: 'Nhiệt độ mẫu (℃)', input: 'number', rowWarn: true },
+          { key: 'thoi_gian', rec: 'thoiGianKhuay', label: 'Thời gian khuấy (s)', input: 'number' },
+          { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả (V/X)', input: 'select', options: ['V', 'X'], result: true }] },
+      { key: 'kichThuoc', label: '8. Kích thước hạt', prefix: 'kich_thuoc', kind: 'sieve', unit: '%',
+        fields: [STAFF_COL,
+          { key: 'khoi_luong_mau', rec: 'khoiLuongMau', label: 'Khối lượng mẫu (g)', input: 'number', def: 100 },
+          { key: 'bien_do', rec: 'bienDo', label: 'Biên độ (mm)', input: 'number', def: 70 },
+          { key: 'thoi_gian', rec: 'thoiGian', label: 'Thời gian (s)', input: 'number', def: 120 }],
+        sieveCols: SIEVE_COLS_POWDER, passCol: 'lt050', passMaxPct: 1 },
+      { key: 'ngoaiVat', label: '9. Ngoại vật', prefix: 'ngoai_vat', kind: 'single', unit: '-', evaluate: 'absentPresent',
+        fields: [
+          { key: 'khoi_luong_mau', rec: 'khoiLuongMau', label: 'Khối lượng mẫu (g)', input: 'number', def: 50 },
+          { key: 'the_tich_nuoc', rec: 'theTichNuoc', label: 'Thể tích nước (ml)', input: 'number', def: 500 },
+          { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả', input: 'select', options: ['Absent', 'Present'], result: true }],
+        photos: { name: 'ngoai_vat_anh', label: 'Hình ảnh ngoại vật (có thể chọn/chụp nhiều)' } }
+    ]
+  },
+  // Chưa có thông tin — sẽ được điền ở giai đoạn 3 khi có danh sách trường/chỉ tiêu của từng loại.
+  coffeeOil: { sampleFields: [], blocks: [] },
+  liquid: { sampleFields: [], blocks: [] }
+};
+function typeCfg(type) { return TYPE_CONFIG[type || state.formType] || { sampleFields: [], blocks: [] }; }
+function typeParamLabels(type) {
+  const set = new Set(typeCfg(type).blocks.map(b => b.label));
+  FIELD_MAPPING.filter(f => typeOf(f) === type && f.parameter !== 'Thông tin mẫu').forEach(f => set.add(f.parameter));
+  THRESHOLDS.filter(t => typeOf(t) === type).forEach(t => set.add(t.parameter));
+  REPEATABILITY.filter(r => typeOf(r) === type).forEach(r => set.add(r.parameter));
+  return Array.from(set);
+}
+
+/* ---------------- DATA ENGINE: kiểu khối chỉ tiêu ---------------- */
 const form = document.getElementById('analysis-form');
+const fel = (name) => form.elements[name];
+const fval = (name) => (form.elements[name] ? form.elements[name].value : '');
 
 function paramStatusEl(n) {
   return document.querySelector('#block-param-' + n + ' .param-summary__status');
 }
-
-function computeDoAm() {
-  const a = toNumber(form.elements['do_am_1_ket_qua'].value);
-  const b = toNumber(form.elements['do_am_2_ket_qua'].value);
-  const req = state.currentThresholds['1. Độ Ẩm (Halogen)'];
-  let status = 'pending';
-  if (a !== null && b !== null) {
-    const avg = average(a, b), diff = diffAbs(a, b);
-    form.elements['do_am_avg'].value = formatNumber(avg);
-    form.elements['do_am_diff'].value = formatNumber(diff);
-    status = checkRange(avg, req);
-    applyRepeatabilityWarn(form.elements['do_am_diff'], diff, '1. Độ Ẩm (Halogen)');
-  } else {
-    form.elements['do_am_avg'].value = '--';
-    form.elements['do_am_diff'].value = '--';
-    applyRepeatabilityWarn(form.elements['do_am_diff'], null, '1. Độ Ẩm (Halogen)');
-  }
-  setStatusBadge(paramStatusEl(1), status);
-  return status;
+function setWarn(name, on) {
+  const e = fel(name);
+  if (e) e.classList.toggle('field__input--warn', !!on);
+}
+function colValue(c, raw) {
+  return (c.input === 'staff' || c.input === 'text' || (c.input === 'select' && !c.numeric)) ? raw : toNumber(raw);
+}
+function inputCellHtml(name, c, def) {
+  const d = (def !== undefined) ? def : c.def;
+  const v = d !== undefined ? ' value="' + d + '"' : '';
+  if (c.input === 'staff') return '<select class="field__input" name="' + name + '"><option value="">--</option></select>';
+  if (c.input === 'select') return '<select class="field__input" name="' + name + '"><option value="">--</option>' +
+    c.options.map(o => '<option value="' + escapeAttr(o) + '">' + escapeAttr(o) + '</option>').join('') + '</select>';
+  if (c.input === 'computed') return '<output class="field__input field__input--computed" name="' + name + '">--</output>';
+  if (c.input === 'text') return '<input type="text" class="field__input" name="' + name + '"' + (c.placeholder ? ' placeholder="' + c.placeholder + '"' : '') + v + ' />';
+  return '<input type="number" step="any" class="field__input" name="' + name + '"' + v + ' />';
+}
+const STATUS_SUMMARY_HTML = '<span class="param-summary__status" data-status="pending">--</span>';
+function photosHtml(p) {
+  if (!p) return '';
+  return '<label class="field field--upload"><span class="field__label">' + escapeAttr(p.label) + '</span>' +
+    '<input type="file" accept="image/*" capture="environment" multiple class="field__input" name="' + p.name + '" /></label>' +
+    '<div class="photo-gallery" id="gallery-' + p.name + '"></div>';
+}
+function collectPhotos(b, obj) {
+  return b.photos ? storeAttachments(photoStore[b.photos.name]).then(a => { obj.attachments = a; return obj; }) : Promise.resolve(obj);
 }
 
-function computeTyTrong() {
-  const m1 = toNumber(form.elements['ty_trong_1_khoi_luong_mau'].value);
-  const v1 = toNumber(form.elements['ty_trong_1_the_tich_binh'].value);
-  const m2 = toNumber(form.elements['ty_trong_2_khoi_luong_mau'].value);
-  const v2 = toNumber(form.elements['ty_trong_2_the_tich_binh'].value);
-  const r1 = (m1 !== null && v1) ? m1 / v1 : null;
-  const r2 = (m2 !== null && v2) ? m2 / v2 : null;
-  form.elements['ty_trong_1_ket_qua'].value = r1 === null ? '--' : formatNumber(r1);
-  form.elements['ty_trong_2_ket_qua'].value = r2 === null ? '--' : formatNumber(r2);
-  const req = state.currentThresholds['2. Tỷ trọng - mật độ chảy tự do'];
-  let status = 'pending';
-  if (r1 !== null && r2 !== null) {
-    const avg = average(r1, r2), diff = diffAbs(r1, r2);
-    form.elements['ty_trong_avg'].value = formatNumber(avg);
-    form.elements['ty_trong_diff'].value = formatNumber(diff);
-    status = checkRange(avg, req);
-    applyRepeatabilityWarn(form.elements['ty_trong_diff'], diff, '2. Tỷ trọng - mật độ chảy tự do');
-  } else {
-    form.elements['ty_trong_avg'].value = '--';
-    form.elements['ty_trong_diff'].value = '--';
-    applyRepeatabilityWarn(form.elements['ty_trong_diff'], null, '2. Tỷ trọng - mật độ chảy tự do');
-  }
-  setStatusBadge(paramStatusEl(2), status);
-  return status;
-}
-
-function computeDoMau() {
-  const a = toNumber(form.elements['do_mau_1_ket_qua'].value);
-  const b = toNumber(form.elements['do_mau_2_ket_qua'].value);
-  const req = state.currentThresholds['3. Độ màu'];
-  let status = 'pending';
-  if (a !== null && b !== null) {
-    const avg = average(a, b), diff = diffAbs(a, b);
-    form.elements['do_mau_avg'].value = formatNumber(avg);
-    form.elements['do_mau_diff'].value = formatNumber(diff);
-    status = checkRange(avg, req);
-    applyRepeatabilityWarn(form.elements['do_mau_diff'], diff, '3. Độ màu');
-  } else {
-    form.elements['do_mau_avg'].value = '--';
-    form.elements['do_mau_diff'].value = '--';
-    applyRepeatabilityWarn(form.elements['do_mau_diff'], null, '3. Độ màu');
-  }
-  setStatusBadge(paramStatusEl(3), status);
-  return status;
-}
-
-function computeDoCan() {
-  const grade = toNumber(form.elements['do_can_ket_qua'].value);
-  const req = state.currentThresholds['4. Độ cặn'];
-  const status = grade !== null ? checkRange(grade, req) : 'pending';
-  setStatusBadge(paramStatusEl(4), status);
-  return status;
-}
-
-function computePh() {
-  const t1 = toNumber(form.elements['ph_1_nhiet_do'].value);
-  const t2 = toNumber(form.elements['ph_2_nhiet_do'].value);
-  form.elements['ph_1_nhiet_do'].classList.toggle('field__input--warn', t1 !== null && (t1 < 24.5 || t1 > 25.5));
-  form.elements['ph_2_nhiet_do'].classList.toggle('field__input--warn', t2 !== null && (t2 < 24.5 || t2 > 25.5));
-  const a = toNumber(form.elements['ph_1_ket_qua'].value);
-  const b = toNumber(form.elements['ph_2_ket_qua'].value);
-  const req = state.currentThresholds['5. pH'];
-  let status = 'pending';
-  if (a !== null && b !== null) {
-    const avg = average(a, b), diff = diffAbs(a, b);
-    form.elements['ph_avg'].value = formatNumber(avg);
-    form.elements['ph_diff'].value = formatNumber(diff);
-    status = checkRange(avg, req);
-    applyRepeatabilityWarn(form.elements['ph_diff'], diff, '5. pH');
-  } else {
-    form.elements['ph_avg'].value = '--';
-    form.elements['ph_diff'].value = '--';
-    applyRepeatabilityWarn(form.elements['ph_diff'], null, '5. pH');
-  }
-  setStatusBadge(paramStatusEl(5), status);
-  return status;
-}
-
-function computeAcidity() {
-  const naoh1 = toNumber(form.elements['acidity_1_nong_do_naoh'].value);
-  const vol1 = toNumber(form.elements['acidity_1_the_tich_tieu_ton'].value);
-  const naoh2 = toNumber(form.elements['acidity_2_nong_do_naoh'].value);
-  const vol2 = toNumber(form.elements['acidity_2_the_tich_tieu_ton'].value);
-  const r1 = (naoh1 !== null && vol1 !== null) ? (vol1 * naoh1 / 0.1) : null;
-  const r2 = (naoh2 !== null && vol2 !== null) ? (vol2 * naoh2 / 0.1) : null;
-  form.elements['acidity_1_ket_qua'].value = r1 === null ? '--' : formatNumber(r1);
-  form.elements['acidity_2_ket_qua'].value = r2 === null ? '--' : formatNumber(r2);
-  const req = state.currentThresholds['6. Acidity'];
-  let status = 'pending';
-  if (r1 !== null && r2 !== null) {
-    const avg = average(r1, r2), diff = diffAbs(r1, r2);
-    form.elements['acidity_avg'].value = formatNumber(avg);
-    form.elements['acidity_diff'].value = formatNumber(diff);
-    status = checkRange(avg, req);
-    applyRepeatabilityWarn(form.elements['acidity_diff'], diff, '6. Acidity');
-  } else {
-    form.elements['acidity_avg'].value = '--';
-    form.elements['acidity_diff'].value = '--';
-    applyRepeatabilityWarn(form.elements['acidity_diff'], null, '6. Acidity');
-  }
-  setStatusBadge(paramStatusEl(6), status);
-  return status;
-}
-
-function computeHoaTan() {
-  const tNong = toNumber(form.elements['hoa_tan_nong_nhiet_do'].value);
-  const tLanh = toNumber(form.elements['hoa_tan_lanh_nhiet_do'].value);
-  form.elements['hoa_tan_nong_nhiet_do'].classList.toggle('field__input--warn', tNong !== null && (tNong < 96 || tNong > 98));
-  form.elements['hoa_tan_lanh_nhiet_do'].classList.toggle('field__input--warn', tLanh !== null && (tLanh < 18 || tLanh > 20));
-  const kqNong = form.elements['hoa_tan_nong_ket_qua'].value;
-  const kqLanh = form.elements['hoa_tan_lanh_ket_qua'].value;
-  let status = 'pending';
-  if (kqNong && kqLanh) {
-    status = (kqNong === 'V' && kqLanh === 'V') ? 'pass' : 'fail';
-  }
-  setStatusBadge(paramStatusEl(7), status);
-  return status;
-}
-
-const SIEVE_COLS = ['400', '335', '280', '200', '140', '100', '050', 'lt050'];
-function computeKichThuoc() {
-  const retained = {};
-  let total = 0;
-  let anyFilled = false;
-  SIEVE_COLS.forEach(col => {
-    const w = toNumber(form.elements['sieve_' + col + '_w'].value);
-    const wt = toNumber(form.elements['sieve_' + col + '_wt'].value);
-    if (w !== null && wt !== null) {
-      retained[col] = Math.max(0, wt - w);
-      total += retained[col];
-      anyFilled = true;
-    } else {
-      retained[col] = null;
+const BLOCK_KINDS = {
+  /* ---- pair: 2 lần đo lặp lại → trung bình / sai khác / so ngưỡng / cảnh báo độ lặp lại ---- */
+  pair: {
+    html(b) {
+      const head = b.cols.map(c => '<th>' + escapeAttr(c.label) + '</th>').join('');
+      const rows = [1, 2].map(i => '<tr class="param-table__row" data-rep="' + i + '">' +
+        b.cols.map(c => '<td>' + inputCellHtml(b.prefix + '_' + i + '_' + c.key, c) + '</td>').join('') + '</tr>').join('');
+      return '<table class="param-table"><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table>' +
+        '<div class="param-summary"><span>' + escapeAttr(b.avgLabel) + ': <output name="' + b.prefix + '_avg">--</output></span>' +
+        '<span>Sự khác nhau: <output name="' + b.prefix + '_diff">--</output></span>' +
+        '<span>Range: <output name="' + b.prefix + '_range">--</output></span>' + STATUS_SUMMARY_HTML + '</div>';
+    },
+    compute(b, idx) {
+      const req = state.currentThresholds[b.label];
+      const rc = b.cols.find(c => c.result);
+      const vals = [1, 2].map(i => {
+        const nm = (k) => b.prefix + '_' + i + '_' + k;
+        const n = (k) => toNumber(fval(nm(k)));
+        b.cols.forEach(c => {
+          if (c.warn) { const t = n(c.key); setWarn(nm(c.key), t !== null && (t < c.warn.min || t > c.warn.max)); }
+        });
+        if (rc.input === 'computed') {
+          const v = rc.formula(n);
+          fel(nm(rc.key)).value = v === null ? '--' : formatNumber(v);
+          return v;
+        }
+        return n(rc.key);
+      });
+      let status = 'pending';
+      const avgEl = fel(b.prefix + '_avg'), diffEl = fel(b.prefix + '_diff');
+      if (vals[0] !== null && vals[1] !== null) {
+        const avg = average(vals[0], vals[1]), diff = diffAbs(vals[0], vals[1]);
+        avgEl.value = formatNumber(avg);
+        diffEl.value = formatNumber(diff);
+        status = checkRange(avg, req);
+        applyRepeatabilityWarn(diffEl, diff, b.label);
+      } else {
+        avgEl.value = '--';
+        diffEl.value = '--';
+        applyRepeatabilityWarn(diffEl, null, b.label);
+      }
+      setStatusBadge(paramStatusEl(idx + 1), status);
+      return status;
+    },
+    async collect(b) {
+      const reps = [1, 2].map(i => {
+        const o = {};
+        b.cols.forEach(c => { o[c.rec] = colValue(c, fval(b.prefix + '_' + i + '_' + c.key)); });
+        return o;
+      });
+      return { label: b.label, unit: b.unit, reps,
+        average: toNumber(fval(b.prefix + '_avg')), difference: toNumber(fval(b.prefix + '_diff')),
+        range: fval(b.prefix + '_range'), status: statusOf(b) };
+    },
+    apply(b, d) {
+      (d.reps || []).forEach((rep, i) => b.cols.forEach(c => {
+        if (c.input !== 'computed') setFieldValue(b.prefix + '_' + (i + 1) + '_' + c.key, rep[c.rec]);
+      }));
     }
-  });
-  let ltPct = null;
-  SIEVE_COLS.forEach(col => {
-    const out = form.elements['sieve_' + col + '_pct'];
-    if (retained[col] !== null && total > 0) {
-      const pct = retained[col] / total * 100;
-      out.value = formatNumber(pct) + '%';
-      if (col === 'lt050') ltPct = pct;
-    } else {
-      out.value = '--';
-    }
-  });
-  form.elements['kich_thuoc_khoi_luong_sau_sang'].value = anyFilled ? formatNumber(total) : '--';
-  const status = ltPct !== null ? (ltPct <= 1 ? 'pass' : 'fail') : 'pending';
-  setStatusBadge(paramStatusEl(8), status);
-  return status;
-}
+  },
 
-function computeNgoaiVat() {
-  const kq = form.elements['ngoai_vat_ket_qua'].value;
-  // Đơn giản hoá: Absent = Đạt, Present = Không đạt.
-  // Quy tắc đếm số lượng/kích thước dị vật cụ thể (Max 10 units < 1mm...) cần QA xác nhận thêm.
-  const status = kq === 'Absent' ? 'pass' : (kq === 'Present' ? 'fail' : 'pending');
-  setStatusBadge(paramStatusEl(9), status);
-  return status;
+  /* ---- single: 1 nhóm trường + 1 kết quả (số hoặc lựa chọn), tuỳ chọn ảnh ---- */
+  single: {
+    html(b) {
+      return '<div class="field-grid">' + b.fields.map(f => '<label class="field"><span class="field__label">' + escapeAttr(f.label) + '</span>' +
+        inputCellHtml(b.prefix + '_' + f.key, f) + '</label>').join('') +
+        '<label class="field"><span class="field__label">Range</span><output class="field__input" name="' + b.prefix + '_range">--</output></label></div>' +
+        photosHtml(b.photos) + '<div class="param-summary">' + STATUS_SUMMARY_HTML + '</div>';
+    },
+    compute(b, idx) {
+      const rf = b.fields.find(f => f.result);
+      const v = fval(b.prefix + '_' + rf.key);
+      let status = 'pending';
+      if (b.evaluate === 'numericRange') { const g = toNumber(v); status = g !== null ? checkRange(g, state.currentThresholds[b.label]) : 'pending'; }
+      else if (b.evaluate === 'absentPresent') status = v === 'Absent' ? 'pass' : (v === 'Present' ? 'fail' : 'pending');
+      setStatusBadge(paramStatusEl(idx + 1), status);
+      return status;
+    },
+    async collect(b) {
+      const o = { label: b.label, unit: b.unit };
+      b.fields.forEach(f => { o[f.rec] = colValue(f, fval(b.prefix + '_' + f.key)); });
+      o.range = fval(b.prefix + '_range');
+      o.status = statusOf(b);
+      return collectPhotos(b, o);
+    },
+    apply(b, d) { b.fields.forEach(f => setFieldValue(b.prefix + '_' + f.key, d[f.rec])); }
+  },
+
+  /* ---- hotCold: nhiều dòng (VD Nóng/Lạnh), tất cả phải đạt ---- */
+  hotCold: {
+    html(b) {
+      const head = '<th></th>' + b.cols.map(c => '<th>' + escapeAttr(c.label) + '</th>').join('');
+      const rows = b.rows.map(r => '<tr class="param-table__row" data-rep="' + r.key + '"><td>' + escapeAttr(r.label) + '</td>' +
+        b.cols.map(c => '<td>' + inputCellHtml(b.prefix + '_' + r.key + '_' + c.key, c, r.defs && r.defs[c.key]) + '</td>').join('') + '</tr>').join('');
+      return '<table class="param-table"><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table>' +
+        '<div class="param-summary"><span>Range: <output name="' + b.prefix + '_range">--</output></span>' + STATUS_SUMMARY_HTML + '</div>';
+    },
+    compute(b, idx) {
+      const rc = b.cols.find(c => c.result);
+      const results = [];
+      b.rows.forEach(r => {
+        b.cols.forEach(c => {
+          if (c.rowWarn && r.warn) { const t = toNumber(fval(b.prefix + '_' + r.key + '_' + c.key)); setWarn(b.prefix + '_' + r.key + '_' + c.key, t !== null && (t < r.warn.min || t > r.warn.max)); }
+        });
+        results.push(fval(b.prefix + '_' + r.key + '_' + rc.key));
+      });
+      let status = 'pending';
+      if (results.every(x => x)) status = results.every(x => x === 'V') ? 'pass' : 'fail';
+      setStatusBadge(paramStatusEl(idx + 1), status);
+      return status;
+    },
+    async collect(b) {
+      const o = { label: b.label, unit: b.unit };
+      b.rows.forEach(r => {
+        const ro = {};
+        b.cols.forEach(c => { ro[c.rec] = colValue(c, fval(b.prefix + '_' + r.key + '_' + c.key)); });
+        o[r.rec] = ro;
+      });
+      o.range = fval(b.prefix + '_range');
+      o.status = statusOf(b);
+      return o;
+    },
+    apply(b, d) {
+      b.rows.forEach(r => { const ro = d[r.rec]; if (ro) b.cols.forEach(c => setFieldValue(b.prefix + '_' + r.key + '_' + c.key, ro[c.rec])); });
+    }
+  },
+
+  /* ---- sieve: bảng rây, % mẫu trên từng cỡ lưới, đạt nếu % ở cột chỉ định ≤ ngưỡng ---- */
+  sieve: {
+    html(b) {
+      const cols = b.sieveCols;
+      const grid = '<div class="field-grid">' + b.fields.map(f => '<label class="field"><span class="field__label">' + escapeAttr(f.label) + '</span>' +
+        inputCellHtml(b.prefix + '_' + f.key, f) + '</label>').join('') +
+        '<label class="field"><span class="field__label">Khối lượng mẫu sau sàng (g)</span><output class="field__input field__input--computed" name="' + b.prefix + '_khoi_luong_sau_sang">--</output></label>' +
+        '<label class="field"><span class="field__label">Range</span><output class="field__input" name="' + b.prefix + '_range">--</output></label></div>';
+      const num = (suffix) => cols.map(c => '<td><input type="number" step="any" class="field__input" name="sieve_' + c.key + suffix + '" /></td>').join('');
+      const table = '<table class="param-table sieve-table"><thead><tr><th>Cỡ lưới</th>' + cols.map(c => '<th>' + escapeAttr(c.label) + '</th>').join('') + '</tr></thead><tbody>' +
+        '<tr><td>Khối lượng sàng (g)</td>' + num('_w') + '</tr>' +
+        '<tr><td>Khối lượng mẫu + sàng (g)</td>' + num('_wt') + '</tr>' +
+        '<tr><td>% mẫu trên sàng</td>' + cols.map(c => '<td><output class="field__input field__input--computed" name="sieve_' + c.key + '_pct">--</output></td>').join('') + '</tr></tbody></table>';
+      return grid + table + '<div class="param-summary">' + STATUS_SUMMARY_HTML + '</div>';
+    },
+    compute(b, idx) {
+      const retained = {};
+      let total = 0, anyFilled = false;
+      b.sieveCols.forEach(c => {
+        const w = toNumber(fval('sieve_' + c.key + '_w')), wt = toNumber(fval('sieve_' + c.key + '_wt'));
+        if (w !== null && wt !== null) { retained[c.key] = Math.max(0, wt - w); total += retained[c.key]; anyFilled = true; }
+        else retained[c.key] = null;
+      });
+      let passPct = null;
+      b.sieveCols.forEach(c => {
+        const out = fel('sieve_' + c.key + '_pct');
+        if (retained[c.key] !== null && total > 0) {
+          const pct = retained[c.key] / total * 100;
+          out.value = formatNumber(pct) + '%';
+          if (c.key === b.passCol) passPct = pct;
+        } else out.value = '--';
+      });
+      fel(b.prefix + '_khoi_luong_sau_sang').value = anyFilled ? formatNumber(total) : '--';
+      const status = passPct !== null ? (passPct <= b.passMaxPct ? 'pass' : 'fail') : 'pending';
+      setStatusBadge(paramStatusEl(idx + 1), status);
+      return status;
+    },
+    async collect(b) {
+      const o = { label: b.label, unit: b.unit };
+      b.fields.forEach(f => { o[f.rec] = colValue(f, fval(b.prefix + '_' + f.key)); });
+      o.khoiLuongMauSauSang = toNumber(fval(b.prefix + '_khoi_luong_sau_sang'));
+      o.range = fval(b.prefix + '_range');
+      o.sieve = b.sieveCols.map(c => ({
+        mesh: c.key, khoiLuongSang: toNumber(fval('sieve_' + c.key + '_w')), khoiLuongMauSang: toNumber(fval('sieve_' + c.key + '_wt')),
+        phanTramTrenSang: (() => { const v = fval('sieve_' + c.key + '_pct'); return v === '--' ? null : parseFloat(v); })()
+      }));
+      o.status = statusOf(b);
+      return o;
+    },
+    apply(b, d) {
+      b.fields.forEach(f => setFieldValue(b.prefix + '_' + f.key, d[f.rec]));
+      (d.sieve || []).forEach(row => {
+        setFieldValue('sieve_' + row.mesh + '_w', row.khoiLuongSang);
+        setFieldValue('sieve_' + row.mesh + '_wt', row.khoiLuongMauSang);
+      });
+    }
+  }
+};
+function statusOf(b) {
+  const idx = typeCfg().blocks.indexOf(b);
+  const el = paramStatusEl(idx + 1);
+  return el ? el.dataset.status : 'pending';
 }
 
 function recomputeConclusion(statuses) {
   const out = form.elements['ketLuan'];
-  if (statuses.some(s => s === 'fail')) {
+  if (statuses.length && statuses.some(s => s === 'fail')) {
     out.value = 'Không đạt';
     out.dataset.status = 'fail';
   } else if (statuses.some(s => s === 'accept')) {
     out.value = 'Chấp nhận có điều kiện';
     out.dataset.status = 'accept';
-  } else if (statuses.every(s => s === 'pass')) {
+  } else if (statuses.length && statuses.every(s => s === 'pass')) {
     out.value = 'Đạt';
     out.dataset.status = 'pass';
   } else {
@@ -2144,14 +1888,12 @@ function recomputeConclusion(statuses) {
     out.dataset.status = 'pending';
   }
   const forceBtn = document.getElementById('btn-force-submit');
-  if (forceBtn) forceBtn.hidden = out.dataset.status !== 'pending';
+  if (forceBtn) forceBtn.hidden = out.dataset.status !== 'pending' || !typeCfg().blocks.length;
 }
 
 function recomputeAll() {
-  const statuses = [
-    computeDoAm(), computeTyTrong(), computeDoMau(), computeDoCan(),
-    computePh(), computeAcidity(), computeHoaTan(), computeKichThuoc(), computeNgoaiVat()
-  ];
+  const cfg = typeCfg();
+  const statuses = cfg.blocks.map((b, i) => BLOCK_KINDS[b.kind].compute(b, i));
   recomputeConclusion(statuses);
   calcCompletion();
 }
@@ -2175,68 +1917,113 @@ function calcCompletion() {
   return pct;
 }
 
-/* ---------------- FORM: thông tin mẫu (lookup / parse) ---------------- */
-const PARAM_LABELS = [
-  '1. Độ Ẩm (Halogen)', '2. Tỷ trọng - mật độ chảy tự do', '3. Độ màu', '4. Độ cặn',
-  '5. pH', '6. Acidity', '7. Độ hòa tan', '8. Kích thước hạt', '9. Ngoại vật'
-];
-const PARAM_RANGE_OUTPUT = {
-  '1. Độ Ẩm (Halogen)': 'do_am_range',
-  '2. Tỷ trọng - mật độ chảy tự do': 'ty_trong_range',
-  '3. Độ màu': 'do_mau_range',
-  '4. Độ cặn': 'do_can_range',
-  '5. pH': 'ph_range',
-  '6. Acidity': 'acidity_range',
-  '7. Độ hòa tan': 'hoa_tan_range',
-  '8. Kích thước hạt': 'kich_thuoc_range',
-  '9. Ngoại vật': 'ngoai_vat_range'
-};
+/* ---------------- FORM: dựng form theo loại sản phẩm ---------------- */
+function sampleInfoHtml(cfg) {
+  if (!cfg.sampleFields.length) return '';
+  return '<fieldset class="card" id="block-sample-info"><legend class="card__title">Thông tin mẫu</legend><div class="field-grid">' +
+    cfg.sampleFields.map(f => {
+      let inner;
+      if (f.input === 'select') inner = '<select name="' + f.name + '" class="field__input"><option value="">-- Chọn --</option>' +
+        f.options.map(o => '<option value="' + escapeAttr(o) + '">' + escapeAttr(o) + '</option>').join('') + '</select>';
+      else if (f.input === 'readonly') inner = '<input type="text" name="' + f.name + '" class="field__input" readonly placeholder="' + escapeAttr(f.placeholder || '') + '" />';
+      else if (f.input === 'number') inner = '<input type="number" inputmode="numeric" name="' + f.name + '" class="field__input" placeholder="' + escapeAttr(f.placeholder || '') + '" />';
+      else inner = '<input type="text" name="' + f.name + '" class="field__input" placeholder="' + escapeAttr(f.placeholder || '') + '" />';
+      return '<label class="field"><span class="field__label">' + escapeAttr(f.label) + '</span>' + inner +
+        (f.hintId ? '<span class="field__hint" id="' + f.hintId + '"></span>' : '') + '</label>';
+    }).join('') + '</div></fieldset>';
+}
+function blockHtml(b, i) {
+  return '<fieldset class="card param-card" id="block-param-' + (i + 1) + '" data-param="' + (i + 1) + '">' +
+    '<legend class="card__title">' + escapeAttr(b.label) + '</legend>' + BLOCK_KINDS[b.kind].html(b) + '</fieldset>';
+}
+function bindSampleBehaviors(cfg) {
+  const on = (e, fn) => { e.addEventListener('change', fn); e.addEventListener('blur', fn); };
+  cfg.sampleFields.forEach(f => {
+    const e = form.elements[f.name];
+    if (!e) return;
+    if (f.behavior === 'itemLookup') on(e, onItemCodeChange);
+    if (f.behavior === 'julianBatch') on(e, onBatchChange);
+    if (f.behavior === 'ssccFromPo') on(e, onPoChange);
+    if (f.thresholdKey) e.addEventListener('change', updateThresholdsForCustomer);
+  });
+}
+function renderFormForType(type) {
+  if (!TYPE_CONFIG[type]) type = DEFAULT_TYPE;
+  state.formType = type;
+  const cfg = typeCfg(type);
+  let html = sampleInfoHtml(cfg) + cfg.blocks.map(blockHtml).join('');
+  if (!html) html = '<div class="card"><p class="empty-type-note">Loại sản phẩm <b>' + escapeAttr(PRODUCT_TYPES[type]) +
+    '</b> chưa được cấu hình thông tin mẫu và chỉ tiêu. Cấu hình sẽ được bổ sung khi có danh sách trường/chỉ tiêu của loại này.</p></div>';
+  document.getElementById('form-dynamic').innerHTML = html;
+  Object.keys(photoStore).forEach(k => delete photoStore[k]);
+  cfg.blocks.forEach(b => { if (b.photos) photoStore[b.photos.name] = []; });
+  state.blockEnteredAt = {};
+  populateStaffSelects();
+  bindSampleBehaviors(cfg);
+  cfg.blocks.forEach(b => { if (b.photos) initPhotoInput(b.photos.name); });
+  const sel = document.getElementById('form-product-type');
+  if (sel) sel.value = type;
+  updateThresholdsForCustomer();
+}
+function isFormDirty() {
+  if (Object.keys(state.blockEnteredAt).length) return true;
+  return typeCfg().sampleFields.some(f => f.input !== 'readonly' && fval(f.name).trim() !== '');
+}
+async function onFormTypeChange(newType) {
+  const sel = document.getElementById('form-product-type');
+  if (newType === state.formType) return;
+  if (isFormDirty()) {
+    const ok = await confirmModal('Đổi loại sản phẩm?', 'Phiếu đang nhập có dữ liệu. Đổi sang ' + PRODUCT_TYPES[newType] + ' sẽ xoá dữ liệu đang nhập (form của mỗi loại khác nhau). Tiếp tục?');
+    if (!ok) { sel.value = state.formType; return; }
+  }
+  resetForm(newType);
+}
 
+/* ---------------- FORM: thông tin mẫu (lookup / parse) ---------------- */
 function updateThresholdsForCustomer() {
-  const customer = form.elements['customer'].value;
-  const recipe = form.elements['recipe'].value;
+  const cfg = typeCfg();
+  const cf = cfg.sampleFields.find(f => f.thresholdKey);
+  const customer = cf ? fval(cf.name) : '';
+  const recipe = fval('recipe');
   state.currentThresholds = {};
-  PARAM_LABELS.forEach(label => {
-    const row = customer ? getThreshold(customer, label, recipe) : null;
-    state.currentThresholds[label] = row ? row.requirement : null;
-    const el = form.elements[PARAM_RANGE_OUTPUT[label]];
+  cfg.blocks.forEach(b => {
+    const row = (customer || !cf) ? getThreshold(state.formType, customer, b.label, recipe) : null;
+    state.currentThresholds[b.label] = row ? row.requirement : null;
+    const el = form.elements[b.prefix + '_range'];
     if (el) el.value = row ? row.requirement.replace(/\n/g, ' / ') : '--';
   });
   recomputeAll();
 }
 
 function onItemCodeChange() {
-  const code = form.elements['itemCode'].value;
+  const code = fval('itemCode');
   const item = findItemByCode(code);
   if (item) {
-    form.elements['recipe'].value = item.recipe;
-    form.elements['productName'].value = item.name;
+    fel('recipe').value = item.recipe;
+    fel('productName').value = item.name;
   } else {
-    form.elements['recipe'].value = '';
-    form.elements['productName'].value = '';
-    if (code) toast('Không tìm thấy Item Code "' + code + '" trong danh mục.', 'warn');
+    if (fel('recipe')) fel('recipe').value = '';
+    if (fel('productName')) fel('productName').value = '';
+    if (code) toast('Không tìm thấy Item Code "' + code + '" trong danh mục ' + PRODUCT_TYPES[state.formType] + '.', 'warn');
   }
   updateThresholdsForCustomer();
 }
 
 function onBatchChange() {
-  const batch = form.elements['batch'].value;
-  const d = productionDateFromBatch(batch);
-  form.elements['productionDate'].value = d ? formatDateVN(d) : '--';
+  const d = productionDateFromBatch(fval('batch'));
+  if (fel('productionDate')) fel('productionDate').value = d ? formatDateVN(d) : '--';
 }
 
 // SSCC = PO + '000' + 3 số cuối tự nhập. Khi có PO, tự gợi ý sẵn phần đầu để người
 // dùng chỉ cần gõ tiếp 3 số cuối (không ghi đè nếu SSCC đã khớp tiền tố PO này rồi).
 function onPoChange() {
-  const po = form.elements['po'].value.trim();
-  const scEl = form.elements['sscc'];
+  const po = fval('po').trim();
+  const scEl = fel('sscc');
   const hint = document.getElementById('sscc-hint');
-  if (!po) { if (hint) hint.textContent = ''; return; }
+  if (!po || !scEl) { if (hint) hint.textContent = ''; return; }
   const prefix = po + '000';
   if (hint) hint.textContent = 'Gợi ý SSCC: ' + prefix + ' + 3 số cuối tự nhập';
-  if (!scEl.value || !scEl.value.startsWith(prefix)) {
-    scEl.value = prefix;
-  }
+  if (!scEl.value || !scEl.value.startsWith(prefix)) scEl.value = prefix;
 }
 
 /* ---------------- NAVIGATION (Sidebar) ---------------- */
@@ -2259,7 +2046,8 @@ function switchTab(tabName) {
 
 /* ---------------- DASHBOARD ---------------- */
 function renderDashboard() {
-  const submitted = state.records.filter(r => !r.isDraft);
+  const dashType = document.getElementById('dash-type-filter').value;
+  const submitted = state.records.filter(r => !r.isDraft && (!dashType || typeOf(r) === dashType));
 
   document.getElementById('stat-total').textContent = submitted.length || '0';
   const passCount = submitted.filter(r => r.conclusion && r.conclusion.statusKey === 'pass').length;
@@ -2422,9 +2210,11 @@ function renderHistoryTable() {
   const custFilter = document.getElementById('history-filter-customer').value;
   const resultFilter = document.getElementById('history-filter-result').value;
   const dateFilter = document.getElementById('history-filter-date').value;
+  const typeFilter = document.getElementById('history-filter-type').value;
 
   const rows = state.records.filter(r => {
     const s = r.sampleInfo || {};
+    if (typeFilter && typeOf(r) !== typeFilter) return false;
     if (search && !((s.batch || '').toLowerCase().includes(search) || (s.itemCode || '').toLowerCase().includes(search))) return false;
     if (custFilter && s.customer !== custFilter) return false;
     if (resultFilter && (!r.conclusion || r.conclusion.result !== resultFilter)) return false;
@@ -2439,7 +2229,7 @@ function renderHistoryTable() {
 
   tbody.innerHTML = '';
   if (rows.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-faint);">Chưa có phiếu nào phù hợp.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-faint);">Chưa có phiếu nào phù hợp.</td></tr>';
     return;
   }
   rows.slice().reverse().forEach(r => {
@@ -2450,6 +2240,7 @@ function renderHistoryTable() {
     const resultStatus = r.isDraft ? 'pending' : ((r.conclusion && r.conclusion.statusKey) || 'pending');
     tr.innerHTML =
       '<td>' + formatDateVN(new Date(r.meta.savedAt)) + '</td>' +
+      '<td>' + PRODUCT_TYPES[typeOf(r)] + '</td>' +
       '<td>' + (s.itemCode || '--') + '</td>' +
       '<td>' + (s.productName || '--') + '</td>' +
       '<td>' + (s.batch || '--') + '</td>' +
@@ -2473,11 +2264,18 @@ function paramSummaryLine(p) {
   return parts.join(' · ') || '--';
 }
 
+// Danh sách khối chỉ tiêu của 1 phiếu theo đúng thứ tự cấu hình của loại sản phẩm đó.
+function orderedParams(r) {
+  const p = r.parameters || {};
+  const cfg = TYPE_CONFIG[typeOf(r)];
+  if (cfg && cfg.blocks.length) return cfg.blocks.map(b => p[b.key]).filter(Boolean);
+  return Object.values(p);
+}
+
 const STATUS_LABELS = { pass: 'Đạt', fail: 'Không đạt', accept: 'Chấp nhận', pending: '--' };
 
 function renderRecordDetailHtml(r) {
-  const p = r.parameters || {};
-  const rows = [p.doAm, p.tyTrong, p.doMau, p.doCan, p.ph, p.acidity, p.hoaTan, p.kichThuoc, p.ngoaiVat];
+  const rows = orderedParams(r);
   const paramHtml = rows.map(item => {
     if (!item) return '';
     const timeStr = item.enteredAt ? new Date(item.enteredAt).toLocaleString('vi-VN') : '';
@@ -2492,6 +2290,7 @@ function renderRecordDetailHtml(r) {
     (r.forcedClose ? ' <span style="font-size:0.7em;color:var(--fail-text);">⚠ Force đóng report</span>' : '');
 
   return '<h2>Phiếu ' + (s.batch || '(chưa có Batch)') + badges + '</h2>' +
+    '<p><b>Loại sản phẩm:</b> ' + PRODUCT_TYPES[typeOf(r)] + '</p>' +
     '<p><b>Item Code:</b> ' + (s.itemCode || '--') + ' — ' + (s.productName || '') + '</p>' +
     '<p><b>Customer:</b> ' + (s.customer || '--') + ' &nbsp; <b>Ngày SX:</b> ' + (s.productionDate || '--') + ' &nbsp; <b>PO:</b> ' + (s.po || '--') + ' &nbsp; <b>SSCC:</b> ' + (s.sscc || '--') + '</p>' +
     '<div class="detail-param-list">' + paramHtml + '</div>' +
@@ -2542,6 +2341,7 @@ function viewRecord(id) {
 function exportRecordCsv(r) {
   const lines = [];
   lines.push(['Trường', 'Giá trị'].map(csvEscape).join(','));
+  lines.push(['productType', PRODUCT_TYPES[typeOf(r)]].map(csvEscape).join(','));
   Object.entries(r.sampleInfo || {}).forEach(([k, v]) => lines.push([k, v].map(csvEscape).join(',')));
   lines.push('');
   Object.values(r.parameters || {}).forEach(param => {
@@ -2570,12 +2370,13 @@ function exportRecordCsv(r) {
 
 function exportHistoryCsv(records) {
   if (!records || !records.length) { toast('Không có phiếu nào để xuất.', 'warn'); return; }
-  const header = ['Ngày nhập', 'Item Code', 'Product Name', 'Batch', 'Customer', 'Kết luận', 'Reviewed by'];
+  const header = ['Ngày nhập', 'Loại sản phẩm', 'Item Code', 'Product Name', 'Batch', 'Customer', 'Kết luận', 'Reviewed by'];
   const lines = [header.map(csvEscape).join(',')];
   records.forEach(r => {
     const s = r.sampleInfo || {};
     lines.push([
       new Date(r.meta.savedAt).toLocaleString('vi-VN'),
+      PRODUCT_TYPES[typeOf(r)],
       s.itemCode, s.productName, s.batch, s.customer,
       r.isDraft ? 'Nháp' : (r.conclusion ? r.conclusion.result : ''), r.reviewedBy
     ].map(csvEscape).join(','));
@@ -2607,8 +2408,7 @@ function objRowsHtml(obj) {
 }
 function renderFullReportHtml(r) {
   const s = r.sampleInfo || {};
-  const p = r.parameters || {};
-  const order = [p.doAm, p.tyTrong, p.doMau, p.doCan, p.ph, p.acidity, p.hoaTan, p.kichThuoc, p.ngoaiVat];
+  const order = orderedParams(r);
   const paramBlocks = order.map(item => {
     if (!item) return '';
     let rows = '';
@@ -2637,6 +2437,7 @@ function renderFullReportHtml(r) {
   }).join('');
 
   return '<h1>FULL REPORT — Phiếu ' + (s.batch || '') + '</h1>' +
+    '<p><b>Loại sản phẩm:</b> ' + PRODUCT_TYPES[typeOf(r)] + '</p>' +
     '<p><b>Item Code:</b> ' + (s.itemCode || '--') + ' — ' + (s.productName || '') + ' &nbsp; <b>Recipe:</b> ' + (s.recipe || '--') + '</p>' +
     '<p><b>Customer:</b> ' + (s.customer || '--') + ' &nbsp; <b>Ngày SX:</b> ' + (s.productionDate || '--') + ' &nbsp; <b>PO:</b> ' + (s.po || '--') + ' &nbsp; <b>SSCC:</b> ' + (s.sscc || '--') + '</p>' +
     paramBlocks +
@@ -2692,19 +2493,51 @@ function populateStaffSelects() {
   }
 }
 
+/* ---------------- CÁC TAB QUẢN TRỊ THEO LOẠI SẢN PHẨM ----------------
+   Item Code / Spec. / Độ lặp lại / Parameters đều lưu chung mảng nhưng mỗi dòng có productType;
+   mỗi tab chỉ hiện và sửa các dòng của loại đang chọn (state.adminType). */
+function typeOptionsHtml(withAll) {
+  return (withAll ? '<option value="">Tất cả loại</option>' : '') +
+    Object.entries(PRODUCT_TYPES).map(([k, v]) => '<option value="' + k + '">' + v + '</option>').join('');
+}
+function renderAdminTab() {
+  renderItemCodeTable(); renderSpecTable(); renderRepeatabilityTable(); renderParametersTable();
+}
+function initTypeSelects() {
+  document.querySelectorAll('.admin-type-select').forEach(sel => {
+    sel.innerHTML = typeOptionsHtml(false);
+    sel.value = state.adminType;
+    sel.addEventListener('change', () => {
+      state.adminType = sel.value;
+      document.querySelectorAll('.admin-type-select').forEach(o => { o.value = state.adminType; });
+      renderAdminTab();
+    });
+  });
+  const ft = document.getElementById('form-product-type');
+  ft.innerHTML = typeOptionsHtml(false);
+  ft.value = state.formType;
+  ft.addEventListener('change', () => onFormTypeChange(ft.value));
+  ['history-filter-type', 'dash-type-filter'].forEach(id => { document.getElementById(id).innerHTML = typeOptionsHtml(true); });
+}
+function fillDatalist(id, values) {
+  document.getElementById(id).innerHTML = values.map(v => '<option value="' + escapeAttr(v) + '"></option>').join('');
+}
+function migrateProductTypes() {
+  [ITEM_CODES, THRESHOLDS, FIELD_MAPPING, REPEATABILITY].forEach(arr => arr.forEach(r => { if (!r.productType) r.productType = DEFAULT_TYPE; }));
+}
+
 /* ---------------- ITEM CODE (danh mục mã hàng) — xem + sửa/thêm/xoá ---------------- */
 function renderItemCodeTable() {
   const tbody = document.getElementById('itemcode-table-body');
   const search = (document.getElementById('itemcode-search').value || '').trim().toLowerCase();
-  const rows = ITEM_CODES
-    .map((it, idx) => ({ it, idx }))
-    .filter(({ it }) => !search ||
+  const ofType = ITEM_CODES.map((it, idx) => ({ it, idx })).filter(({ it }) => typeOf(it) === state.adminType);
+  const rows = ofType.filter(({ it }) => !search ||
       it.item.toLowerCase().includes(search) ||
       it.name.toLowerCase().includes(search) ||
       it.recipe.toLowerCase().includes(search));
 
   document.getElementById('itemcode-count-note').textContent =
-    'Hiển thị ' + rows.length + ' / ' + ITEM_CODES.length + ' mã hàng.';
+    'Hiển thị ' + rows.length + ' / ' + ofType.length + ' mã hàng của ' + PRODUCT_TYPES[state.adminType] + '.';
 
   tbody.innerHTML = rows.map(({ it, idx }) =>
     '<tr>' +
@@ -2741,16 +2574,16 @@ function renderItemCodeTable() {
 /* ---------------- ĐỘ LẶP LẠI — xem + sửa dung sai tối đa mỗi chỉ tiêu ---------------- */
 function renderRepeatabilityTable() {
   const tbody = document.getElementById('repeatability-table-body');
-  tbody.innerHTML = REPEATABILITY.map((r, idx) =>
+  const rows = REPEATABILITY.map((r, idx) => ({ r, idx })).filter(({ r }) => typeOf(r) === state.adminType);
+  tbody.innerHTML = rows.map(({ r, idx }) =>
     '<tr>' +
-    '<td>' + r.parameter + '</td>' +
-    '<td>' + r.unit + '</td>' +
+    '<td>' + escapeAttr(r.parameter) + '</td>' +
+    '<td>' + escapeAttr(r.unit) + '</td>' +
     '<td><input type="number" step="any" class="field__input" data-idx="' + idx + '" value="' + r.maxDiff + '" /></td>' +
     '<td><button type="button" class="btn btn--secondary btn-delete-repeat" data-idx="' + idx + '">Xoá</button></td>' +
     '</tr>'
   ).join('');
-  document.getElementById('repeat-parameter-list').innerHTML =
-    PARAM_LABELS.map(p => '<option value="' + escapeAttr(p) + '"></option>').join('');
+  fillDatalist('repeat-parameter-list', typeParamLabels(state.adminType));
   tbody.querySelectorAll('.btn-delete-repeat').forEach(btn => {
     btn.addEventListener('click', () => {
       REPEATABILITY.splice(parseInt(btn.dataset.idx, 10), 1);
@@ -2775,26 +2608,19 @@ function renderRepeatabilityTable() {
 function persistRepeatability() { return Storage.put('settings', { key: 'repeatability', value: REPEATABILITY }); }
 
 /* ---------------- SPEC. (Bảng ngưỡng kết luận) — xem + sửa/thêm/xoá ---------------- */
-function specSelectHtml(idx, field, options, current) {
-  return '<select class="field__input" data-idx="' + idx + '" data-field="' + field + '">' +
-    options.map(o => '<option value="' + escapeAttr(o) + '"' + (o === current ? ' selected' : '') + '>' + o + '</option>').join('') +
-    '</select>';
-}
-
 function renderSpecTable() {
   const tbody = document.getElementById('spec-table-body');
-  tbody.innerHTML = THRESHOLDS.map((t, idx) =>
-    '<tr>' +
-    '<td>' + specSelectHtml(idx, 'customer', ['INS', 'LDC'], t.customer) + '</td>' +
-    '<td>' + specSelectHtml(idx, 'parameter', PARAM_LABELS, t.parameter) + '</td>' +
-    '<td><input type="text" class="field__input" data-idx="' + idx + '" data-field="unit" value="' + escapeAttr(t.unit) + '" /></td>' +
-    '<td><input type="text" class="field__input" data-idx="' + idx + '" data-field="requirement" value="' + escapeAttr(toSingleLine(t.requirement)) + '" /></td>' +
-    '<td><input type="text" class="field__input" data-idx="' + idx + '" data-field="recipe" value="' + escapeAttr(t.recipe) + '" /></td>' +
-    '<td><button type="button" class="btn btn--secondary btn-delete-spec" data-idx="' + idx + '">Xoá</button></td>' +
-    '</tr>'
+  const rows = THRESHOLDS.map((t, idx) => ({ t, idx })).filter(({ t }) => typeOf(t) === state.adminType);
+  const txt = (idx, field, val) => '<td><input type="text" class="field__input" data-idx="' + idx + '" data-field="' + field + '" value="' + escapeAttr(val) + '" /></td>';
+  tbody.innerHTML = rows.map(({ t, idx }) =>
+    '<tr>' + txt(idx, 'customer', t.customer) + txt(idx, 'parameter', t.parameter) + txt(idx, 'unit', t.unit) +
+    txt(idx, 'requirement', toSingleLine(t.requirement)) + txt(idx, 'recipe', t.recipe) +
+    '<td><button type="button" class="btn btn--secondary btn-delete-spec" data-idx="' + idx + '">Xoá</button></td></tr>'
   ).join('');
+  fillDatalist('spec-parameter-list', typeParamLabels(state.adminType));
+  fillDatalist('spec-customer-list', Array.from(new Set(THRESHOLDS.filter(t => typeOf(t) === state.adminType).map(t => t.customer))));
 
-  tbody.querySelectorAll('input[data-field], select[data-field]').forEach(el => {
+  tbody.querySelectorAll('input[data-field]').forEach(el => {
     el.addEventListener('change', (e) => {
       const idx = parseInt(e.target.dataset.idx, 10);
       THRESHOLDS[idx][e.target.dataset.field] = e.target.value;
@@ -2816,12 +2642,7 @@ function renderSpecTable() {
   });
 }
 
-function populateSpecParameterSelect() {
-  const sel = document.getElementById('spec-new-parameter');
-  sel.innerHTML = PARAM_LABELS.map(p => '<option value="' + escapeAttr(p) + '">' + p + '</option>').join('');
-}
-
-/* ---------------- PARAMETERS (tham chiếu trường dữ liệu) — xem + sửa mô tả/kiểu dữ liệu ---------------- */
+/* ---------------- PARAMETERS (tham chiếu trường dữ liệu) — xem + sửa/thêm/xoá ---------------- */
 function paramFieldSelectHtml(idx, field, options, current) {
   return '<select class="field__input" data-idx="' + idx + '" data-field="' + field + '">' +
     options.map(o => '<option value="' + escapeAttr(o) + '"' + (o === current ? ' selected' : '') + '>' + o + '</option>').join('') +
@@ -2832,15 +2653,18 @@ function renderParametersTable() {
   const tbody = document.getElementById('parameters-table-body');
   const formatOptions = ['number', 'text', 'date', 'time', 'Picture'];
   const typeOptions = ['Independent', 'Dependent'];
-  tbody.innerHTML = FIELD_MAPPING.map((f, idx) =>
+  const rows = FIELD_MAPPING.map((f, idx) => ({ f, idx })).filter(({ f }) => typeOf(f) === state.adminType);
+  tbody.innerHTML = rows.map(({ f, idx }) =>
     '<tr>' +
-    '<td>' + f.parameter + '</td>' +
-    '<td>' + f.field + '</td>' +
+    '<td>' + escapeAttr(f.parameter) + '</td>' +
+    '<td>' + escapeAttr(f.field) + '</td>' +
     '<td>' + paramFieldSelectHtml(idx, 'format', formatOptions, f.format) + '</td>' +
     '<td>' + paramFieldSelectHtml(idx, 'type', typeOptions, f.type) + '</td>' +
     '<td><input type="text" class="field__input" data-idx="' + idx + '" data-field="remark" value="' + escapeAttr(f.remark) + '" /></td>' +
+    '<td><button type="button" class="btn btn--secondary btn-delete-param" data-idx="' + idx + '">Xoá</button></td>' +
     '</tr>'
   ).join('');
+  fillDatalist('param-parameter-list', ['Thông tin mẫu'].concat(typeParamLabels(state.adminType)));
 
   tbody.querySelectorAll('input[data-field], select[data-field]').forEach(el => {
     el.addEventListener('change', (e) => {
@@ -2848,6 +2672,14 @@ function renderParametersTable() {
       FIELD_MAPPING[idx][e.target.dataset.field] = e.target.value;
       persistFieldMapping();
       toast('Đã lưu.', 'success');
+    });
+  });
+  tbody.querySelectorAll('.btn-delete-param').forEach(btn => {
+    btn.addEventListener('click', () => {
+      FIELD_MAPPING.splice(parseInt(btn.dataset.idx, 10), 1);
+      persistFieldMapping();
+      renderParametersTable();
+      AuditLog.log('delete-param', {});
     });
   });
 }
@@ -2891,6 +2723,7 @@ function persistTheme(v) { return Storage.put('settings', { key: 'theme', value:
 async function loadRecordsCache() {
   const all = await Storage.getAll('records');
   state.records = all.filter(r => r.id !== 'draft_current');
+  state.records.forEach(r => { if (!r.productType) r.productType = DEFAULT_TYPE; });
 }
 
 /* ---------------- ĐÍNH KÈM ẢNH (Blob trong IndexedDB; bỏ qua nếu đang ở chế độ dự phòng localStorage) ---------------- */
@@ -2921,7 +2754,7 @@ async function storeAttachments(files) {
 /* ---------------- ĐA ẢNH: chọn/chụp nhiều lần, cộng dồn vào 1 thư viện xem trước ----------------
    <input type="file" multiple> tự thay thế toàn bộ FileList mỗi lần chọn, nên cần tự cộng dồn
    vào mảng riêng (photoStore) để hỗ trợ chụp nhiều ảnh qua nhiều lần bấm camera. */
-const photoStore = { do_can_anh: [], ngoai_vat_anh: [] };
+const photoStore = {}; // name -> File[]; các khoá được tạo theo từng khối có ảnh khi dựng form
 function renderPhotoGallery(name) {
   const box = document.getElementById('gallery-' + name);
   if (!box) return;
@@ -2955,102 +2788,27 @@ function clearPhotoStore() {
 
 /* ---------------- FORM: thu thập đầy đủ dữ liệu phiếu (Phần 3 schema) ---------------- */
 async function buildFullRecord(isDraft, existingId, forced) {
-  const g = (name) => (form.elements[name] ? form.elements[name].value : '');
-  const num = (name) => toNumber(g(name));
-  const statusOf = (n) => { const el = paramStatusEl(n); return el ? el.dataset.status : 'pending'; };
+  const g = (name) => fval(name);
+  const cfg = typeCfg();
 
-  const sampleInfo = {
-    itemCode: g('itemCode'), recipe: g('recipe'), productName: g('productName'),
-    customer: g('customer'), batch: g('batch'), productionDate: g('productionDate'),
-    po: g('po'), sscc: g('sscc')
-  };
+  const sampleInfo = {};
+  cfg.sampleFields.forEach(f => { sampleInfo[f.name] = g(f.name); });
 
-  const doCanImgs = await storeAttachments(photoStore['do_can_anh']);
-  const ngoaiVatImgs = await storeAttachments(photoStore['ngoai_vat_anh']);
-
-  const parameters = {
-    doAm: {
-      label: '1. Độ Ẩm (Halogen)', unit: '%',
-      reps: [
-        { nguoiThucHien: g('do_am_1_nguoi_thuc_hien'), khoiLuongMau: num('do_am_1_khoi_luong_mau'), nhietDoSay: num('do_am_1_nhiet_do_say'), thoiGianSay: g('do_am_1_thoi_gian_say'), ketQua: num('do_am_1_ket_qua') },
-        { nguoiThucHien: g('do_am_2_nguoi_thuc_hien'), khoiLuongMau: num('do_am_2_khoi_luong_mau'), nhietDoSay: num('do_am_2_nhiet_do_say'), thoiGianSay: g('do_am_2_thoi_gian_say'), ketQua: num('do_am_2_ket_qua') }
-      ],
-      average: toNumber(g('do_am_avg')), difference: toNumber(g('do_am_diff')), range: g('do_am_range'), status: statusOf(1)
-    },
-    tyTrong: {
-      label: '2. Tỷ trọng - mật độ chảy tự do', unit: 'g/L',
-      reps: [
-        { nguoiThucHien: g('ty_trong_1_nguoi_thuc_hien'), khoiLuongBinh: num('ty_trong_1_khoi_luong_binh'), khoiLuongMau: num('ty_trong_1_khoi_luong_mau'), theTichBinh: num('ty_trong_1_the_tich_binh'), ketQua: toNumber(g('ty_trong_1_ket_qua')) },
-        { nguoiThucHien: g('ty_trong_2_nguoi_thuc_hien'), khoiLuongBinh: num('ty_trong_2_khoi_luong_binh'), khoiLuongMau: num('ty_trong_2_khoi_luong_mau'), theTichBinh: num('ty_trong_2_the_tich_binh'), ketQua: toNumber(g('ty_trong_2_ket_qua')) }
-      ],
-      average: toNumber(g('ty_trong_avg')), difference: toNumber(g('ty_trong_diff')), range: g('ty_trong_range'), status: statusOf(2)
-    },
-    doMau: {
-      label: '3. Độ màu', unit: 'ACN',
-      reps: [
-        { nguoiThucHien: g('do_mau_1_nguoi_thuc_hien'), ketQua: num('do_mau_1_ket_qua') },
-        { nguoiThucHien: g('do_mau_2_nguoi_thuc_hien'), ketQua: num('do_mau_2_ket_qua') }
-      ],
-      average: toNumber(g('do_mau_avg')), difference: toNumber(g('do_mau_diff')), range: g('do_mau_range'), status: statusOf(3)
-    },
-    doCan: {
-      label: '4. Độ cặn', unit: 'Grade',
-      nguoiThucHien: g('do_can_nguoi_thuc_hien'), khoiLuongMau: num('do_can_khoi_luong_mau'),
-      theTichNuoc: num('do_can_the_tich_nuoc'), ketQua: num('do_can_ket_qua'), range: g('do_can_range'), status: statusOf(4),
-      attachments: doCanImgs
-    },
-    ph: {
-      label: '5. pH', unit: '-',
-      reps: [
-        { nguoiThucHien: g('ph_1_nguoi_thuc_hien'), khoiLuongMau: num('ph_1_khoi_luong_mau'), theTichNuoc: num('ph_1_the_tich_nuoc'), nhietDoMau: num('ph_1_nhiet_do'), ketQua: num('ph_1_ket_qua') },
-        { nguoiThucHien: g('ph_2_nguoi_thuc_hien'), khoiLuongMau: num('ph_2_khoi_luong_mau'), theTichNuoc: num('ph_2_the_tich_nuoc'), nhietDoMau: num('ph_2_nhiet_do'), ketQua: num('ph_2_ket_qua') }
-      ],
-      average: toNumber(g('ph_avg')), difference: toNumber(g('ph_diff')), range: g('ph_range'), status: statusOf(5)
-    },
-    acidity: {
-      label: '6. Acidity', unit: '-',
-      reps: [
-        { nguoiThucHien: g('acidity_1_nguoi_thuc_hien'), khoiLuongMau: num('acidity_1_khoi_luong_mau'), theTichNuoc: num('acidity_1_the_tich_nuoc'), nongDoNaOH: num('acidity_1_nong_do_naoh'), theTichTieuTon: num('acidity_1_the_tich_tieu_ton'), ketQua: toNumber(g('acidity_1_ket_qua')) },
-        { nguoiThucHien: g('acidity_2_nguoi_thuc_hien'), khoiLuongMau: num('acidity_2_khoi_luong_mau'), theTichNuoc: num('acidity_2_the_tich_nuoc'), nongDoNaOH: num('acidity_2_nong_do_naoh'), theTichTieuTon: num('acidity_2_the_tich_tieu_ton'), ketQua: toNumber(g('acidity_2_ket_qua')) }
-      ],
-      average: toNumber(g('acidity_avg')), difference: toNumber(g('acidity_diff')), range: g('acidity_range'), status: statusOf(6)
-    },
-    hoaTan: {
-      label: '7. Độ hòa tan', unit: 'V/X',
-      hot: { nguoiThucHien: g('hoa_tan_nong_nguoi_thuc_hien'), khoiLuongMau: num('hoa_tan_nong_khoi_luong_mau'), theTichNuoc: num('hoa_tan_nong_the_tich_nuoc'), nhietDoMau: num('hoa_tan_nong_nhiet_do'), thoiGianKhuay: num('hoa_tan_nong_thoi_gian'), ketQua: g('hoa_tan_nong_ket_qua') },
-      cold: { nguoiThucHien: g('hoa_tan_lanh_nguoi_thuc_hien'), khoiLuongMau: num('hoa_tan_lanh_khoi_luong_mau'), theTichNuoc: num('hoa_tan_lanh_the_tich_nuoc'), nhietDoMau: num('hoa_tan_lanh_nhiet_do'), thoiGianKhuay: num('hoa_tan_lanh_thoi_gian'), ketQua: g('hoa_tan_lanh_ket_qua') },
-      range: g('hoa_tan_range'), status: statusOf(7)
-    },
-    kichThuoc: {
-      label: '8. Kích thước hạt', unit: '%',
-      nguoiThucHien: g('kich_thuoc_nguoi_thuc_hien'), khoiLuongMau: num('kich_thuoc_khoi_luong_mau'),
-      bienDo: num('kich_thuoc_bien_do'), thoiGian: num('kich_thuoc_thoi_gian'),
-      khoiLuongMauSauSang: toNumber(g('kich_thuoc_khoi_luong_sau_sang')), range: g('kich_thuoc_range'),
-      sieve: SIEVE_COLS.map(col => ({
-        mesh: col, khoiLuongSang: num('sieve_' + col + '_w'), khoiLuongMauSang: num('sieve_' + col + '_wt'),
-        phanTramTrenSang: (() => { const v = g('sieve_' + col + '_pct'); return v === '--' ? null : parseFloat(v); })()
-      })),
-      status: statusOf(8)
-    },
-    ngoaiVat: {
-      label: '9. Ngoại vật', unit: '-',
-      khoiLuongMau: num('ngoai_vat_khoi_luong_mau'), theTichNuoc: num('ngoai_vat_the_tich_nuoc'),
-      ketQua: g('ngoai_vat_ket_qua'), range: g('ngoai_vat_range'), status: statusOf(9),
-      attachments: ngoaiVatImgs
-    }
-  };
-
-  // Ghi thời gian thực lúc bắt đầu nhập mỗi khối chỉ tiêu (state.blockEnteredAt được
-  // cập nhật ngay khi có input đầu tiên trong khối đó — xem listener 'input' ở BOOTSTRAP).
-  const PARAM_KEY_BY_INDEX = { 1: 'doAm', 2: 'tyTrong', 3: 'doMau', 4: 'doCan', 5: 'ph', 6: 'acidity', 7: 'hoaTan', 8: 'kichThuoc', 9: 'ngoaiVat' };
-  Object.entries(PARAM_KEY_BY_INDEX).forEach(([n, key]) => {
-    if (parameters[key]) parameters[key].enteredAt = state.blockEnteredAt[n] || null;
-  });
+  // Mỗi khối tự thu thập dữ liệu của mình (BLOCK_KINDS[kind].collect); enteredAt = thời gian
+  // thực lúc bắt đầu nhập khối đó (state.blockEnteredAt, xem listener 'input' ở BOOTSTRAP).
+  const parameters = {};
+  for (let i = 0; i < cfg.blocks.length; i++) {
+    const b = cfg.blocks[i];
+    const obj = await BLOCK_KINDS[b.kind].collect(b);
+    obj.enteredAt = state.blockEnteredAt[i + 1] || null;
+    parameters[b.key] = obj;
+  }
 
   const now = new Date().toISOString();
   return {
     id: existingId || ('rec_' + Date.now()),
     isDraft: !!isDraft,
+    productType: state.formType,
     sampleInfo,
     parameters,
     notes: g('ghiChu'),
@@ -3068,142 +2826,40 @@ function setFieldValue(name, value) {
 }
 
 // Nạp 1 bản ghi đã lưu trở lại form (dùng cho Auto Recovery và "Tiếp tục chỉnh sửa" nháp).
+// Form được dựng lại theo loại sản phẩm của bản ghi rồi mỗi khối tự nạp dữ liệu của mình.
 // Lưu ý: trình duyệt không cho gán lại giá trị <input type="file"> bằng JS vì lý do bảo mật,
 // nên ảnh đính kèm trước đó sẽ không tự hiện lại trong ô chọn file — cần chọn lại nếu muốn thay ảnh.
 function applyRecordToForm(record) {
   if (!record) return;
+  renderFormForType(record.productType || DEFAULT_TYPE);
+  const cfg = typeCfg();
   const s = record.sampleInfo || {};
-  setFieldValue('itemCode', s.itemCode);
-  setFieldValue('recipe', s.recipe);
-  setFieldValue('productName', s.productName);
-  setFieldValue('customer', s.customer);
-  setFieldValue('batch', s.batch);
-  setFieldValue('productionDate', s.productionDate);
-  setFieldValue('po', s.po);
-  setFieldValue('sscc', s.sscc);
+  cfg.sampleFields.forEach(f => setFieldValue(f.name, s[f.name]));
 
   const p = record.parameters || {};
-  if (p.doAm && p.doAm.reps) {
-    setFieldValue('do_am_1_nguoi_thuc_hien', p.doAm.reps[0].nguoiThucHien);
-    setFieldValue('do_am_1_khoi_luong_mau', p.doAm.reps[0].khoiLuongMau);
-    setFieldValue('do_am_1_nhiet_do_say', p.doAm.reps[0].nhietDoSay);
-    setFieldValue('do_am_1_thoi_gian_say', p.doAm.reps[0].thoiGianSay);
-    setFieldValue('do_am_1_ket_qua', p.doAm.reps[0].ketQua);
-    setFieldValue('do_am_2_nguoi_thuc_hien', p.doAm.reps[1].nguoiThucHien);
-    setFieldValue('do_am_2_khoi_luong_mau', p.doAm.reps[1].khoiLuongMau);
-    setFieldValue('do_am_2_nhiet_do_say', p.doAm.reps[1].nhietDoSay);
-    setFieldValue('do_am_2_thoi_gian_say', p.doAm.reps[1].thoiGianSay);
-    setFieldValue('do_am_2_ket_qua', p.doAm.reps[1].ketQua);
-  }
-  if (p.tyTrong && p.tyTrong.reps) {
-    setFieldValue('ty_trong_1_nguoi_thuc_hien', p.tyTrong.reps[0].nguoiThucHien);
-    setFieldValue('ty_trong_1_khoi_luong_binh', p.tyTrong.reps[0].khoiLuongBinh);
-    setFieldValue('ty_trong_1_khoi_luong_mau', p.tyTrong.reps[0].khoiLuongMau);
-    setFieldValue('ty_trong_1_the_tich_binh', p.tyTrong.reps[0].theTichBinh);
-    setFieldValue('ty_trong_2_nguoi_thuc_hien', p.tyTrong.reps[1].nguoiThucHien);
-    setFieldValue('ty_trong_2_khoi_luong_binh', p.tyTrong.reps[1].khoiLuongBinh);
-    setFieldValue('ty_trong_2_khoi_luong_mau', p.tyTrong.reps[1].khoiLuongMau);
-    setFieldValue('ty_trong_2_the_tich_binh', p.tyTrong.reps[1].theTichBinh);
-  }
-  if (p.doMau && p.doMau.reps) {
-    setFieldValue('do_mau_1_nguoi_thuc_hien', p.doMau.reps[0].nguoiThucHien);
-    setFieldValue('do_mau_1_ket_qua', p.doMau.reps[0].ketQua);
-    setFieldValue('do_mau_2_nguoi_thuc_hien', p.doMau.reps[1].nguoiThucHien);
-    setFieldValue('do_mau_2_ket_qua', p.doMau.reps[1].ketQua);
-  }
-  if (p.doCan) {
-    setFieldValue('do_can_nguoi_thuc_hien', p.doCan.nguoiThucHien);
-    setFieldValue('do_can_khoi_luong_mau', p.doCan.khoiLuongMau);
-    setFieldValue('do_can_the_tich_nuoc', p.doCan.theTichNuoc);
-    setFieldValue('do_can_ket_qua', p.doCan.ketQua);
-  }
-  if (p.ph && p.ph.reps) {
-    setFieldValue('ph_1_nguoi_thuc_hien', p.ph.reps[0].nguoiThucHien);
-    setFieldValue('ph_1_khoi_luong_mau', p.ph.reps[0].khoiLuongMau);
-    setFieldValue('ph_1_the_tich_nuoc', p.ph.reps[0].theTichNuoc);
-    setFieldValue('ph_1_nhiet_do', p.ph.reps[0].nhietDoMau);
-    setFieldValue('ph_1_ket_qua', p.ph.reps[0].ketQua);
-    setFieldValue('ph_2_nguoi_thuc_hien', p.ph.reps[1].nguoiThucHien);
-    setFieldValue('ph_2_khoi_luong_mau', p.ph.reps[1].khoiLuongMau);
-    setFieldValue('ph_2_the_tich_nuoc', p.ph.reps[1].theTichNuoc);
-    setFieldValue('ph_2_nhiet_do', p.ph.reps[1].nhietDoMau);
-    setFieldValue('ph_2_ket_qua', p.ph.reps[1].ketQua);
-  }
-  if (p.acidity && p.acidity.reps) {
-    setFieldValue('acidity_1_nguoi_thuc_hien', p.acidity.reps[0].nguoiThucHien);
-    setFieldValue('acidity_1_khoi_luong_mau', p.acidity.reps[0].khoiLuongMau);
-    setFieldValue('acidity_1_the_tich_nuoc', p.acidity.reps[0].theTichNuoc);
-    setFieldValue('acidity_1_nong_do_naoh', p.acidity.reps[0].nongDoNaOH);
-    setFieldValue('acidity_1_the_tich_tieu_ton', p.acidity.reps[0].theTichTieuTon);
-    setFieldValue('acidity_2_nguoi_thuc_hien', p.acidity.reps[1].nguoiThucHien);
-    setFieldValue('acidity_2_khoi_luong_mau', p.acidity.reps[1].khoiLuongMau);
-    setFieldValue('acidity_2_the_tich_nuoc', p.acidity.reps[1].theTichNuoc);
-    setFieldValue('acidity_2_nong_do_naoh', p.acidity.reps[1].nongDoNaOH);
-    setFieldValue('acidity_2_the_tich_tieu_ton', p.acidity.reps[1].theTichTieuTon);
-  }
-  if (p.hoaTan) {
-    if (p.hoaTan.hot) {
-      setFieldValue('hoa_tan_nong_nguoi_thuc_hien', p.hoaTan.hot.nguoiThucHien);
-      setFieldValue('hoa_tan_nong_khoi_luong_mau', p.hoaTan.hot.khoiLuongMau);
-      setFieldValue('hoa_tan_nong_the_tich_nuoc', p.hoaTan.hot.theTichNuoc);
-      setFieldValue('hoa_tan_nong_nhiet_do', p.hoaTan.hot.nhietDoMau);
-      setFieldValue('hoa_tan_nong_thoi_gian', p.hoaTan.hot.thoiGianKhuay);
-      setFieldValue('hoa_tan_nong_ket_qua', p.hoaTan.hot.ketQua);
-    }
-    if (p.hoaTan.cold) {
-      setFieldValue('hoa_tan_lanh_nguoi_thuc_hien', p.hoaTan.cold.nguoiThucHien);
-      setFieldValue('hoa_tan_lanh_khoi_luong_mau', p.hoaTan.cold.khoiLuongMau);
-      setFieldValue('hoa_tan_lanh_the_tich_nuoc', p.hoaTan.cold.theTichNuoc);
-      setFieldValue('hoa_tan_lanh_nhiet_do', p.hoaTan.cold.nhietDoMau);
-      setFieldValue('hoa_tan_lanh_thoi_gian', p.hoaTan.cold.thoiGianKhuay);
-      setFieldValue('hoa_tan_lanh_ket_qua', p.hoaTan.cold.ketQua);
-    }
-  }
-  if (p.kichThuoc) {
-    setFieldValue('kich_thuoc_nguoi_thuc_hien', p.kichThuoc.nguoiThucHien);
-    setFieldValue('kich_thuoc_khoi_luong_mau', p.kichThuoc.khoiLuongMau);
-    setFieldValue('kich_thuoc_bien_do', p.kichThuoc.bienDo);
-    setFieldValue('kich_thuoc_thoi_gian', p.kichThuoc.thoiGian);
-    (p.kichThuoc.sieve || []).forEach(row => {
-      setFieldValue('sieve_' + row.mesh + '_w', row.khoiLuongSang);
-      setFieldValue('sieve_' + row.mesh + '_wt', row.khoiLuongMauSang);
-    });
-  }
-  if (p.ngoaiVat) {
-    setFieldValue('ngoai_vat_khoi_luong_mau', p.ngoaiVat.khoiLuongMau);
-    setFieldValue('ngoai_vat_the_tich_nuoc', p.ngoaiVat.theTichNuoc);
-    setFieldValue('ngoai_vat_ket_qua', p.ngoaiVat.ketQua);
-  }
+  cfg.blocks.forEach((b, i) => {
+    const d = p[b.key];
+    if (!d) return;
+    BLOCK_KINDS[b.kind].apply(b, d);
+    if (d.enteredAt) state.blockEnteredAt[i + 1] = d.enteredAt;
+  });
 
   setFieldValue('ghiChu', record.notes);
   setFieldValue('reviewedBy', record.reviewedBy);
   setFieldValue('reviewedDate', record.reviewedDate);
-
-  const PARAM_KEY_BY_INDEX2 = { 1: 'doAm', 2: 'tyTrong', 3: 'doMau', 4: 'doCan', 5: 'ph', 6: 'acidity', 7: 'hoaTan', 8: 'kichThuoc', 9: 'ngoaiVat' };
-  state.blockEnteredAt = {};
-  Object.entries(PARAM_KEY_BY_INDEX2).forEach(([n, key]) => {
-    if (p[key] && p[key].enteredAt) state.blockEnteredAt[n] = p[key].enteredAt;
-  });
-
   updateThresholdsForCustomer();
 }
 
-function resetForm() {
+// Xoá trắng phiếu đang nhập. Nếu truyền type thì chuyển sang loại đó; không thì giữ loại hiện tại.
+function resetForm(type) {
   form.reset();
   state.editingRecordId = null;
-  ['do_am_avg', 'do_am_diff', 'ty_trong_avg', 'ty_trong_diff', 'do_mau_avg', 'do_mau_diff',
-    'ph_avg', 'ph_diff', 'acidity_avg', 'acidity_diff', 'kich_thuoc_khoi_luong_sau_sang']
-    .forEach(n => { if (form.elements[n]) form.elements[n].value = '--'; });
-  SIEVE_COLS.forEach(col => { form.elements['sieve_' + col + '_pct'].value = '--'; });
   form.elements['ketLuan'].value = '--';
   form.elements['ketLuan'].dataset.status = 'pending';
   form.elements['reviewedDate'].value = '--';
-  document.querySelectorAll('.param-summary__status').forEach(el => setStatusBadge(el, 'pending'));
   document.getElementById('autosave-status').textContent = '';
-  clearPhotoStore();
-  state.blockEnteredAt = {};
   document.getElementById('btn-force-submit').hidden = true;
-  updateThresholdsForCustomer();
+  renderFormForType(type || state.formType);
 }
 
 function handleReviewedByChange() {
@@ -3213,13 +2869,15 @@ function handleReviewedByChange() {
 
 /* ---------------- VALIDATION (Phần 5) ---------------- */
 function validateBeforeSubmit() {
-  const itemCode = form.elements['itemCode'].value.trim();
-  const batch = form.elements['batch'].value.trim();
-  const customer = form.elements['customer'].value;
-  if (!itemCode || !batch) return 'Vui lòng nhập Item Code và Batch trước khi lưu.';
-  if (!findItemByCode(itemCode)) return 'Item Code "' + itemCode + '" không có trong danh mục — kiểm tra lại trước khi lưu.';
-  if (!customer) return 'Vui lòng chọn Customer.';
-  if (!/^[A-Za-z0-9]{4,}$/.test(batch)) return 'Batch không hợp lệ (cần ít nhất 4 ký tự chữ/số, không khoảng trắng).';
+  const cfg = typeCfg();
+  if (!cfg.blocks.length) return 'Loại sản phẩm ' + PRODUCT_TYPES[state.formType] + ' chưa được cấu hình chỉ tiêu nên chưa thể lưu phiếu.';
+  for (const f of cfg.sampleFields) {
+    if (f.required && !fval(f.name).trim()) return 'Vui lòng nhập/chọn ' + f.label + ' trước khi lưu.';
+    if (f.behavior === 'itemLookup' && fval(f.name).trim() && !findItemByCode(fval(f.name)))
+      return 'Item Code "' + fval(f.name).trim() + '" không có trong danh mục ' + PRODUCT_TYPES[state.formType] + ' — kiểm tra lại trước khi lưu.';
+    if (f.behavior === 'julianBatch' && fval(f.name).trim() && !/^[A-Za-z0-9]{4,}$/.test(fval(f.name).trim()))
+      return 'Batch không hợp lệ (cần ít nhất 4 ký tự chữ/số, không khoảng trắng).';
+  }
   return null;
 }
 
@@ -3234,8 +2892,8 @@ async function submitRecord(forced) {
     return;
   }
 
-  const batch = form.elements['batch'].value.trim();
-  const dup = state.records.find(r => !r.isDraft && r.sampleInfo && r.sampleInfo.batch === batch && r.id !== state.editingRecordId);
+  const batch = fval('batch').trim();
+  const dup = batch && state.records.find(r => !r.isDraft && r.sampleInfo && r.sampleInfo.batch === batch && typeOf(r) === state.formType && r.id !== state.editingRecordId);
   if (dup) {
     const proceed = await confirmModal('Trùng Batch', 'Batch "' + batch + '" đã có phiếu chính thức lưu trước đó. Vẫn lưu thêm bản mới?');
     if (!proceed) return;
@@ -3246,8 +2904,8 @@ async function submitRecord(forced) {
   const savedOk = await Storage.put('records', record);
   if (!savedOk) return;
   await Storage.delete('records', 'draft_current');
-  AuditLog.log(forced ? 'force-submit-record' : 'submit-record', { batch: record.sampleInfo.batch });
-  toast((forced ? 'Đã Force đóng phiếu ' : 'Đã lưu phiếu ') + record.sampleInfo.batch, forced ? 'warn' : 'success');
+  AuditLog.log(forced ? 'force-submit-record' : 'submit-record', { batch: record.sampleInfo.batch || '' });
+  toast((forced ? 'Đã Force đóng phiếu ' : 'Đã lưu phiếu ') + (record.sampleInfo.batch || ''), forced ? 'warn' : 'success');
   resetForm();
   await loadRecordsCache();
   renderDashboard();
@@ -3263,6 +2921,8 @@ async function exportBackup() {
     staff: STAFF,
     thresholds: THRESHOLDS,
     fieldMapping: FIELD_MAPPING,
+    itemCodes: ITEM_CODES,
+    repeatability: REPEATABILITY,
     records
   };
   downloadFile('lab_record_backup_' + Date.now() + '.json', JSON.stringify(backup, null, 2), 'application/json');
@@ -3292,6 +2952,9 @@ async function importBackupFile(file) {
     if (Array.isArray(data.staff) && data.staff.length) { STAFF = data.staff; await persistStaff(); }
     if (Array.isArray(data.thresholds) && data.thresholds.length) { THRESHOLDS.length = 0; THRESHOLDS.push(...data.thresholds); await persistThresholds(); }
     if (Array.isArray(data.fieldMapping) && data.fieldMapping.length) { FIELD_MAPPING.length = 0; FIELD_MAPPING.push(...data.fieldMapping); await persistFieldMapping(); }
+    if (Array.isArray(data.itemCodes) && data.itemCodes.length) { ITEM_CODES.length = 0; ITEM_CODES.push(...data.itemCodes); await persistItemCodes(); }
+    if (Array.isArray(data.repeatability) && data.repeatability.length) { REPEATABILITY.length = 0; REPEATABILITY.push(...data.repeatability); await persistRepeatability(); }
+    migrateProductTypes();
     for (const rec of data.records) { await Storage.put('records', rec); }
     await loadRecordsCache();
     populateStaffSelects();
@@ -3311,7 +2974,7 @@ function startAutoSave() {
   autoSaveTimer = setInterval(async () => {
     const active = document.querySelector('.panel.is-active');
     if (!active || active.dataset.panel !== 'form') return;
-    if (!form.elements['itemCode'].value && !form.elements['batch'].value) return;
+    if (!isFormDirty()) return;
     const draft = await buildFullRecord(true, 'draft_current');
     const ok = await Storage.put('records', draft);
     const el = document.getElementById('autosave-status');
@@ -3321,7 +2984,7 @@ function startAutoSave() {
 
 async function checkAutoRecovery() {
   const draft = await Storage.get('records', 'draft_current');
-  if (draft && draft.sampleInfo && (draft.sampleInfo.itemCode || draft.sampleInfo.batch)) {
+  if (draft && draft.sampleInfo && Object.values(draft.sampleInfo).some(v => v)) {
     Modal.open(
       '<h2>Khôi phục phiếu đang nhập dở?</h2>' +
       '<p>Phát hiện dữ liệu chưa lưu chính thức từ phiên làm việc trước (Item Code: ' + (draft.sampleInfo.itemCode || '--') + ', Batch: ' + (draft.sampleInfo.batch || '--') + ').</p>' +
@@ -3364,8 +3027,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   await AuditLog.loadAll();
 
-  populateSpecParameterSelect();
-  updateThresholdsForCustomer();
+  migrateProductTypes();
+  initTypeSelects();
+  renderFormForType(state.formType);
   await loadRecordsCache();
   renderDashboard();
 
@@ -3416,17 +3080,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     switchTab('form');
   });
 
-  // Thông tin mẫu
-  form.elements['itemCode'].addEventListener('change', onItemCodeChange);
-  form.elements['itemCode'].addEventListener('blur', onItemCodeChange);
-  form.elements['batch'].addEventListener('change', onBatchChange);
-  form.elements['batch'].addEventListener('blur', onBatchChange);
-  form.elements['po'].addEventListener('change', onPoChange);
-  form.elements['po'].addEventListener('blur', onPoChange);
-  form.elements['customer'].addEventListener('change', updateThresholdsForCustomer);
+  // Các trường Thông tin mẫu và ảnh được gắn sự kiện mỗi lần dựng form (renderFormForType);
+  // ở đây chỉ gắn cho phần tĩnh của form.
   form.elements['reviewedBy'].addEventListener('change', handleReviewedByChange);
-  initPhotoInput('do_can_anh');
-  initPhotoInput('ngoai_vat_anh');
 
   // Recompute khi bất kỳ input/select nào trong form thay đổi.
   // Nghe cả 'input' và 'change' vì một số trình duyệt/thiết bị (đặc biệt <select>
@@ -3473,7 +3129,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Lịch sử: filter + xuất CSV
-  ['history-search', 'history-filter-customer', 'history-filter-result', 'history-filter-date'].forEach(id => {
+  document.getElementById('dash-type-filter').addEventListener('change', renderDashboard);
+  ['history-search', 'history-filter-customer', 'history-filter-result', 'history-filter-type', 'history-filter-date'].forEach(id => {
     document.getElementById(id).addEventListener('input', renderHistoryTable);
     document.getElementById(id).addEventListener('change', renderHistoryTable);
   });
@@ -3488,8 +3145,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const name = document.getElementById('itemcode-new-name').value.trim();
     const recipe = document.getElementById('itemcode-new-recipe').value.trim() || '-';
     if (!item || !name) { toast('Vui lòng nhập Item Code và Product Name.', 'warn'); return; }
-    if (findItemByCode(item)) { toast('Item Code "' + item + '" đã tồn tại trong danh mục.', 'warn'); return; }
-    ITEM_CODES.push({ item, name, recipe });
+    if (findItemByCodeIn(state.adminType, item)) { toast('Item Code "' + item + '" đã tồn tại trong danh mục ' + PRODUCT_TYPES[state.adminType] + '.', 'warn'); return; }
+    ITEM_CODES.push({ productType: state.adminType, item, name, recipe });
     document.getElementById('itemcode-new-item').value = '';
     document.getElementById('itemcode-new-name').value = '';
     document.getElementById('itemcode-new-recipe').value = '';
@@ -3505,8 +3162,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const unit = document.getElementById('repeat-new-unit').value.trim() || '-';
     const maxDiff = toNumber(document.getElementById('repeat-new-maxdiff').value);
     if (!parameter || maxDiff === null) { toast('Nhập tên chỉ tiêu và chênh lệch tối đa hợp lệ.', 'warn'); return; }
-    if (REPEATABILITY.some(r => r.parameter === parameter)) { toast('Chỉ tiêu này đã có trong bảng.', 'warn'); return; }
-    REPEATABILITY.push({ parameter, unit, maxDiff });
+    if (REPEATABILITY.some(r => r.parameter === parameter && typeOf(r) === state.adminType)) { toast('Chỉ tiêu này đã có trong bảng.', 'warn'); return; }
+    REPEATABILITY.push({ productType: state.adminType, parameter, unit, maxDiff });
     ['repeat-new-parameter', 'repeat-new-unit', 'repeat-new-maxdiff'].forEach(id => { document.getElementById(id).value = ''; });
     persistRepeatability();
     renderRepeatabilityTable();
@@ -3515,15 +3172,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     toast('Đã thêm chỉ tiêu.', 'success');
   });
 
+  // Parameters: thêm trường mới
+  document.getElementById('btn-add-param').addEventListener('click', () => {
+    const parameter = document.getElementById('param-new-parameter').value.trim();
+    const field = document.getElementById('param-new-field').value.trim();
+    if (!parameter || !field) { toast('Nhập Chỉ tiêu và Tên trường.', 'warn'); return; }
+    FIELD_MAPPING.push({
+      productType: state.adminType, parameter, field,
+      format: document.getElementById('param-new-format').value,
+      type: document.getElementById('param-new-type').value,
+      remark: document.getElementById('param-new-remark').value.trim()
+    });
+    ['param-new-parameter', 'param-new-field', 'param-new-remark'].forEach(id => { document.getElementById(id).value = ''; });
+    persistFieldMapping();
+    renderParametersTable();
+    AuditLog.log('add-param', { parameter, field });
+    toast('Đã thêm trường.', 'success');
+  });
+
   // Spec.: thêm dòng ngưỡng mới
   document.getElementById('btn-add-spec').addEventListener('click', () => {
-    const customer = document.getElementById('spec-new-customer').value;
-    const parameter = document.getElementById('spec-new-parameter').value;
+    const customer = document.getElementById('spec-new-customer').value.trim();
+    const parameter = document.getElementById('spec-new-parameter').value.trim();
     const unit = document.getElementById('spec-new-unit').value.trim();
     const requirement = document.getElementById('spec-new-requirement').value.trim();
     const recipe = document.getElementById('spec-new-recipe').value.trim() || '-';
-    if (!requirement) { toast('Vui lòng nhập Yêu cầu (ngưỡng).', 'warn'); return; }
-    THRESHOLDS.push({ customer, parameter, unit, requirement, recipe });
+    if (!parameter || !requirement) { toast('Vui lòng nhập Chỉ tiêu và Yêu cầu (ngưỡng).', 'warn'); return; }
+    THRESHOLDS.push({ productType: state.adminType, customer, parameter, unit, requirement, recipe });
+    document.getElementById('spec-new-customer').value = '';
+    document.getElementById('spec-new-parameter').value = '';
     document.getElementById('spec-new-unit').value = '';
     document.getElementById('spec-new-requirement').value = '';
     document.getElementById('spec-new-recipe').value = '';

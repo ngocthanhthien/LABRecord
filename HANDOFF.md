@@ -1,8 +1,8 @@
 # Lab Record – ILD Coffee — Handoff Document
 
-**Cập nhật:** 2026-09-25
+**Cập nhật:** 2026-09-26
 **Vị trí dự án:** `C:\Users\BinhDang\Documents\GitHub\LABRecord` (git repo; trước đây ở `C:\Apps\Q - LAB RECORD`, đã chuyển)
-**Trạng thái:** Ứng dụng chạy được đầy đủ (Phần 1-5 kế hoạch gốc + 13 mục hiệu chỉnh vòng 2 + tab Độ lặp lại cho thêm/xoá chỉ tiêu). Còn vài giả định nghiệp vụ cần QA xác nhận (mục 5).
+**Trạng thái:** Đã hỗ trợ nhiều LOẠI SẢN PHẨM (Powder / Coffee Oil / Liquid) theo kiến trúc cấu hình (mục 3.6). Powder chạy đầy đủ và cho kết quả trùng bản cũ; Coffee Oil và Liquid mới có khung, chưa có trường/chỉ tiêu. Ứng dụng chạy được đầy đủ (Phần 1-5 kế hoạch gốc + 13 mục hiệu chỉnh vòng 2 + tab Độ lặp lại cho thêm/xoá chỉ tiêu). Còn vài giả định nghiệp vụ cần QA xác nhận (mục 5).
 
 Tài liệu này viết cho AI/dev khác tiếp nhận dự án mà không có lịch sử hội thoại. Đọc trước khi sửa code.
 
@@ -89,6 +89,7 @@ Phiếu đã lưu (`records`) theo schema lồng nhau: `sampleInfo`, `parameters
   | Admin | `admin1234` | admin |
 
 ### 3.5. Luồng nhập liệu chính
+(Các bước dưới mô tả form Powder; hàm và tên trường vẫn đúng nhưng form nay được dựng bởi Form Engine — mục 3.6.)
 1. `itemCode` đổi → `onItemCodeChange()` → tra `ITEM_CODES` → điền Recipe/Product Name → `updateThresholdsForCustomer()`.
 2. `batch` đổi → `onBatchChange()` → `productionDateFromBatch()` (ký tự vị trí 2-3-4 của Batch = ngày Julian, năm = năm hiện tại) → Ngày sản xuất.
 3. `po` đổi → `onPoChange()` → gợi ý SSCC = PO + "000" (người dùng gõ tiếp 3 số cuối).
@@ -98,6 +99,17 @@ Phiếu đã lưu (`records`) theo schema lồng nhau: `sampleInfo`, `parameters
 7. Lưu nháp / Lưu phiếu (`submitRecord(false)`) / Force đóng Report (`submitRecord(true)`) → `buildFullRecord()` → `Storage.put('records', …)`.
 8. Auto Save mỗi 20s (khi ở tab Nhập liệu) ghi vào bản ghi cố định `draft_current` — khác "Lưu nháp" (tạo bản ghi nháp id riêng, hiện trong Lịch sử). Mở lại app → `checkAutoRecovery()` hỏi khôi phục. Chỉ chạy SAU khi đăng nhập.
 
+### 3.6. Loại sản phẩm + Form Engine (quan trọng — đọc trước khi sửa form)
+
+Form Nhập liệu KHÔNG còn là HTML viết cứng. Ở tab Nhập liệu người dùng chọn **Loại sản phẩm** (`#form-product-type`), form được dựng động từ cấu hình `TYPE_CONFIG[type]` (search `const TYPE_CONFIG`):
+- `sampleFields`: các trường "Thông tin mẫu" của loại đó (mỗi loại KHÁC nhau). Trường có thể mang hành vi tự động: `behavior:'itemLookup'` (tra Item Code → Recipe/Product Name), `'julianBatch'` (ngày SX từ Batch), `'ssccFromPo'` (gợi ý SSCC từ PO); `thresholdKey:true` = trường dùng để tra ngưỡng (Customer); `required:true` = bắt buộc khi lưu.
+- `blocks`: danh sách khối chỉ tiêu. Mỗi khối có `kind` trỏ tới `BLOCK_KINDS`: `pair` (2 lần đo số → TB/sai khác/so ngưỡng/cảnh báo độ lặp lại; cột kết quả có thể `input:'computed'` với `formula`), `single` (1 nhóm trường + kết quả số hoặc lựa chọn, tuỳ chọn ảnh; `evaluate:'numericRange'|'absentPresent'`), `hotCold` (nhiều dòng như Nóng/Lạnh, tất cả phải V), `sieve` (bảng rây). Mỗi kiểu khối có 4 hàm: `html`, `compute`, `collect`, `apply`.
+- **Thêm chỉ tiêu/loại mới = thêm cấu hình**, chỉ cần viết kiểu khối mới khi có cách đo hoàn toàn khác. Tên input trong DOM = `prefix_rep_key` (VD `do_am_1_ket_qua`); khoá bản ghi giữ nguyên schema cũ (`doAm`, `reps`, `average`... xem `buildFullRecord`).
+- `renderFormForType(type)` dựng lại form (dùng cho đổi loại, Phiếu mới, reset, nạp bản nháp/phục hồi). Đổi loại khi đang có dữ liệu sẽ hỏi xác nhận rồi xoá form.
+- **Coffee Oil và Liquid hiện có `sampleFields: []`, `blocks: []`** → form hiện thông báo "chưa được cấu hình", nút lưu bị chặn. Giai đoạn 3 (chưa làm, đang chờ người dùng cung cấp danh sách trường thông tin mẫu, chỉ tiêu, công thức, ngưỡng, dung sai của 2 loại này): điền cấu hình vào `TYPE_CONFIG.coffeeOil / liquid`.
+- **Dữ liệu theo loại:** mọi dòng của `ITEM_CODES`, `THRESHOLDS`, `FIELD_MAPPING`, `REPEATABILITY` và mỗi phiếu có trường `productType`. Dữ liệu cũ thiếu trường này được gán `powder` khi nạp (`migrateProductTypes()`, `loadRecordsCache()`, khi import backup). Các tab Item Code / Spec. / Parameters / Độ lặp lại có ô "Loại sản phẩm" (`state.adminType`) chỉ hiện và sửa dòng của loại đang chọn; Spec. và Parameters cho phép thêm/xoá dòng (Customer, Chỉ tiêu nhập tự do có gợi ý). `getThreshold(type, customer, label, recipe)`, `findItemByCodeIn(type, code)`, `getMaxDiff()` đều lọc theo loại. Lịch sử và Dashboard có bộ lọc loại; CSV/Full Report/chi tiết phiếu có thông tin loại và dựng theo `orderedParams(record)`.
+- Quy tắc riêng của Powder (Item Code lấy Recipe, ngày Julian từ Batch, SSCC từ PO) chỉ áp dụng khi cấu hình loại đó bật hành vi tương ứng; Oil/Liquid không bị áp dụng mặc định.
+
 ---
 
 ## 4. Tính năng đã hoàn thành
@@ -105,7 +117,8 @@ Phiếu đã lưu (`records`) theo schema lồng nhau: `sampleInfo`, `parameters
 - **Phần 1–5 gốc:** khung HTML; logic tính toán/điều hướng; IndexedDB + fallback, Auto Save/Recovery, Backup/Restore JSON, xuất CSV; Dark mode, responsive, animation; validation (Item Code tồn tại, định dạng Batch, trùng Batch, ảnh ≤5MB, try/catch quanh Storage).
 - **13 mục vòng 2:** (1) thanh tab ngang; (2) Item Code & PO dạng số; (3) tab Item Code (CRUD); (4) SSCC gợi ý từ PO; (5) tab Độ lặp lại, lệch quá → cảnh báo đỏ (không đổi Kết luận); (6) bỏ ảnh "Vị trí dán mẫu cặn" trùng ở Độ màu; (8) Full Report PDF riêng; (9) đa ảnh cộng dồn + thư viện xem trước; (10) timestamp nhập theo khối; (11) thanh % hoàn thành; (12) Force đóng Report (đánh dấu "⚠ Force"); (13) đăng nhập + phân quyền. *(Người dùng không đánh số 7 — không phải thiếu sót.)*
 - **Sau vòng 2:** tab Độ lặp lại cho **thêm/xoá chỉ tiêu** (`btn-add-repeat`, `renderRepeatabilityTable()`). Lưu ý: cảnh báo đỏ tự động chỉ hoạt động với 5 chỉ tiêu có 2 lần đo trong form (Độ ẩm, Tỷ trọng, Độ màu, pH, Acidity); chỉ tiêu gõ tự do chỉ được lưu trong bảng, chưa có ô nhập tương ứng trong form.
-- **Đang dở:** người dùng vừa nhắn "Tại tab độ lặp lại. Cho phép chèn thêm chỉ tiêu mới &" — tin nhắn bị cắt ở dấu "&". Phần "thêm chỉ tiêu" đã làm; phần sau dấu "&" (có thể là sửa đơn vị/đổi tên chỉ tiêu trực tiếp trong bảng) chưa rõ — hỏi lại người dùng.
+- **Loại sản phẩm (Giai đoạn 1+2 xong):** chọn loại ở đầu phiếu; cấu hình Spec./Độ lặp lại/Parameters/Item Code theo loại; Powder được chuyển sang cấu hình và kiểm chứng trùng số liệu bản cũ (Độ ẩm 2.25/0.04, Tỷ trọng 234.10, Acidity 4.14, sàng <0.5mm 0.12%, sau sàng 100.42g, lưu → nạp lại cho bản ghi giống hệt). **Giai đoạn 3 (Oil/Liquid) đang chờ dữ liệu từ người dùng.**
+- **Đang dở (cũ):** người dùng vừa nhắn "Tại tab độ lặp lại. Cho phép chèn thêm chỉ tiêu mới &" — tin nhắn bị cắt ở dấu "&". Phần "thêm chỉ tiêu" đã làm; phần sau dấu "&" (có thể là sửa đơn vị/đổi tên chỉ tiêu trực tiếp trong bảng) chưa rõ — hỏi lại người dùng.
 
 ---
 
@@ -138,7 +151,7 @@ Nếu dùng Claude Code Browser tool, tạo `.claude/launch.json`:
   { "name": "lab-record-static", "runtimeExecutable": "python",
     "runtimeArgs": ["-m", "http.server", "8765"], "port": 8765 } ] }
 ```
-Lưu ý: Browser tool không chạy được JS trên `file://` ngoài thư mục project — phải test qua server. Sau khi đổi thư mục, preview của Claude Code vẫn có thể phục vụ thư mục CŨ (từng gặp: trang không có thay đổi mới) — kiểm tra bằng `fetch('/index.html')` xem có nội dung mới không; nếu sai, tự chạy `python -m http.server 8766` trong thư mục dự án rồi mở `http://localhost:8766`.
+Lưu ý: Browser tool không chạy được JS trên `file://` ngoài thư mục project — phải test qua server. Sau khi đổi thư mục, preview của Claude Code vẫn có thể phục vụ thư mục CŨ (từng gặp: trang không có thay đổi mới) — kiểm tra bằng `fetch('/index.html')` xem có nội dung mới không; nếu sai, tự chạy `python -m http.server 8766` trong thư mục dự án (hiện đang dùng cách này) rồi mở `http://localhost:8766`.
 
 **Kiểm tra nhanh sau khi sửa:**
 1. Console không có lỗi đỏ khi tải trang. Kiểm cú pháp script: tách nội dung giữa `<script>`…`</script>` ra file `.js` rồi `node --check`.
@@ -153,6 +166,7 @@ Không có test tự động; mọi kiểm tra đều thủ công.
 
 ## 7. Việc tiếp theo gợi ý
 
+- **Giai đoạn 3:** khi người dùng gửi thông tin Coffee Oil/Liquid, điền `TYPE_CONFIG` (xem 3.6), thêm seed `THRESHOLDS`/`REPEATABILITY`/`FIELD_MAPPING`/`ITEM_CODES` với `productType` tương ứng (hoặc để người dùng nhập ở các tab quản trị), rồi test như Powder (đối chiếu tay số liệu mẫu).
 - Hỏi người dùng nốt yêu cầu bị cắt ở tab Độ lặp lại (mục 4).
 - Xác nhận 6 giả định ở mục 5 với QA/Supervisor.
 - Test thật mở bằng `file://` trên máy người dùng cuối.
