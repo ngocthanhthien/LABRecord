@@ -745,6 +745,9 @@ body {
       <button class="sidebar__item" data-tab="users">
         <span class="sidebar__icon">👥</span> Người dùng
       </button>
+      <button class="sidebar__item" data-tab="datalog">
+        <span class="sidebar__icon">🕒</span> Data Log
+      </button>
       <button class="sidebar__item" data-tab="settings">
         <span class="sidebar__icon">⚙️</span> Cài đặt
       </button>
@@ -1032,6 +1035,36 @@ body {
             </table>
           </div>
           <p class="storage-mode">Giá trị mặc định là ước lượng ban đầu — cần QA xác nhận lại theo phương pháp thử chính thức.</p>
+        </div>
+      </section>
+
+      <!-- ---------- PANEL: DATA LOG (Supervisor+) ---------- -->
+      <section class="panel" id="panel-datalog" data-panel="datalog">
+        <h1 class="panel__title">Data Log</h1>
+        <p class="panel__desc">Ai, trên máy nào, lúc nào đã tạo / sửa / xoá / duyệt phiếu, đổi cấu hình hay đăng nhập. Gồm log trên máy này và (khi đã đăng nhập Supabase) log của các máy khác.</p>
+        <div class="card">
+          <div class="settings-add-row settings-add-row--wrap" style="margin-bottom:0.75rem;">
+            <label class="field field--inline"><span class="field__label">Tên máy này</span>
+              <input type="text" class="field__input" id="datalog-device" placeholder="VD: Tablet Lab 1" /></label>
+            <span class="storage-mode" id="datalog-device-id" style="margin:0;align-self:center;"></span>
+          </div>
+          <div class="toolbar">
+            <input type="search" class="field__input" id="datalog-search" placeholder="Tìm trong log..." />
+            <select class="field__input" id="datalog-action"></select>
+            <select class="field__input" id="datalog-user"></select>
+            <input type="date" class="field__input" id="datalog-from" title="Từ ngày" />
+            <input type="date" class="field__input" id="datalog-to" title="Đến ngày" />
+            <button type="button" class="btn btn--secondary" id="btn-datalog-refresh">🔄 Tải lại</button>
+            <button type="button" class="btn btn--secondary" id="btn-datalog-csv">Xuất CSV</button>
+          </div>
+          <div class="users-banner" id="datalog-warn" hidden></div>
+          <div class="table-wrapper">
+            <table class="data-table" id="datalog-table">
+              <thead><tr><th>Thời gian</th><th>Người dùng</th><th>Máy</th><th>Hành động</th><th>Chi tiết</th></tr></thead>
+              <tbody id="datalog-table-body"></tbody>
+            </table>
+          </div>
+          <p class="storage-mode" id="datalog-count"></p>
         </div>
       </section>
 
@@ -1890,6 +1923,12 @@ const Sync = (function () {
       enqueue('del', store, key);
       flush();
     },
+    // Data Log: đọc nhật ký từ Supabase (RLS chỉ cho Supervisor trở lên)
+    canFetch: () => enabled(),
+    async fetchAudit() {
+      const rows = await (await rest('lab_audit?select=data&order=created_at.desc&limit=1000', { headers: headers() })).json();
+      return rows.map(r => r.data);
+    },
     pendingCount: () => readQ().length,
     render
   };
@@ -1910,11 +1949,27 @@ Storage.delete = async (store, key) => {
 };
 
 /* ---------------- AUDIT LOG (ghi vào Storage) ---------------- */
+/* ---------------- MÁY (thiết bị): mã ngẫu nhiên + tên gọi tự đặt, ghi kèm mỗi dòng Data Log ---------------- */
+const Device = {
+  id() {
+    let id = '';
+    try { id = localStorage.getItem('labrecord_device_id') || ''; } catch (e) {}
+    if (!id) {
+      id = 'dev_' + Math.random().toString(36).slice(2, 10);
+      try { localStorage.setItem('labrecord_device_id', id); } catch (e) {}
+    }
+    return id;
+  },
+  label() { try { return localStorage.getItem('labrecord_device_label') || ''; } catch (e) { return ''; } },
+  setLabel(v) { try { localStorage.setItem('labrecord_device_label', String(v || '').trim()); } catch (e) {} },
+  name() { return this.label() || ('Máy ' + this.id().slice(-4)); }
+};
+
 const AuditLog = {
   entries: [],
   async log(action, detail) {
     const userName = state.currentUser ? state.currentUser.name : '(chưa đăng nhập)';
-    const entry = { id: 'log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), time: new Date().toISOString(), action, detail, user: userName };
+    const entry = { id: 'log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), time: new Date().toISOString(), action, detail, user: userName, device: Device.name(), deviceId: Device.id() };
     this.entries.unshift(entry);
     await Storage.put('auditLog', entry).catch(() => {});
     renderAuditLogList();
@@ -2449,6 +2504,7 @@ function switchTab(tabName) {
   if (tabName === 'parameters') renderParametersTable();
   if (tabName === 'settings') { renderStaffList(); renderAuditLogList(); }
   if (tabName === 'users') renderUsersTab(true);
+  if (tabName === 'datalog') renderDataLog(true);
 }
 
 /* ---------------- DASHBOARD ---------------- */
@@ -2611,7 +2667,7 @@ function updateHeaderUser() {
 function applyRolePermissions() {
   const supervisorPlus = hasRole('supervisor');
   const adminOnly = hasRole('admin');
-  document.querySelectorAll('[data-tab="itemcode"], [data-tab="spec"], [data-tab="repeatability"]').forEach(btn => {
+  document.querySelectorAll('[data-tab="itemcode"], [data-tab="spec"], [data-tab="repeatability"], [data-tab="datalog"]').forEach(btn => {
     btn.hidden = !supervisorPlus;
   });
   document.querySelectorAll('[data-tab="parameters"], [data-tab="settings"], [data-tab="users"]').forEach(btn => {
@@ -2744,6 +2800,94 @@ function openUserAddModal() {
       renderUsersTab(true);
     } catch (ex) { err.textContent = ex.message; btn.disabled = false; }
   });
+}
+
+/* ---------------- TAB DATA LOG: ai / máy nào / lúc nào đã tạo–sửa–xoá–duyệt–đăng nhập ---------------- */
+const ACTION_LABELS = {
+  'submit-record': 'Lưu phiếu', 'force-submit-record': 'Force đóng phiếu', 'save-draft': 'Lưu nháp phiếu', 'delete-record': 'Xoá phiếu',
+  'approval-approved': 'Phê duyệt: Approve', 'approval-rejected': 'Phê duyệt: Reject', 'approval-not_approved': 'Phê duyệt: Not Approve',
+  'login': 'Đăng nhập', 'logout': 'Đăng xuất', 'import-backup': 'Nhập backup', 'export-backup': 'Xuất backup',
+  'add-itemcode': 'Thêm mã hàng', 'edit-itemcode': 'Sửa mã hàng', 'delete-itemcode': 'Xoá mã hàng',
+  'add-spec-row': 'Thêm ngưỡng (Spec.)', 'edit-spec-row': 'Sửa ngưỡng (Spec.)', 'delete-spec-row': 'Xoá ngưỡng (Spec.)',
+  'add-repeatability': 'Thêm độ lặp lại', 'edit-repeatability': 'Sửa độ lặp lại', 'delete-repeatability': 'Xoá độ lặp lại',
+  'add-param': 'Thêm trường (Parameters)', 'edit-param': 'Sửa trường (Parameters)', 'delete-param': 'Xoá trường (Parameters)',
+  'add-staff': 'Thêm nhân viên đo', 'remove-staff': 'Xoá nhân viên đo',
+  'rename-device': 'Đặt tên máy', 'add-user': 'Tạo người dùng', 'remove-user': 'Xoá người dùng', 'set-role': 'Đổi vai trò', 'disable-user': 'Vô hiệu hoá người dùng', 'enable-user': 'Kích hoạt người dùng',
+  'USER_CREATED': 'Tạo người dùng', 'ROLE_CHANGED': 'Đổi vai trò', 'USER_DISABLED': 'Vô hiệu hoá người dùng', 'USER_ENABLED': 'Kích hoạt người dùng'
+};
+const actionLabel = (a) => ACTION_LABELS[a] || a;
+function formatLogDetail(d) {
+  if (d === null || d === undefined || d === '') return '';
+  if (typeof d !== 'object') return String(d);
+  if (d.text) return d.text;
+  return Object.entries(d).filter(([, v]) => v !== '' && v !== null && v !== undefined).map(([k, v]) => k + ': ' + v).join(', ');
+}
+
+let dataLogRows = [];
+let dataLogWarn = '';
+async function loadDataLog(reload) {
+  const map = new Map(AuditLog.entries.map(e => [e.id, e]));
+  dataLogWarn = '';
+  if (reload && Sync.canFetch()) {
+    try { const NORM = { USER_CREATED: 'add-user', ROLE_CHANGED: 'set-role', USER_DISABLED: 'disable-user', USER_ENABLED: 'enable-user' };
+      (await Sync.fetchAudit()).forEach(e => { if (e && e.id && !map.has(e.id)) map.set(e.id, Object.assign({}, e, { action: NORM[e.action] || e.action })); }); }
+    catch (err) { dataLogWarn = 'Không tải được log từ Supabase (' + err.message + ') — chỉ hiện log trên máy này.'; }
+  } else if (reload && Auth.on() && !Sync.canFetch()) {
+    dataLogWarn = 'Chưa đăng nhập Supabase — chỉ hiện log trên máy này.';
+  }
+  dataLogRows = Array.from(map.values()).sort((a, b) => new Date(b.time) - new Date(a.time));
+}
+function dataLogFiltered() {
+  const q = document.getElementById('datalog-search').value.trim().toLowerCase();
+  const act = document.getElementById('datalog-action').value;
+  const usr = document.getElementById('datalog-user').value;
+  const from = document.getElementById('datalog-from').value;
+  const to = document.getElementById('datalog-to').value;
+  const dayOf = (iso) => { const d = new Date(iso); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+  return dataLogRows.filter(e => {
+    if (act && e.action !== act) return false;
+    if (usr && e.user !== usr) return false;
+    if (from && dayOf(e.time) < from) return false;
+    if (to && dayOf(e.time) > to) return false;
+    if (q && !(actionLabel(e.action) + ' ' + e.action + ' ' + e.user + ' ' + (e.device || '') + ' ' + formatLogDetail(e.detail)).toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+function renderDataLogTable() {
+  const rows = dataLogFiltered();
+  const MAX = 500;
+  const tbody = document.getElementById('datalog-table-body');
+  tbody.innerHTML = rows.length
+    ? rows.slice(0, MAX).map(e =>
+        '<tr><td>' + new Date(e.time).toLocaleString('vi-VN') + '</td><td>' + escapeAttr(e.user || '') + '</td><td>' + escapeAttr(e.device || '') +
+        '</td><td>' + escapeAttr(actionLabel(e.action)) + '</td><td>' + escapeAttr(formatLogDetail(e.detail)) + '</td></tr>').join('')
+    : '<tr><td colspan="5" style="text-align:center;color:var(--text-faint);">Không có bản ghi phù hợp.</td></tr>';
+  document.getElementById('datalog-count').textContent = 'Hiển thị ' + Math.min(rows.length, MAX) + ' / ' + rows.length + ' bản ghi lọc được (tổng ' + dataLogRows.length + ').' +
+    (rows.length > MAX ? ' Chỉ hiện ' + MAX + ' bản ghi mới nhất — dùng bộ lọc hoặc xuất CSV để xem đủ.' : '');
+  const w = document.getElementById('datalog-warn');
+  w.hidden = !dataLogWarn; w.textContent = dataLogWarn;
+}
+async function renderDataLog(reload) {
+  document.getElementById('datalog-device').value = Device.label();
+  document.getElementById('datalog-device-id').textContent = 'Mã máy: ' + Device.id();
+  if (reload) document.getElementById('datalog-count').textContent = 'Đang tải…';
+  await loadDataLog(reload);
+  const keep = (id, vals, first) => {
+    const sel = document.getElementById(id), cur = sel.value;
+    sel.innerHTML = '<option value="">' + first + '</option>' + vals.map(v => '<option value="' + escapeAttr(v.value) + '">' + escapeAttr(v.label) + '</option>').join('');
+    sel.value = vals.some(v => v.value === cur) ? cur : '';
+  };
+  keep('datalog-action', Array.from(new Set(dataLogRows.map(e => e.action))).sort().map(a => ({ value: a, label: actionLabel(a) })), 'Tất cả hành động');
+  keep('datalog-user', Array.from(new Set(dataLogRows.map(e => e.user).filter(Boolean))).sort().map(u => ({ value: u, label: u })), 'Tất cả người dùng');
+  renderDataLogTable();
+}
+function exportDataLogCsv() {
+  const rows = dataLogFiltered();
+  if (!rows.length) { toast('Không có bản ghi để xuất.', 'warn'); return; }
+  const lines = [['Thời gian', 'Người dùng', 'Máy', 'Hành động', 'Chi tiết'].map(csvEscape).join(',')];
+  rows.forEach(e => lines.push([new Date(e.time).toLocaleString('vi-VN'), e.user, e.device || '', actionLabel(e.action), formatLogDetail(e.detail)].map(csvEscape).join(',')));
+  downloadFile('data_log.csv', '﻿' + lines.join('\n'), 'text/csv;charset=utf-8');
+  toast('Đã xuất Data Log (' + rows.length + ' dòng).', 'success');
 }
 
 /* ---------------- HISTORY ---------------- */
@@ -3182,6 +3326,7 @@ function renderRepeatabilityTable() {
       const v = toNumber(e.target.value);
       if (v === null) { toast('Giá trị không hợp lệ.', 'warn'); e.target.value = REPEATABILITY[idx].maxDiff; return; }
       REPEATABILITY[idx].maxDiff = v;
+      AuditLog.log('edit-repeatability', { parameter: REPEATABILITY[idx].parameter, maxDiff: v });
       persistRepeatability();
       recomputeAll();
       toast('Đã cập nhật độ lặp lại.', 'success');
@@ -3207,6 +3352,7 @@ function renderSpecTable() {
     el.addEventListener('change', (e) => {
       const idx = parseInt(e.target.dataset.idx, 10);
       THRESHOLDS[idx][e.target.dataset.field] = e.target.value;
+      AuditLog.log('edit-spec-row', { parameter: THRESHOLDS[idx].parameter, field: e.target.dataset.field, value: e.target.value });
       updateThresholdsForCustomer();
       persistThresholds();
       toast('Đã cập nhật ngưỡng.', 'success');
@@ -3253,6 +3399,7 @@ function renderParametersTable() {
     el.addEventListener('change', (e) => {
       const idx = parseInt(e.target.dataset.idx, 10);
       FIELD_MAPPING[idx][e.target.dataset.field] = e.target.value;
+      AuditLog.log('edit-param', { field: FIELD_MAPPING[idx].field, key: e.target.dataset.field, value: e.target.value });
       persistFieldMapping();
       toast('Đã lưu.', 'success');
     });
@@ -3657,6 +3804,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   } else {
     showLogin();
   }
+
+  // Tab Data Log
+  ['datalog-search', 'datalog-action', 'datalog-user', 'datalog-from', 'datalog-to'].forEach(id => {
+    document.getElementById(id).addEventListener('input', renderDataLogTable);
+    document.getElementById(id).addEventListener('change', renderDataLogTable);
+  });
+  document.getElementById('btn-datalog-refresh').addEventListener('click', () => renderDataLog(true));
+  document.getElementById('btn-datalog-csv').addEventListener('click', exportDataLogCsv);
+  document.getElementById('datalog-device').addEventListener('change', (e) => {
+    Device.setLabel(e.target.value);
+    AuditLog.log('rename-device', { name: Device.name() });
+    toast('Đã lưu tên máy.', 'success');
+  });
 
   // Tab Người dùng (Admin)
   document.getElementById('btn-users-refresh').addEventListener('click', () => renderUsersTab(true));
