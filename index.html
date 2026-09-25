@@ -1569,6 +1569,11 @@ const CONFIG = {
   appName: 'Lab Record',
   version: 'v1.0 (Phần 1-5)',
   defaultUser: 'QA Demo',
+  // Đặt true để bật lại màn hình đăng nhập bắt buộc. Khi false (giai đoạn hoàn thiện
+  // tính năng), app tự vào với tài khoản Admin để thấy đủ tab — toàn bộ code đăng nhập
+  // và phân quyền vẫn giữ nguyên.
+  loginRequired: false,
+  autoLoginUser: 'Admin',
 };
 let STAFF = ['Trân', 'Huy', 'Hiền', 'Định', 'Trang', 'Triều'];
 
@@ -2372,8 +2377,10 @@ function updateHeaderUser() {
   const el = document.getElementById('current-user');
   if (!state.currentUser) { el.textContent = 'Chưa đăng nhập'; return; }
   el.innerHTML = '<span class="header-user-badge">Xin chào, <b>' + state.currentUser.name +
-    '</b> (' + ROLES[state.currentUser.role].label + ') <button type="button" class="btn btn--secondary" id="btn-logout">Đăng xuất</button></span>';
-  document.getElementById('btn-logout').addEventListener('click', logout);
+    '</b> (' + ROLES[state.currentUser.role].label + ')' +
+    (CONFIG.loginRequired ? ' <button type="button" class="btn btn--secondary" id="btn-logout">Đăng xuất</button>' : '') + '</span>';
+  const lo = document.getElementById('btn-logout');
+  if (lo) lo.addEventListener('click', logout);
 }
 // Ẩn các tab/khối chỉ Supervisor+/Admin mới được vào — CHỈ là điều hướng UI, KHÔNG phải
 // bảo mật thật (ứng dụng chạy offline, không có backend xác thực).
@@ -3370,6 +3377,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   try { restored = JSON.parse(sessionStorage.getItem('labrecord_session') || 'null'); } catch (e) {}
   if (restored && USERS.some(u => u.name === restored.name && u.role === restored.role)) {
     state.currentUser = restored;
+    updateHeaderUser();
+    applyRolePermissions();
+    checkAutoRecovery().then(() => startAutoSave());
+  } else if (!CONFIG.loginRequired && USERS.some(u => u.name === CONFIG.autoLoginUser)) {
+    const u = USERS.find(x => x.name === CONFIG.autoLoginUser);
+    state.currentUser = { name: u.name, role: u.role };
     updateHeaderUser();
     applyRolePermissions();
     checkAutoRecovery().then(() => startAutoSave());
