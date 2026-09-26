@@ -1808,7 +1808,8 @@ const Sync = (function () {
     let changed = false;
 
     // Danh mục
-    const remoteSettings = await (await rest('lab_settings?select=key,value,updated_at', { headers: headers() })).json();
+    // Bước 1 chỉ lấy key + updated_at (vài trăm byte); chỉ tải `value` của key mà server mới hơn máy này.
+    const remoteSettings = await (await rest('lab_settings?select=key,updated_at', { headers: headers() })).json();
     const remoteKeys = new Set();
     for (const row of remoteSettings) {
       if (!SYNC_SETTINGS.includes(row.key)) continue;
@@ -1816,7 +1817,11 @@ const Sync = (function () {
       if (pend.has('settings|' + row.key)) continue;
       const local = await Storage.get('settings', row.key);
       const rt = new Date(row.updated_at).getTime(), lt = local ? new Date(local.updatedAt || 0).getTime() : -1;
-      if (rt > lt) { await Storage.raw.put('settings', { key: row.key, value: row.value, updatedAt: row.updated_at }); changed = true; }
+      if (rt > lt) {
+        const full = await (await rest('lab_settings?select=key,value,updated_at&key=eq.' + encodeURIComponent(row.key), { headers: headers() })).json();
+        if (!full.length) continue;
+        await Storage.raw.put('settings', { key: row.key, value: full[0].value, updatedAt: full[0].updated_at }); changed = true;
+      }
       else if (rt < lt) enqueue('put', 'settings', row.key);
     }
     for (const k of SYNC_SETTINGS) {
@@ -1900,10 +1905,14 @@ const Sync = (function () {
       if (!started) {
         started = true;
         window.addEventListener('online', () => syncNow(false));
-        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') syncNow(false); });
+        // Quay lại tab: chỉ đồng bộ nếu lần trước cách ≥30 giây (tránh gọi liên tục khi chuyển tab qua lại)
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible' && (!lastSync || Date.now() - lastSync.getTime() > 30000)) syncNow(false);
+        });
       }
       if (timer) clearInterval(timer);
-      timer = setInterval(() => syncNow(false), 60000);
+      // Định kỳ 3 phút, bỏ qua khi tab đang ẩn
+      timer = setInterval(() => { if (!document.hidden) syncNow(false); }, 180000);
       syncNow(false);
     },
     stop() {
@@ -1925,9 +1934,10 @@ const Sync = (function () {
     },
     // Data Log: đọc nhật ký từ Supabase (RLS chỉ cho Supervisor trở lên)
     canFetch: () => enabled(),
-    async fetchAudit() {
-      const rows = await (await rest('lab_audit?select=data&order=created_at.desc&limit=1000', { headers: headers() })).json();
-      return rows.map(r => r.data);
+    // Chỉ tải dòng mới hơn `since` (created_at lớn nhất đã có); lần đầu tối đa 1000 dòng mới nhất.
+    async fetchAudit(since) {
+      const q = 'lab_audit?select=data,created_at&order=created_at.desc&limit=1000' + (since ? '&created_at=gt.' + encodeURIComponent(since) : '');
+      return (await (await rest(q, { headers: headers() })).json()).map(r => ({ data: r.data, createdAt: r.created_at }));
     },
     pendingCount: () => readQ().length,
     render
@@ -2825,16 +2835,24 @@ function formatLogDetail(d) {
 
 let dataLogRows = [];
 let dataLogWarn = '';
+const dataLogRemote = new Map();   // cache log từ Supabase (trong bộ nhớ, theo phiên)
+let dataLogSince = '';             // created_at lớn nhất đã tải
 async function loadDataLog(reload) {
   const map = new Map(AuditLog.entries.map(e => [e.id, e]));
   dataLogWarn = '';
+  if (!Sync.canFetch()) { dataLogRemote.clear(); dataLogSince = ''; }   // đăng xuất → bỏ cache log từ server
   if (reload && Sync.canFetch()) {
     try { const NORM = { USER_CREATED: 'add-user', ROLE_CHANGED: 'set-role', USER_DISABLED: 'disable-user', USER_ENABLED: 'enable-user' };
-      (await Sync.fetchAudit()).forEach(e => { if (e && e.id && !map.has(e.id)) map.set(e.id, Object.assign({}, e, { action: NORM[e.action] || e.action })); }); }
+      // Chỉ tải phần mới hơn lần trước; phần cũ lấy từ cache trong bộ nhớ
+      (await Sync.fetchAudit(dataLogSince)).forEach(({ data: e, createdAt }) => {
+        if (createdAt && createdAt > dataLogSince) dataLogSince = createdAt;
+        if (e && e.id) dataLogRemote.set(e.id, Object.assign({}, e, { action: NORM[e.action] || e.action }));
+      }); }
     catch (err) { dataLogWarn = 'Không tải được log từ Supabase (' + err.message + ') — chỉ hiện log trên máy này.'; }
   } else if (reload && Auth.on() && !Sync.canFetch()) {
     dataLogWarn = 'Chưa đăng nhập Supabase — chỉ hiện log trên máy này.';
   }
+  dataLogRemote.forEach((e, id) => { if (!map.has(id)) map.set(id, e); });
   dataLogRows = Array.from(map.values()).sort((a, b) => new Date(b.time) - new Date(a.time));
 }
 function dataLogFiltered() {
@@ -3458,19 +3476,41 @@ async function loadRecordsCache() {
 
 /* ---------------- ĐÍNH KÈM ẢNH (Blob trong IndexedDB; bỏ qua nếu đang ở chế độ dự phòng localStorage) ---------------- */
 let attachmentFallbackWarned = false;
+// Nén ảnh trước khi lưu/đồng bộ: cạnh dài ≤1600px, JPEG 0.8 (ảnh điện thoại 3–5MB → ~200–400KB). Lỗi/không nhỏ hơn → giữ bản gốc.
+async function compressImage(file, max = 1600, q = 0.8) {
+  try {
+    if (!file.type || !file.type.startsWith('image/') || file.type === 'image/gif' || file.size < 300 * 1024) return file;
+    const bmp = await createImageBitmap(file);
+    const s = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    if (bmp.close) bmp.close();
+    const blob = await new Promise(res => c.toBlob(res, 'image/jpeg', q));
+    return (blob && blob.size < file.size) ? blob : file;
+  } catch (e) { return file; }
+}
+// Cùng một File (tự lưu nháp 20 giây/lần, rồi Lưu phiếu) → dùng lại tham chiếu cũ, không tạo/đẩy bản ảnh mới.
+const attachmentRefCache = new WeakMap();
 async function storeAttachment(file) {
   if (!file) return null;
-  if (file.size > 5 * 1024 * 1024) {
-    toast('Ảnh "' + file.name + '" vượt quá 5MB, vui lòng chọn ảnh nhỏ hơn.', 'warn');
+  if (attachmentRefCache.has(file)) return attachmentRefCache.get(file);
+  if (file.size > 15 * 1024 * 1024) {
+    toast('Ảnh "' + file.name + '" quá lớn (>15MB), vui lòng chọn ảnh nhỏ hơn.', 'warn');
     return null;
   }
+  const orig = file;
+  file = await compressImage(file);
   if (Storage.mode() !== 'indexeddb' && !attachmentFallbackWarned) {
     attachmentFallbackWarned = true;
     toast('Trình duyệt đang dùng bộ nhớ dự phòng — ảnh đính kèm sẽ không được lưu lại.', 'warn');
   }
   const id = 'att_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-  const ok = await Storage.put('attachments', { id, blob: file, name: file.name, type: file.type, savedAt: new Date().toISOString() });
-  return ok ? { fileRef: id, fileName: file.name, fileType: file.type } : null;
+  const ok = await Storage.put('attachments', { id, blob: file, name: orig.name, type: file.type || orig.type, savedAt: new Date().toISOString() });
+  if (!ok) return null;
+  const ref = { fileRef: id, fileName: orig.name, fileType: file.type || orig.type };
+  attachmentRefCache.set(orig, ref);
+  return ref;
 }
 async function storeAttachments(files) {
   const results = [];

@@ -177,3 +177,10 @@ Không có test tự động; mọi kiểm tra đều thủ công.
 - Test thật mở bằng `file://` trên máy người dùng cuối.
 - Dữ liệu không đồng bộ giữa các máy (mỗi máy một Storage riêng) — nếu nhiều Inspector dùng nhiều thiết bị, hiện chỉ gộp thủ công qua Backup/Restore JSON; đồng bộ thật cần server (định hướng ban đầu: "build offline trước, đẩy lên web sau").
 - Cân nhắc commit vào git ở thư mục mới (hiện repo mới có 1 commit "Add files via upload").
+
+## Tối ưu Egress Supabase (2026-09-26)
+- `Sync.pull`: `lab_settings` lấy `key,updated_at` trước, chỉ tải `value` của key mới hơn máy này.
+- Đồng bộ định kỳ 3 phút (trước 60 giây), bỏ qua khi tab ẩn; quay lại tab chỉ sync nếu lần trước cách ≥30 giây.
+- Data Log: `fetchAudit(since)` chỉ tải dòng `created_at` mới hơn, cache trong bộ nhớ (`dataLogRemote`), xoá khi đăng xuất.
+- Ảnh: `compressImage` (cạnh dài ≤1600px, JPEG 0.8, chỉ khi >300KB), giới hạn gốc nâng lên 15MB; `attachmentRefCache` (WeakMap) để tự lưu nháp/Lưu phiếu dùng lại cùng tham chiếu, không tạo & đẩy ảnh mới mỗi 20 giây.
+- Chưa làm: bỏ việc máy tải lại phiếu do chính nó vừa đẩy (cần cột device_id), Realtime.
