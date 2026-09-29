@@ -1,6 +1,6 @@
 # Lab Record – ILD Coffee — Handoff Document
 
-**Cập nhật:** 2026-09-26
+**Cập nhật:** 2026-09-29 (đợt sửa theo `Comment-Lab Record.xlsx` — mục 8; đợt rebrand ILD Crafted + Theme — mục 9, cuối file)
 **Vị trí dự án:** `C:\Users\BinhDang\Documents\GitHub\LABRecord` (git repo; trước đây ở `C:\Apps\Q - LAB RECORD`, đã chuyển)
 **Trạng thái:** Đã hỗ trợ nhiều LOẠI SẢN PHẨM (Powder / Coffee Oil / Liquid) theo kiến trúc cấu hình (mục 3.6). Powder chạy đầy đủ và cho kết quả trùng bản cũ; Coffee Oil và Liquid mới có khung, chưa có trường/chỉ tiêu. Ứng dụng chạy được đầy đủ (Phần 1-5 kế hoạch gốc + 13 mục hiệu chỉnh vòng 2 + tab Độ lặp lại cho thêm/xoá chỉ tiêu). Còn vài giả định nghiệp vụ cần QA xác nhận (mục 5).
 
@@ -184,3 +184,93 @@ Không có test tự động; mọi kiểm tra đều thủ công.
 - Data Log: `fetchAudit(since)` chỉ tải dòng `created_at` mới hơn, cache trong bộ nhớ (`dataLogRemote`), xoá khi đăng xuất.
 - Ảnh: `compressImage` (cạnh dài ≤1600px, JPEG 0.8, chỉ khi >300KB), giới hạn gốc nâng lên 15MB; `attachmentRefCache` (WeakMap) để tự lưu nháp/Lưu phiếu dùng lại cùng tham chiếu, không tạo & đẩy ảnh mới mỗi 20 giây.
 - Chưa làm: bỏ việc máy tải lại phiếu do chính nó vừa đẩy (cần cột device_id), Realtime.
+
+## 8. Đợt sửa theo phản hồi người dùng — `Comment-Lab Record.xlsx` (2026-09-29)
+
+Đối chiếu trực tiếp file Excel (7 dòng phản hồi, 1 ảnh minh hoạ cấu trúc Batch) với code hiện có. Không sửa dữ liệu lịch sử — mọi thay đổi bên dưới chỉ ảnh hưởng NHẬP LIỆU MỚI / SỬA phiếu; đọc phiếu cũ vẫn hiển thị nguyên như đã lưu.
+
+**1. Batch** — `parseBatchStructure()`, `resolveBatchYear()`, `recomputeProductionDate()` ([index.html](index.html) khu vực `BATCH_RE`):
+- Viết hoa tự động khi gõ/dán (`input` listener), trim trước khi tính/lưu.
+- Cấu trúc bắt buộc đúng 10 ký tự: 1 số năm + 3 số Julian + 4 số cuối PO + 1 chữ loại sản phẩm + 1 số line (regex `BATCH_RE`), kiểm tra ngày Julian 1–366 và năm nhuận (`isLeapYear`) trước khi chấp nhận ngày 366.
+- **Năm SX**: Batch chỉ có 1 chữ số năm → thêm field mới `productionYear` ("Năm SX (xác nhận)") cạnh Batch. Trống → tự đoán năm gần năm hiện tại nhất (`resolveBatchYear`, cửa sổ ±6 năm, hoà thì để trống bắt xác nhận) và LUÔN hiển thị ghi chú "tự động…" để không đoán ngầm; người dùng sửa tay thì giữ nguyên, chỉ kiểm tra khớp chữ số cuối với Batch. Ngày SX = năm đã xác nhận + ngày Julian, lưu vào `sampleInfo.productionYear` + `sampleInfo.productionDate` như các field khác — mở lại phiếu cũ chỉ đọc lại giá trị đã lưu (`setFieldValue`, không dispatch event) nên KHÔNG tự tính lại/đổi năm.
+- `validateBeforeSubmit()` chặn lưu chính thức/Force nếu Batch sai cấu trúc, thiếu năm xác nhận, hoặc năm không khớp Batch.
+- Riêng của Powder (field `batch` có `behavior:'julianBatch'` chỉ khai báo ở `TYPE_CONFIG.powder`) — Oil/Liquid chưa có field này nên không bị áp quy tắc.
+
+**2. SSCC — CHƯA SỬA, đang chờ xác nhận.** Ghi chú Excel mô tả 11 chữ số (1+5+5) nhưng ví dụ mẫu `61260008300221` có 14 chữ số — mâu thuẫn, không tự suy đoán bỏ bớt số 0 để khớp ví dụ. Đã hỏi người dùng câu hỏi ngắn (cấu trúc chính xác + 2-3 cặp PO–SSCC mẫu đã xác nhận đúng) trong hội thoại. Thuật toán gợi ý hiện tại (`onPoChange()`: SSCC = PO + "000" + 3 số tự nhập) giữ nguyên, không đổi.
+
+**3. Người thực hiện** — kiến trúc Form Engine (`TYPE_CONFIG`/`BLOCK_KINDS`) đổi từ "1 cột lặp theo dòng" (`STAFF_COL` nằm trong `cols`/`fields`, mỗi lần đo 1 ô riêng) sang **1 ô chọn CHUNG ở đầu mỗi khối** (`sharedStaffHtml`, `staffFieldName`, `hasStaffCol`, `withoutStaffCol`): dùng chung cho 2 lần đo (`pair`) và cho cả Nóng+Lạnh (`hotCold`); `single`/`sieve` vốn đã 1 giá trị/khối nên chỉ đổi vị trí hiển thị lên đầu. Khối **Ngoại vật** trước đây THIẾU hẳn field này — đã bổ sung `STAFF_COL` vào `fields`. Khi thu thập (`collect`), cả 2 lần đo/2 dòng đều ghi CÙNG giá trị ô chung (giữ đúng schema cũ `rep.nguoiThucHien`/`hot.nguoiThucHien`/`cold.nguoiThucHien` nên chi tiết phiếu/in/CSV/Full Report không cần sửa). Khi mở lại 1 phiếu CŨ mà các lần đo có người khác nhau, ô chung `applySharedStaff()` để TRỐNG + viền cảnh báo + tooltip liệt kê các tên cũ — không tự chọn 1 người rồi bỏ người kia, bắt người dùng chọn lại.
+
+**4. Thời gian sấy** — cột `thoi_gian_say` đổi `input:'text'` → `input:'mmss'`: 2 ô số (phút, giây) do `inputCellHtml()` render, dấu `:` do app tự chèn (không phải nhân viên gõ). `readMmSs()`/`setMmSs()` phân biệt Ô TRỐNG (chưa nhập) khỏi "00:00" (đã nhập, bằng 0) và validate phút nguyên ≥0, giây nguyên 0–59; chặn Lưu chính thức/Force qua `BLOCK_KINDS.pair.validate()` (xem mục 7). Đọc phiếu cũ: `setMmSs()` nhận diện `mm:ss` hoặc `mm/ss` (theo đúng ghi chú Excel về dấu "/"); định dạng tự do khác của dữ liệu cũ để 2 ô trống (không đoán) — giá trị gốc vẫn nguyên trong bản ghi, vẫn hiển thị đúng khi xem/in/Full Report (các hàm đó chỉ dump chuỗi đã lưu).
+
+**5. Nhiệt độ hòa tan** — khối `hoaTan` (`hotCold`) đã có sẵn ngưỡng `warn:{min,max}` (Nóng 96–98°C, Lạnh 18–20°C) nhưng trước đây chỉ tô viền đỏ khi SAI, không tô xanh khi ĐÚNG và không có chữ mô tả. Bổ sung: ô nhập thêm class `field__input--ok` (xanh, CSS mới `--ok`) khi trong khoảng, `--warn` (đỏ, đã có) khi ngoài khoảng, không class khi trống; `<div class="field__hint">` ngay dưới ô hiện "Ngưỡng: X–Y°C — ✓/✗ …". Đây là cảnh báo ĐIỀU KIỆN ĐO, tách biệt hoàn toàn khỏi kết luận Đạt/Không đạt của Độ hòa tan (vẫn chỉ dựa kết quả V/X như cũ, không đổi).
+
+**6. Khối lượng sàng** — khối `kichThuoc` (`sieve`): bỏ `Math.max(0, wt - w)` (từng che số âm/không hợp lệ). `compute()` giờ chỉ tính %/Range khi ĐỦ cả 8 cỡ sàng và TẤT CẢ hợp lệ (KL mẫu+sàng ≥ KL sàng, không âm, không thiếu 1 trong 2 ô/dòng) — thiếu/sai bất kỳ dòng nào thì cả bảng hiện "--", Range vẫn "pending" (không suy luận kết luận từ dữ liệu 1 phần/sai). `BLOCK_KINDS.sieve.validate()` (mới, xem mục 7) báo lỗi đúng ô và chặn Lưu chính thức/Force (không chặn Lưu nháp) khi: 1 dòng chỉ có 1 trong 2 ô, giá trị âm, KL mẫu+sàng < KL sàng, hoặc (đủ dữ liệu nhưng) tổng khối lượng giữ lại = 0.
+
+**7. Kiểm tra trước khi lưu & Alarm** — tách 3 khái niệm:
+- *Hợp lệ dữ liệu*: `validateBeforeSubmit()` (Item Code/Batch/Customer/Năm SX như cũ) + **`blockValidationErrors()`** (mới) gọi `BLOCK_KINDS[kind].validate(b)` của từng khối (hiện có ở `pair` cho mm:ss, `sieve` cho khối lượng). Lỗi này chặn CẢ Lưu chính thức LẪN Force — Force chỉ bỏ qua "chưa đủ chỉ tiêu", không bỏ qua lỗi hợp lệ.
+- *Đầy đủ chỉ tiêu*: kết luận còn `pending` → chặn Lưu chính thức, Force mới bỏ qua được (không đổi so với trước).
+- *Kết luận chất lượng*: nếu ≥1 chỉ tiêu `fail`, `submitRecord()` mở modal `confirmSaveAlarm()` (nút riêng "Quay lại kiểm tra"/"Xác nhận lưu", KHÔNG dùng `confirmModal()` nhãn Huỷ/Đồng ý) liệt kê tên chỉ tiêu + `paramSummaryLine()` (TB/sai khác/Range). Xác nhận thì vẫn lưu bình thường (không cấm Không đạt hợp lệ), lưu `record.qcAlarm = {confirmedBy, confirmedAt, failedParams[]}` + `AuditLog.log(...,{khongDat:...})`; hiện trong chi tiết phiếu và Full Report. Lưu nháp (`btn-save-draft`) không qua alarm này.
+
+**8. Lịch sử & Tra cứu** (`renderHistoryTable`, `panel-history`):
+- Bộ lọc kết hợp: Loại sản phẩm (đã có), tìm theo Item Code/PO/Batch/Product Name (`history-search`, không phân biệt hoa/thường, an toàn field thiếu), Customer, Kết luận, Phê duyệt, **Nháp/chính thức** (mới), Ngày lưu (đã có, đổi nhãn cho rõ), **MFG từ–đến** (mới, `parseVNDate()` đọc `sampleInfo.productionDate` dạng `dd/mm/yyyy`; thiếu MFG thì không khớp bộ lọc theo khoảng ngày).
+- Bảng thêm cột **PO** và **Ngày SX (MFG)**.
+- Sắp xếp: **Nháp lên đầu**, trong từng nhóm theo `meta.updatedAt` (fallback `savedAt`) mới nhất trước; `state.filteredHistory` lưu ĐÚNG thứ tự đang hiển thị nên **Xuất CSV** (`exportHistoryCsv`, thêm cột PO/Ngày SX/cờ Nháp) khớp tuyệt đối tập + thứ tự trên bảng.
+- Nút **"Tiếp tục nhập"** ngay trên dòng Nháp trong bảng (không cần mở modal chi tiết mới thấy).
+
+**9. Flow phê duyệt** — mở rộng, không tạo luồng song song:
+- Trạng thái mới: `pending` (Chờ duyệt) → `approved` (Đã duyệt) hoặc `returned` (Trả lại sửa, bắt buộc lý do) → sửa → tự động về `pending` khi lưu lại ("Gửi duyệt lại"). Ánh xạ trạng thái CŨ khi ĐỌC (`LEGACY_APPROVAL_MAP`, không ghi đè dữ liệu đã lưu): `approved→approved`, `not_approved`/thiếu`→pending`, `rejected→returned` (không có lý do cũ).
+- `approveRecord()`/`returnRecordForEdit()` (thay `setApproval()` cũ): chỉ Supervisor/Admin, chỉ tác động phiếu đang `pending`, Trả lại bắt buộc lý do (modal `promptModal()`), mỗi lần chuyển trạng thái nối vào `record.approval.history[]` (status/by/at/reason).
+- **Khoá nội dung bản đã duyệt**: sửa 1 phiếu `approved` (nút "Sửa phiếu (tạo phiên bản mới)" → `resumeRecordForEdit()` đặt `state.editingWasApproved`) — khi Lưu (`submitRecord`), bản ĐANG approved được lưu nguyên vẹn thành 1 bản ghi `archived:true` id riêng (`<id>_approved_<ts>`, `versionOf` trỏ về id gốc) để truy vết; "id sống" (id gốc) nhận nội dung mới, `version+1`, trạng thái reset về `pending`. Chi tiết phiếu có link "xem các phiên bản trước đã duyệt" liệt kê các bản `archived`. Lịch sử/Dashboard/CSV lọc bỏ `archived` theo mặc định.
+- Bảo toàn `meta.createdBy`/`meta.createdAt` (mới) qua mọi lần sửa (kể cả sửa nháp) — trước đây `createdBy` bị ghi đè bằng người vừa lưu.
+- Sync: LWW hiện có theo `meta.updatedAt` (không đổi cơ chế); mọi thao tác duyệt/trả lại/tạo phiên bản đều bump `updatedAt` nên vẫn qua được hàng đợi đồng bộ sẵn có. Toast không khẳng định "đã duyệt trên hệ thống" — chỉ nói lưu trên máy này (+ "đang đồng bộ" nếu Supabase bật).
+- **Supabase**: viết migration mới `supabase/approval_flow.sql` (thay `lab_records_guard` cũ) khoá nội dung phiếu `approved` ở DB (không chỉ ẩn nút UI) + bắt buộc lý do khi `returned` + chỉ Supervisor+ đổi trạng thái. **CHƯA chạy trên project thật** — đọc phần "Đã biết/giới hạn" cuối file đó trước khi chạy, đặc biệt về xung đột đồng bộ 2 máy (chưa có cơ chế báo xung đột chủ động, chỉ dựa vào lỗi 4xx bị Sync bỏ qua).
+
+**10. Item Code — tìm Recipe**: sửa lỗi có thật khi `it.item`/`it.name`/`it.recipe` là số hoặc thiếu (dữ liệu cũ) sẽ làm `.toLowerCase()` ném lỗi — bọc `String(...||'')`. Đổi placeholder ô tìm thành "Tìm Item Code, tên sản phẩm hoặc Recipe...". `findItemByCodeIn()` (dùng cho tra cứu ở form Nhập liệu) cũng bọc `String()` tương tự.
+
+**11. Spec — lọc Customer**: thêm dropdown Customer (theo Loại sản phẩm đang chọn, có "Tất cả") + dòng đếm "Hiển thị X / Y dòng". `idx` dùng để sửa/xoá vẫn lấy từ mảng `THRESHOLDS` GỐC (lấy trước khi lọc Customer), nên sửa/xoá sau khi lọc luôn đúng bản ghi gốc.
+
+### Bảng ánh xạ 12 dòng yêu cầu Excel
+
+| # | Yêu cầu (Excel) | Trạng thái |
+|---|---|---|
+| 1 | Batch viết hoa | ✅ Đã làm |
+| 2 | Batch: cấu trúc năm+Julian+PO+loại+line, kiểm tra ngày/năm nhuận, không mặc định năm hiện tại | ✅ Đã làm (field "Năm SX (xác nhận)" mới) |
+| 3 | SSCC dư 1 số 0 | ⛔ Còn chờ — ghi chú Excel (11 số) mâu thuẫn ví dụ mẫu (14 số), đã hỏi người dùng, thuật toán giữ nguyên |
+| 4 | Người thực hiện — 1 người/phương pháp | ✅ Đã làm (ô chung đầu khối, bổ sung cho khối Ngoại vật vốn thiếu) |
+| 5 | Thời gian sấy — 2 ô phút/giây, dấu tự động | ✅ Đã làm |
+| 6 | Độ hòa tan — range nhiệt độ tô xanh/đỏ | ✅ Đã làm (+ chữ mô tả ngưỡng, giữ nguyên quy tắc kết luận V/X) |
+| 7 | Kích thước hạt — KL mẫu+sàng ≥ KL sàng | ✅ Đã làm (bỏ Math.max che số âm, chặn lưu khi sai) |
+| 8 | Lưu phiếu — Alarm khi có Không đạt | ✅ Đã làm (tách hợp lệ/đầy đủ/kết luận, modal riêng, lưu người xác nhận) |
+| 9 | Lịch sử & Tra cứu — tìm theo Loại/Item/PO/Batch/MFG | ✅ Đã làm (+ Nháp lên đầu, CSV khớp, cột PO/MFG) |
+| 10 | Bổ sung Flow Phê duyệt | ✅ Đã làm (Nháp→Chờ duyệt→Đã duyệt/Trả lại sửa, khoá bản đã duyệt, versioning; migration Supabase CHƯA chạy) |
+| 11 | Item Code — tìm theo Recipe | ✅ Đã có sẵn, đã kiểm tra + vá lỗi null/kiểu dữ liệu cũ, đổi placeholder |
+| 12 | Spec — tìm theo Customer | ✅ Đã làm (dropdown lọc, sửa/xoá vẫn đúng bản ghi gốc) |
+
+### Kiểm tra đã chạy (cục bộ, qua Console/JS trực tiếp trên `http://localhost:8766` — CHƯA kiểm thử tích hợp với Supabase thật)
+Batch: chữ thường→hoa, cấu trúc sai, ngày 366 năm thường (chặn)/năm nhuận 2016 (qua), năm không khớp chữ số cuối, năm để trống tự đoán gần nhất + hiển thị ghi chú ổn định qua nhiều lần fire change/blur. Người thực hiện: khối `pair` thu thập 1 giá trị chung cho 2 lần đo; nạp lại bản ghi cũ có 2 tên khác nhau → để trống + cảnh báo + tooltip. Thời gian sấy: hợp lệ `05:07`, giây `60` bị chặn với thông báo đúng khối/lần đo, sửa lại qua được; đọc `12/30` (cũ) và `abc` (không đoán được) không crash. Khối lượng sàng: `wt<w` bị chặn đúng cỡ lưới, thiếu 1 ô bị chặn, âm bị chặn, đủ dữ liệu hợp lệ thì qua. Nhiệt độ hòa tan: 97°C (trong khoảng, xanh) và 25°C (ngoài khoảng 18–20, đỏ) ra đúng class + chữ mô tả. Phê duyệt: approve → sửa phiếu đã duyệt (Force) → version 2 + bản `archived` version 1 giữ nguyên + `createdBy` không đổi; trả lại thiếu lý do bị chặn, có lý do thành công; sửa phiếu `returned` rồi lưu → tự về `pending`. Đọc 1 bản ghi "kiểu cũ" (approval `rejected`, thời gian sấy `12/30`, người thực hiện khác nhau) qua `applyRecordToForm`/`viewRecord` không lỗi console, hiển thị đúng nhãn mới ("Trả lại sửa"). Item Code/Spec: filter Customer + đếm dòng đúng; tìm kiếm không crash với dữ liệu số/thiếu field. Toàn bộ `<script>` qua `node --check` sau mỗi bước. KHÔNG kiểm thử: Supabase RLS/trigger mới (`approval_flow.sql` chưa chạy), đồng bộ 2 máy với dữ liệu approval mới, in PDF/Full Report thật (chỉ kiểm tra hàm dựng HTML không lỗi), mở bằng `file://` thật.
+
+### Hạn chế còn lại
+- SSCC: thuật toán CŨ vẫn dùng tạm (PO + "000" + 3 số) — chờ xác nhận cấu trúc thật.
+- `supabase/approval_flow.sql` mới viết, CHƯA chạy trên Supabase thật; RLS/trigger CŨ (`auth.sql`) vẫn đang là bản 3 trạng thái approved/not_approved/rejected — app vẫn ghi được (trigger cũ chỉ chặn Inspector đổi `approval`, không biết khái niệm `returned`/khoá nội dung) cho tới khi chạy `approval_flow.sql`.
+- Đồng bộ 2 máy cùng sửa 1 phiếu quanh thời điểm phê duyệt: vẫn dựa Last-Write-Wins theo `meta.updatedAt`, chưa có cảnh báo xung đột chủ động cho người dùng (xem ghi chú cuối `approval_flow.sql`).
+- "Đã biết/giả định" ở mục 5 (Recipe-band threshold, Ngoại vật Absent/Present, REPEATABILITY mặc định...) vẫn còn nguyên, chưa đổi trong đợt này.
+- Coffee Oil / Liquid vẫn chưa có cấu hình (Giai đoạn 3, đang chờ dữ liệu).
+
+## 9. Rebrand ILD Crafted + mô-đun Theme (2026-09-29)
+
+Áp nhận diện ILD Crafted (nền kem #F7F0E6, espresso, logo thật) + thêm DUY NHẤT 1 tính năng mới: bảng tùy chỉnh Theme. Không sửa JS nghiệp vụ, không đổi ID/class/name/data-*/value đang có, không thêm dependency/CDN.
+
+- **Logo:** nhúng trực tiếp file logo người dùng cung cấp dạng `data:image/webp;base64,...` (không vẽ lại, không đổi màu/tỷ lệ), thay `<span class="app-header__logo">☕</span>` bằng `<img>` cùng class, luôn đặt trên nền trắng riêng (kể cả Theme tối) qua CSS `.app-header__logo`.
+- **Token màu:** đổi GIÁ TRỊ (không đổi TÊN) của các biến `:root`/`:root[data-theme="dark"]` đã có sẵn (`--bg,--surface,--border,--text,--primary,--accent-bg,...`) sang bảng ILD Crafted sáng/tối; toàn bộ CSS nghiệp vụ đang dùng `var(--...)` tự động lên màu mới, không phải sửa từng rule. Thêm biến mới: `--input-border` (viền ô nhập rõ hơn viền phân cách), `--focus-ring` (tách khỏi màu nút chính), `--primary-hover`, `--accent-brown`, `--accent-red`.
+- **Lưu ý quan trọng:** `:root[data-theme="dark"]` trước đây tồn tại trong CSS nhưng KHÔNG có JS nào từng gán `data-theme` — dark mode cũ là code chết. Mô-đun Theme mới là nơi DUY NHẤT gán thuộc tính này (dùng làm cầu nối tái sử dụng khối CSS đó), nên không có xung đột với tính năng cũ nào.
+- **Cấu hình mẫu / Sáng-Tối-Hệ thống / Tương phản / Độ đậm:** đúng theo yêu cầu — 4 preset (`crafted-standard/soft/dark/sharp`), tự nhận diện "Tuỳ chỉnh" khi tổ hợp không khớp preset nào; "Theo hệ thống" theo `prefers-color-scheme`, chỉ lắng nghe khi đang chọn chế độ này; Tương phản cao chỉ tăng rõ chữ/ô nhập/focus/vùng chọn (không tô viền đậm mọi khối); Độ đậm chỉ đổi `font-weight` (2 biến mới `--ild-fw-body/--ild-fw-strong`, áp cho `body`, `.field__label`, `.card__title`, `.panel__title`, `legend`, `th`, `.sidebar__item` — các vị trí RỘNG, không rà từng rule `font-weight:600` đang có rải rác trong file để tránh sửa hàng loạt ngoài phạm vi).
+- **Vị trí:** nút "🎨 Giao diện" trong `.app-header__actions` (cạnh "+ Phiếu mới"); panel là overlay RIÊNG (`#ild-theme-overlay`, prefix `ild-theme-`), KHÔNG dùng chung `#modal-overlay`/`Modal` nghiệp vụ — tránh mọi rủi ro đụng vào modal chi tiết phiếu/phê duyệt.
+- **Lưu cấu hình:** `localStorage['ild-crafted-appearance-v1']` = `{appearance, contrast, emphasis}`; đọc có kiểm tra từng field hợp lệ (sai/hỏng → về mặc định); lỗi localStorage (chặn/quota) bọc try/catch, Theme vẫn hoạt động trong phiên. Không đụng tới bất kỳ khoá localStorage nào khác của app (`labrecord_*`).
+- **Chống chớp màu:** thêm 1 `<script>` nhỏ ngay sau `</style>` trong `<head>` (trước `<body>`), CHỈ đọc localStorage + set `data-theme`/`data-ild-*` trên `<html>` — chạy trước khi phần còn lại của trang vẽ. Mô-đun Theme đầy đủ (panel, sự kiện, đồng bộ hệ thống) vẫn nằm ở cuối `<script>` nghiệp vụ như 1 IIFE riêng (`ildCraftedTheme`), không có biến toàn cục mới ngoài closure của chính nó.
+- **Khả năng truy cập:** dùng `role="dialog"` + `aria-modal` + `aria-labelledby`; các lựa chọn là `<input type="radio">` thật (không phải div giả); Escape đóng panel và trả focus về đúng nút đã mở; click ra ngoài overlay cũng đóng; "Khôi phục mặc định" CHỈ gọi lại Theme mặc định, không gọi bất kỳ hàm reset dữ liệu nào của app.
+- **In ấn:** không cần sửa gì thêm — cơ chế in sẵn có (`body.is-printing > *:not(#print-area){display:none}`) đã ẩn toàn bộ header/nút Theme khi in qua `printRecord()`/`printFullReport()`; có thêm 1 rule `@media print` ẩn nút/panel Theme phòng trường hợp người dùng tự Ctrl+P ngoài luồng đó.
+- **Không đổi:** biểu đồ/canvas (app hiện không dùng canvas/chart JS nào), ảnh đính kèm/ảnh bằng chứng (không áp filter Theme lên `<img>` ảnh nghiệp vụ), ý nghĩa màu trạng thái Đạt/Không đạt/Chấp nhận/Pending (giữ nguyên `--pass/--fail/--accept/--pending`, chỉ đổi `--pending-bg` sang tông ấm hơn cho khớp nền mới, không đổi ý nghĩa).
+
+**Kiểm tra đã chạy** (qua `localhost:8766`, Console/JS + click thật qua Browser tool): 4 cấu hình mẫu áp đúng tổ hợp và hiển thị đúng tên; chọn tay 1 tổ hợp không khớp preset nào → hiện "Tuỳ chỉnh"; Sáng/Tối áp ngay không cần tải lại; lưu & đọc lại đúng sau khi điều hướng lại trang (bootstrap sớm không chớp màu — kiểm tra `data-theme` đã đúng ngay khi trang vừa vào, trước khi chạy script cuối); "Khôi phục mặc định" đưa về đúng Crafted tiêu chuẩn và ghi đúng localStorage; Escape đóng panel + trả focus đúng về nút mở; đổi tab/nhập dữ liệu Batch rồi mở/đóng panel không mất dữ liệu form, không đổi tab đang xem; sau khi đổi Theme, các hàm nghiệp vụ đã sửa ở mục 8 (tra Item Code, validate sàng) vẫn chạy đúng; giao diện mobile 375px không vỡ layout (dùng đúng CSS responsive có sẵn, không sửa). Không có lỗi Console trong toàn bộ quá trình. **Chưa kiểm tra:** mở thật bằng `file://` (chỉ test qua local server), trình duyệt không hỗ trợ `:has()` (chỉ ảnh hưởng hiệu ứng highlight lựa chọn đang chọn trong panel, không ảnh hưởng chức năng), độ tương phản đo bằng công cụ chuyên dụng (chỉ ước lượng theo bảng màu spec).
+
+**Giới hạn còn lại:** "Độ đậm" chỉ áp cho 1 tập chọn lọc các phần tử tiêu đề/nhãn rộng (không rà toàn bộ ~10 vị trí có `font-weight:600/700` rải rác trong file) — đủ tạo khác biệt rõ giữa 3 mức nhưng không phải 100% mọi chữ đậm trong app đều đổi theo; nếu cần phủ kín hơn, làm ở đợt sau (rà từng rule, rủi ro thấp nhưng tốn thời gian). File gốc trước khi rebrand có thể xem lại qua lịch sử git (không tạo file `-ILD-Crafted.html` riêng vì đây là dự án git có lịch sử, không phải 1 file HTML rời).

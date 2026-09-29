@@ -7,7 +7,8 @@ Chạy theo thứ tự, trong **SQL Editor** (Dashboard → SQL Editor → New q
 | 1 | `schema.sql` | Bảng phiếu / danh mục / nhật ký, kho ảnh |
 | 2 | `auth.sql` | Bảng `profiles` (vai trò), RLS theo vai trò |
 | 3 | `users.sql` | Cột `disabled` / `username`, vô hiệu hoá tài khoản |
-| 4 | Edge Function `admin-users` | Cho tab **Người dùng** tạo/khoá tài khoản (bên dưới) |
+| 4 | `approval_flow.sql` | Flow phê duyệt Nháp→Chờ duyệt→Đã duyệt/Trả lại sửa (khoá nội dung bản đã duyệt, bắt buộc lý do khi trả lại) — **CHƯA chạy trên project thật**, tự chạy khi sẵn sàng |
+| 5 | Edge Function `admin-users` | Cho tab **Người dùng** tạo/khoá tài khoản (bên dưới) |
 
 ## Triển khai Edge Function `admin-users`
 
