@@ -1340,18 +1340,45 @@ function formatDateVN(d) {
   const yyyy = d.getFullYear();
   return dd + '/' + mm + '/' + yyyy;
 }
-// Batch VD '62550110F1' -> ký tự vị trí 2-3-4 (1-indexed) = '255' = ngày thứ 255 trong năm.
-// Năm sản xuất lấy theo năm hiện tại (đã xác nhận ở Giai đoạn 1).
-function productionDateFromBatch(batch, refYear) {
-  if (!batch) return null;
-  const s = batch.trim();
-  if (s.length < 4) return null;
-  const dayCode = s.substring(1, 4);
-  const day = parseInt(dayCode, 10);
-  if (isNaN(day) || day < 1 || day > 366) return null;
-  const year = refYear || new Date().getFullYear();
-  const d = new Date(year, 0, 1);
-  d.setDate(d.getDate() + day - 1);
+// Cấu trúc Batch (theo phản hồi người dùng, VD "62600083F1"):
+//  1 số năm (chữ số cuối) + 3 số ngày Julian + 4 số cuối PO + 1 chữ loại sản phẩm + 1 số line = 10 ký tự.
+const BATCH_RE = /^([0-9])([0-9]{3})([0-9]{4})([A-Z])([0-9])$/;
+function isLeapYear(y) { return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0; }
+
+// Chỉ 1 chữ số năm trong Batch → nhiều năm khớp (VD '6' = 2016/2026/2036...). Không âm thầm suy
+// đoán: chọn năm gần năm hiện tại nhất trong ±6 năm; nếu hoà (cách đều quá khứ/tương lai) coi là
+// mơ hồ, để trống cho người dùng tự xác nhận thay vì tự chọn.
+function resolveBatchYear(lastDigit, refDate) {
+  const curYear = (refDate || new Date()).getFullYear();
+  const base = curYear - (curYear % 10);
+  let candidates = [];
+  for (let dec = base - 30; dec <= base + 30; dec += 10) candidates.push(dec + lastDigit);
+  candidates = candidates.filter(y => Math.abs(y - curYear) <= 6);
+  candidates.sort((a, b) => Math.abs(a - curYear) - Math.abs(b - curYear));
+  if (!candidates.length) return { year: null, ambiguous: true, candidates: [] };
+  const ambiguous = candidates.length > 1 && Math.abs(candidates[1] - curYear) === Math.abs(candidates[0] - curYear);
+  return { year: ambiguous ? null : candidates[0], ambiguous, candidates: candidates.slice(0, 4) };
+}
+
+// Phân tích + kiểm tra cấu trúc Batch. Trả về { ok, error } hoặc { ok:true, yearDigit, day, poLast4, typeChar, line }.
+function parseBatchStructure(batch) {
+  const s = (batch || '').trim().toUpperCase();
+  if (!s) return { ok: false, error: '' };
+  const m = s.match(BATCH_RE);
+  if (!m) return { ok: false, error: 'Batch "' + s + '" sai cấu trúc — cần đúng 10 ký tự: 1 số năm + 3 số ngày Julian + 4 số cuối PO + 1 chữ loại sản phẩm + 1 số line (VD 62600083F1).' };
+  const yearDigit = parseInt(m[1], 10);
+  const day = parseInt(m[2], 10);
+  if (day < 1 || day > 366) return { ok: false, error: 'Ngày Julian "' + m[2] + '" trong Batch không hợp lệ (phải 001-366).' };
+  return { ok: true, yearDigit, day, poLast4: m[3], typeChar: m[4], line: m[5] };
+}
+// Ngày SX = năm đầy đủ đã xác nhận (`confirmedYear`) + ngày Julian trong Batch. Kiểm tra cả năm nhuận
+// (ngày 366 chỉ hợp lệ nếu confirmedYear là năm nhuận).
+function productionDateFromBatch(batch, confirmedYear) {
+  const parsed = parseBatchStructure(batch);
+  if (!parsed.ok || !confirmedYear) return null;
+  if (parsed.day === 366 && !isLeapYear(confirmedYear)) return null;
+  const d = new Date(confirmedYear, 0, 1);
+  d.setDate(d.getDate() + parsed.day - 1);
   return d;
 }
 
@@ -2037,8 +2064,9 @@ const TYPE_CONFIG = {
       { name: 'recipe', label: 'Recipe', input: 'readonly', placeholder: 'Tự động' },
       { name: 'productName', label: 'Product Name', input: 'readonly', placeholder: 'Tự động' },
       { name: 'customer', label: 'Customer', input: 'select', options: ['INS', 'LDC'], required: true, thresholdKey: true },
-      { name: 'batch', label: 'Batch', input: 'text', placeholder: 'VD: 62550110F1', required: true, behavior: 'julianBatch' },
-      { name: 'productionDate', label: 'Ngày sản xuất', input: 'readonly', placeholder: 'Tự động từ Batch' },
+      { name: 'batch', label: 'Batch', input: 'text', placeholder: 'VD: 62600083F1', required: true, behavior: 'julianBatch', hintId: 'batch-hint' },
+      { name: 'productionYear', label: 'Năm SX (xác nhận)', input: 'number', placeholder: 'VD: 2026', hintId: 'batch-year-hint' },
+      { name: 'productionDate', label: 'Ngày sản xuất', input: 'readonly', placeholder: 'Tự động từ Batch + Năm SX' },
       { name: 'po', label: 'PO', input: 'number', placeholder: 'VD: 712600110', behavior: 'ssccFromPo' },
       { name: 'sscc', label: 'SSCC', input: 'text', placeholder: 'VD: 71260011000027', hintId: 'sscc-hint' }
     ],
@@ -2047,7 +2075,7 @@ const TYPE_CONFIG = {
         cols: [STAFF_COL,
           { key: 'khoi_luong_mau', rec: 'khoiLuongMau', label: 'Khối lượng mẫu (g)', input: 'number' },
           { key: 'nhiet_do_say', rec: 'nhietDoSay', label: 'Nhiệt độ sấy (℃)', input: 'number', def: 114 },
-          { key: 'thoi_gian_say', rec: 'thoiGianSay', label: 'Thời gian sấy (mm:ss)', input: 'text', placeholder: 'mm:ss' },
+          { key: 'thoi_gian_say', rec: 'thoiGianSay', label: 'Thời gian sấy (phút : giây)', input: 'mmss' },
           { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả ẩm (%)', input: 'number', result: true }] },
       { key: 'tyTrong', label: '2. Tỷ trọng - mật độ chảy tự do', prefix: 'ty_trong', kind: 'pair', unit: 'g/L', avgLabel: 'Giá trị trung bình (g/L)',
         cols: [STAFF_COL,
@@ -2097,6 +2125,7 @@ const TYPE_CONFIG = {
         sieveCols: SIEVE_COLS_POWDER, passCol: 'lt050', passMaxPct: 1 },
       { key: 'ngoaiVat', label: '9. Ngoại vật', prefix: 'ngoai_vat', kind: 'single', unit: '-', evaluate: 'absentPresent',
         fields: [
+          STAFF_COL,
           { key: 'khoi_luong_mau', rec: 'khoiLuongMau', label: 'Khối lượng mẫu (g)', input: 'number', def: 50 },
           { key: 'the_tich_nuoc', rec: 'theTichNuoc', label: 'Thể tích nước (ml)', input: 'number', def: 500 },
           { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả', input: 'select', options: ['Absent', 'Present'], result: true }],
@@ -2139,9 +2168,63 @@ function inputCellHtml(name, c, def) {
     c.options.map(o => '<option value="' + escapeAttr(o) + '">' + escapeAttr(o) + '</option>').join('') + '</select>';
   if (c.input === 'computed') return '<output class="field__input field__input--computed" name="' + name + '">--</output>';
   if (c.input === 'text') return '<input type="text" class="field__input" name="' + name + '"' + (c.placeholder ? ' placeholder="' + c.placeholder + '"' : '') + v + ' />';
+  // mm:ss — 2 ô số phút/giây, dấu ":" do app tự hiển thị (nhân viên không gõ dấu phân cách).
+  if (c.input === 'mmss') return '<span class="mmss-input">' +
+    '<input type="number" step="1" min="0" inputmode="numeric" class="field__input field__input--mm" style="width:4.2em" name="' + name + '_mm" placeholder="phút" />' +
+    '<span class="mmss-sep">:</span>' +
+    '<input type="number" step="1" min="0" max="59" inputmode="numeric" class="field__input field__input--ss" style="width:4.2em" name="' + name + '_ss" placeholder="giây" /></span>';
   return '<input type="number" step="any" class="field__input" name="' + name + '"' + v + ' />';
 }
+// Đọc/ghi cặp ô phút+giây. Phân biệt "trống" (chưa nhập) với "00:00" (đã nhập, bằng 0):
+// text rỗng nếu CẢ HAI ô đều trống; nếu chỉ 1 ô có giá trị thì coi là chưa hợp lệ (valid:false).
+function readMmSs(name) {
+  const mmEl = fel(name + '_mm'), ssEl = fel(name + '_ss');
+  if (!mmEl || !ssEl) return { empty: true, valid: true, text: '' };
+  const mmRaw = mmEl.value.trim(), ssRaw = ssEl.value.trim();
+  if (!mmRaw && !ssRaw) return { empty: true, valid: true, text: '' };
+  if (!mmRaw || !ssRaw) return { empty: false, valid: false, text: '', error: 'chưa nhập đủ phút và giây' };
+  const mm = Number(mmRaw), ss = Number(ssRaw);
+  if (!Number.isInteger(mm) || mm < 0) return { empty: false, valid: false, text: '', error: 'phút phải là số nguyên ≥ 0' };
+  if (!Number.isInteger(ss) || ss < 0 || ss > 59) return { empty: false, valid: false, text: '', error: 'giây phải là số nguyên 0–59' };
+  return { empty: false, valid: true, text: String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0'), mm, ss };
+}
+// Nạp lại giá trị đã lưu vào 2 ô phút/giây — chấp nhận "mm:ss" (định dạng mới) hoặc "mm/ss" (dữ
+// liệu cũ, xem HANDOFF/Excel); các định dạng tự do khác của dữ liệu cũ để trống 2 ô (không đoán),
+// giá trị gốc vẫn còn nguyên trong bản ghi và vẫn hiển thị đúng khi xem/in/Full Report.
+function setMmSs(name, text) {
+  const mmEl = fel(name + '_mm'), ssEl = fel(name + '_ss');
+  if (!mmEl || !ssEl) return;
+  mmEl.value = ''; ssEl.value = '';
+  if (!text) return;
+  const m = String(text).trim().match(/^(\d{1,3})\s*[:\/]\s*(\d{1,2})$/);
+  if (m) { mmEl.value = String(parseInt(m[1], 10)); ssEl.value = String(parseInt(m[2], 10)); }
+}
 const STATUS_SUMMARY_HTML = '<span class="param-summary__status" data-status="pending">--</span>';
+// Người thực hiện: 1 ô CHUNG ở đầu mỗi khối (dùng cho cả 2 lần đo / Nóng+Lạnh), không phải cột lặp lại theo dòng.
+const staffFieldName = (b) => b.prefix + '_nguoi_thuc_hien';
+const hasStaffCol = (cols) => (cols || []).some(c => c.key === 'nguoi_thuc_hien');
+const withoutStaffCol = (cols) => (cols || []).filter(c => c.key !== 'nguoi_thuc_hien');
+function sharedStaffHtml(b) {
+  const cols = b.cols || b.fields;
+  if (!hasStaffCol(cols)) return '';
+  return '<label class="field field--inline block-staff"><span class="field__label">Người thực hiện</span>' +
+    '<select class="field__input" name="' + staffFieldName(b) + '"><option value="">--</option></select></label>';
+}
+// Nạp lại bản ghi cũ: nếu các lần đo/dòng có người thực hiện KHÁC nhau, KHÔNG tự chọn một
+// người rồi bỏ người kia — để trống và cảnh báo, buộc người dùng xác nhận lại người chung.
+function applySharedStaff(b, values) {
+  const cols = b.cols || b.fields;
+  if (!hasStaffCol(cols)) return;
+  const el = fel(staffFieldName(b));
+  if (!el) return;
+  const distinct = Array.from(new Set((values || []).filter(v => v !== undefined && v !== null && v !== '')));
+  if (distinct.length === 1) { el.value = distinct[0]; setWarn(staffFieldName(b), false); el.title = ''; }
+  else if (distinct.length > 1) {
+    el.value = '';
+    setWarn(staffFieldName(b), true);
+    el.title = 'Phiếu cũ có người thực hiện khác nhau (' + distinct.join(', ') + ') — vui lòng chọn lại người thực hiện chung.';
+  } else { el.value = ''; setWarn(staffFieldName(b), false); el.title = ''; }
+}
 function photosHtml(p) {
   if (!p) return '';
   return '<label class="field field--upload"><span class="field__label">' + escapeAttr(p.label) + '</span>' +
@@ -2156,10 +2239,11 @@ const BLOCK_KINDS = {
   /* ---- pair: 2 lần đo lặp lại → trung bình / sai khác / so ngưỡng / cảnh báo độ lặp lại ---- */
   pair: {
     html(b) {
-      const head = b.cols.map(c => '<th>' + escapeAttr(c.label) + '</th>').join('');
+      const cols = withoutStaffCol(b.cols);
+      const head = cols.map(c => '<th>' + escapeAttr(c.label) + '</th>').join('');
       const rows = [1, 2].map(i => '<tr class="param-table__row" data-rep="' + i + '">' +
-        b.cols.map(c => '<td>' + inputCellHtml(b.prefix + '_' + i + '_' + c.key, c) + '</td>').join('') + '</tr>').join('');
-      return '<table class="param-table"><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table>' +
+        cols.map(c => '<td>' + inputCellHtml(b.prefix + '_' + i + '_' + c.key, c) + '</td>').join('') + '</tr>').join('');
+      return sharedStaffHtml(b) + '<table class="param-table"><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table>' +
         '<div class="param-summary"><span>' + escapeAttr(b.avgLabel) + ': <output name="' + b.prefix + '_avg">--</output></span>' +
         '<span>Sự khác nhau: <output name="' + b.prefix + '_diff">--</output></span>' +
         '<span>Range: <output name="' + b.prefix + '_range">--</output></span>' + STATUS_SUMMARY_HTML + '</div>';
@@ -2197,9 +2281,14 @@ const BLOCK_KINDS = {
       return status;
     },
     async collect(b) {
+      const staffVal = hasStaffCol(b.cols) ? fval(staffFieldName(b)) : undefined;
       const reps = [1, 2].map(i => {
         const o = {};
-        b.cols.forEach(c => { o[c.rec] = colValue(c, fval(b.prefix + '_' + i + '_' + c.key)); });
+        b.cols.forEach(c => {
+          if (c.key === 'nguoi_thuc_hien') { o[c.rec] = staffVal || ''; return; }
+          if (c.input === 'mmss') { o[c.rec] = readMmSs(b.prefix + '_' + i + '_' + c.key).text; return; }
+          o[c.rec] = colValue(c, fval(b.prefix + '_' + i + '_' + c.key));
+        });
         return o;
       });
       return { label: b.label, unit: b.unit, reps,
@@ -2208,15 +2297,29 @@ const BLOCK_KINDS = {
     },
     apply(b, d) {
       (d.reps || []).forEach((rep, i) => b.cols.forEach(c => {
+        if (c.key === 'nguoi_thuc_hien') return; // xử lý chung bên dưới
+        if (c.input === 'mmss') { setMmSs(b.prefix + '_' + (i + 1) + '_' + c.key, rep[c.rec]); return; }
         if (c.input !== 'computed') setFieldValue(b.prefix + '_' + (i + 1) + '_' + c.key, rep[c.rec]);
       }));
+      applySharedStaff(b, (d.reps || []).map(r => r.nguoiThucHien));
+    },
+    // Kiểm tra hợp lệ (item 4): giây 0–59, phút nguyên ≥0, không được chỉ nhập 1 trong 2 ô.
+    validate(b) {
+      const mmssCol = b.cols.find(c => c.input === 'mmss');
+      if (!mmssCol) return null;
+      for (const i of [1, 2]) {
+        const r = readMmSs(b.prefix + '_' + i + '_' + mmssCol.key);
+        if (!r.valid) return b.label + ' — Lần đo ' + i + ': ' + r.error + '.';
+      }
+      return null;
     }
   },
 
   /* ---- single: 1 nhóm trường + 1 kết quả (số hoặc lựa chọn), tuỳ chọn ảnh ---- */
   single: {
     html(b) {
-      return '<div class="field-grid">' + b.fields.map(f => '<label class="field"><span class="field__label">' + escapeAttr(f.label) + '</span>' +
+      const fields = withoutStaffCol(b.fields);
+      return sharedStaffHtml(b) + '<div class="field-grid">' + fields.map(f => '<label class="field"><span class="field__label">' + escapeAttr(f.label) + '</span>' +
         inputCellHtml(b.prefix + '_' + f.key, f) + '</label>').join('') +
         '<label class="field"><span class="field__label">Range</span><output class="field__input" name="' + b.prefix + '_range">--</output></label></div>' +
         photosHtml(b.photos) + '<div class="param-summary">' + STATUS_SUMMARY_HTML + '</div>';
@@ -2243,10 +2346,11 @@ const BLOCK_KINDS = {
   /* ---- hotCold: nhiều dòng (VD Nóng/Lạnh), tất cả phải đạt ---- */
   hotCold: {
     html(b) {
-      const head = '<th></th>' + b.cols.map(c => '<th>' + escapeAttr(c.label) + '</th>').join('');
+      const cols = withoutStaffCol(b.cols);
+      const head = '<th></th>' + cols.map(c => '<th>' + escapeAttr(c.label) + '</th>').join('');
       const rows = b.rows.map(r => '<tr class="param-table__row" data-rep="' + r.key + '"><td>' + escapeAttr(r.label) + '</td>' +
-        b.cols.map(c => '<td>' + inputCellHtml(b.prefix + '_' + r.key + '_' + c.key, c, r.defs && r.defs[c.key]) + '</td>').join('') + '</tr>').join('');
-      return '<table class="param-table"><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table>' +
+        cols.map(c => '<td>' + inputCellHtml(b.prefix + '_' + r.key + '_' + c.key, c, r.defs && r.defs[c.key]) + '</td>').join('') + '</tr>').join('');
+      return sharedStaffHtml(b) + '<table class="param-table"><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table>' +
         '<div class="param-summary"><span>Range: <output name="' + b.prefix + '_range">--</output></span>' + STATUS_SUMMARY_HTML + '</div>';
     },
     compute(b, idx) {
@@ -2265,9 +2369,13 @@ const BLOCK_KINDS = {
     },
     async collect(b) {
       const o = { label: b.label, unit: b.unit };
+      const staffVal = hasStaffCol(b.cols) ? fval(staffFieldName(b)) : undefined;
       b.rows.forEach(r => {
         const ro = {};
-        b.cols.forEach(c => { ro[c.rec] = colValue(c, fval(b.prefix + '_' + r.key + '_' + c.key)); });
+        b.cols.forEach(c => {
+          if (c.key === 'nguoi_thuc_hien') { ro[c.rec] = staffVal || ''; return; }
+          ro[c.rec] = colValue(c, fval(b.prefix + '_' + r.key + '_' + c.key));
+        });
         o[r.rec] = ro;
       });
       o.range = fval(b.prefix + '_range');
@@ -2275,7 +2383,8 @@ const BLOCK_KINDS = {
       return o;
     },
     apply(b, d) {
-      b.rows.forEach(r => { const ro = d[r.rec]; if (ro) b.cols.forEach(c => setFieldValue(b.prefix + '_' + r.key + '_' + c.key, ro[c.rec])); });
+      b.rows.forEach(r => { const ro = d[r.rec]; if (ro) b.cols.forEach(c => { if (c.key !== 'nguoi_thuc_hien') setFieldValue(b.prefix + '_' + r.key + '_' + c.key, ro[c.rec]); }); });
+      applySharedStaff(b, b.rows.map(r => d[r.rec] && d[r.rec].nguoiThucHien));
     }
   },
 
@@ -2283,7 +2392,8 @@ const BLOCK_KINDS = {
   sieve: {
     html(b) {
       const cols = b.sieveCols;
-      const grid = '<div class="field-grid">' + b.fields.map(f => '<label class="field"><span class="field__label">' + escapeAttr(f.label) + '</span>' +
+      const fields = withoutStaffCol(b.fields);
+      const grid = sharedStaffHtml(b) + '<div class="field-grid">' + fields.map(f => '<label class="field"><span class="field__label">' + escapeAttr(f.label) + '</span>' +
         inputCellHtml(b.prefix + '_' + f.key, f) + '</label>').join('') +
         '<label class="field"><span class="field__label">Khối lượng mẫu sau sàng (g)</span><output class="field__input field__input--computed" name="' + b.prefix + '_khoi_luong_sau_sang">--</output></label>' +
         '<label class="field"><span class="field__label">Range</span><output class="field__input" name="' + b.prefix + '_range">--</output></label></div>';
@@ -2413,10 +2523,16 @@ function bindSampleBehaviors(cfg) {
     const e = form.elements[f.name];
     if (!e) return;
     if (f.behavior === 'itemLookup') on(e, onItemCodeChange);
-    if (f.behavior === 'julianBatch') on(e, onBatchChange);
+    if (f.behavior === 'julianBatch') {
+      // Viết hoa ngay khi gõ/dán (không đợi blur) — không trim khi đang gõ để khỏi nhảy con trỏ.
+      e.addEventListener('input', () => { const p = e.selectionStart; e.value = e.value.toUpperCase(); if (p !== null && e.setSelectionRange) e.setSelectionRange(p, p); });
+      on(e, onBatchChange);
+    }
     if (f.behavior === 'ssccFromPo') on(e, onPoChange);
     if (f.thresholdKey) e.addEventListener('change', updateThresholdsForCustomer);
   });
+  const yearEl = form.elements['productionYear'];
+  if (yearEl) on(yearEl, onProductionYearChange);
 }
 function renderFormForType(type) {
   if (!TYPE_CONFIG[type]) type = DEFAULT_TYPE;
@@ -2480,10 +2596,62 @@ function onItemCodeChange() {
   updateThresholdsForCustomer();
 }
 
-function onBatchChange() {
-  const d = productionDateFromBatch(fval('batch'));
-  if (fel('productionDate')) fel('productionDate').value = d ? formatDateVN(d) : '--';
+// Batch chỉ mang 1 chữ số năm (mơ hồ giữa các thập niên) → cần ô "Năm SX (xác nhận)" riêng.
+// Không tự đổi năm khi mở lại phiếu cũ: chỉ TỰ ĐOÁN năm khi ô đó đang trống; nếu người dùng
+// (hoặc bản ghi đã lưu) đã có năm, chỉ kiểm tra khớp chữ số cuối, không ghi đè.
+function recomputeProductionDate(autoGuessYear) {
+  const batchEl = fel('batch'), yearEl = fel('productionYear'), dateEl = fel('productionDate');
+  const hint = document.getElementById('batch-hint'), yearHint = document.getElementById('batch-year-hint');
+  if (!batchEl || !dateEl) return;
+  const raw = batchEl.value.toUpperCase().trim();
+  if (batchEl.value !== raw) batchEl.value = raw; // uppercase + trim trước khi lưu/tính toán
+  setWarn('batch', false); setWarn('productionYear', false);
+  if (hint) hint.textContent = '';
+  if (yearHint) yearHint.textContent = '';
+  if (!raw) { dateEl.value = ''; return; }
+
+  const parsed = parseBatchStructure(raw);
+  if (!parsed.ok) {
+    setWarn('batch', true);
+    if (hint) hint.textContent = parsed.error;
+    dateEl.value = '--';
+    return;
+  }
+
+  let yearStr = yearEl ? yearEl.value.trim() : '';
+  if (!yearStr && autoGuessYear) {
+    const guess = resolveBatchYear(parsed.yearDigit);
+    if (guess.year) {
+      yearEl.value = guess.year;
+      yearStr = String(guess.year);
+      if (yearHint) yearHint.textContent = 'Đã tự đoán theo năm gần nhất (Batch chỉ có 1 số năm) — kiểm tra lại trước khi lưu.';
+    } else if (yearHint) {
+      yearHint.textContent = 'Không tự xác định được năm đầy đủ (nhiều năm cách đều năm hiện tại) — vui lòng nhập năm SX.';
+    }
+  }
+  if (!yearStr) {
+    dateEl.value = '--';
+    if (yearHint && !yearHint.textContent) yearHint.textContent = 'Nhập năm sản xuất đầy đủ (Batch chỉ có 1 số năm, không đủ để tự xác định).';
+    return;
+  }
+  const year = parseInt(yearStr, 10);
+  if (isNaN(year) || String(year % 10) !== String(parsed.yearDigit)) {
+    setWarn('productionYear', true);
+    if (yearHint) yearHint.textContent = 'Năm SX phải có chữ số cuối khớp với Batch ("' + parsed.yearDigit + '").';
+    dateEl.value = '--';
+    return;
+  }
+  if (parsed.day === 366 && !isLeapYear(year)) {
+    setWarn('batch', true);
+    if (hint) hint.textContent = 'Ngày Julian 366 chỉ hợp lệ với năm nhuận — năm ' + year + ' không phải năm nhuận.';
+    dateEl.value = '--';
+    return;
+  }
+  const d = productionDateFromBatch(raw, year);
+  dateEl.value = d ? formatDateVN(d) : '--';
 }
+function onBatchChange() { recomputeProductionDate(true); }
+function onProductionYearChange() { recomputeProductionDate(false); }
 
 // SSCC = PO + '000' + 3 số cuối tự nhập. Khi có PO, tự gợi ý sẵn phần đầu để người
 // dùng chỉ cần gõ tiếp 3 số cuối (không ghi đè nếu SSCC đã khớp tiền tố PO này rồi).
@@ -3645,8 +3813,15 @@ function validateBeforeSubmit() {
     if (f.required && !fval(f.name).trim()) return 'Vui lòng nhập/chọn ' + f.label + ' trước khi lưu.';
     if (f.behavior === 'itemLookup' && fval(f.name).trim() && !findItemByCode(fval(f.name)))
       return 'Item Code "' + fval(f.name).trim() + '" không có trong danh mục ' + PRODUCT_TYPES[state.formType] + ' — kiểm tra lại trước khi lưu.';
-    if (f.behavior === 'julianBatch' && fval(f.name).trim() && !/^[A-Za-z0-9]{4,}$/.test(fval(f.name).trim()))
-      return 'Batch không hợp lệ (cần ít nhất 4 ký tự chữ/số, không khoảng trắng).';
+    if (f.behavior === 'julianBatch' && fval(f.name).trim()) {
+      const parsed = parseBatchStructure(fval(f.name));
+      if (!parsed.ok) return parsed.error;
+      const yearStr = fval('productionYear').trim();
+      if (!yearStr) return 'Batch chỉ có 1 số năm — vui lòng xác nhận "Năm SX (xác nhận)" trước khi lưu.';
+      const year = parseInt(yearStr, 10);
+      if (isNaN(year) || String(year % 10) !== String(parsed.yearDigit)) return 'Năm SX phải có chữ số cuối khớp với Batch ("' + parsed.yearDigit + '").';
+      if (parsed.day === 366 && !isLeapYear(year)) return 'Ngày Julian 366 trong Batch chỉ hợp lệ với năm nhuận — năm ' + year + ' không phải năm nhuận.';
+    }
   }
   return null;
 }
