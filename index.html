@@ -145,6 +145,11 @@ body {
   padding: 1.25rem;
   overflow-y: auto;
 }
+/* Tab Nhập liệu: overflow-y:auto trên .main-content biến nó thành khung cuộn của sticky (thanh tiến độ không bám
+   theo viewport). Chỉ khi tab này đang mở thì bỏ overflow ở đây; phần rộng quá khung (VD bảng sàng trên mobile)
+   được cuộn ngang ngay trong #analysis-form để vẫn xem được như trước. */
+.main-content:has(> #panel-form.is-active) { overflow: visible; }
+#panel-form #analysis-form { overflow-x: auto; }
 .panel {
   display: none;
 }
@@ -714,6 +719,40 @@ body {
   .app-header__actions { width: 100%; justify-content: space-between; }
 }
 
+/* ---------- Thanh tiến độ cố định khi nhập liệu + tiến độ trong chi tiết phiếu ---------- */
+.completion-row--sticky {
+  position: sticky;
+  top: var(--sticky-offset, 0px);
+  z-index: 40;
+  background: var(--bg);
+  padding: 0.4rem 0;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+#analysis-form input, #analysis-form select, #analysis-form textarea { scroll-margin-top: 9rem; }
+.card__title--done { color: var(--pass-text); }
+.card__title--done::after { content: " \2713"; }
+.detail-progress { display: flex; align-items: center; gap: 0.6rem; margin: 0.5rem 0; font-size: 0.85rem; }
+.detail-progress__label { font-weight: 600; white-space: nowrap; }
+.detail-progress .completion-bar { min-width: 80px; }
+
+/* ---------- Báo lỗi định dạng tại trường + thiếu kết quả ---------- */
+.field__error { font-size: 0.78rem; color: var(--fail-text); }
+.field__input.field__input--error { border-color: var(--fail-text); background: var(--warn-bg); }
+.field__input--missing { outline: 2px dashed var(--fail-text); outline-offset: 1px; }
+.block-missing-note {
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+  color: var(--fail-text);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.82rem;
+}
+.block-missing-note ul { margin: 0; padding-left: 1.1rem; }
+.missing-list { padding-left: 1.1rem; }
+.missing-list a { color: var(--primary); text-decoration: underline; cursor: pointer; }
+
 /* =====================================================================
    ILD CRAFTED — MÔ-ĐUN NHẬN DIỆN + THEME (bổ sung, không sửa CSS nghiệp vụ
    ở trên — chỉ thêm token mới/khai báo lại giá trị token màu đã có và các
@@ -977,7 +1016,7 @@ body { font-weight: var(--ild-fw-body, 400); }
             <select class="field__input" id="form-product-type"></select></label>
         </div>
 
-        <div class="completion-row">
+        <div class="completion-row completion-row--sticky" id="form-completion-row">
           <div class="completion-bar"><div class="completion-bar__fill" id="form-completion-bar" style="width:0%"></div></div>
           <span class="completion-label" id="form-completion-label">0% hoàn thành</span>
         </div>
@@ -2271,6 +2310,8 @@ const state = {
   formType: 'powder',     // loại sản phẩm đang nhập ở tab Nhập liệu
   adminType: 'powder',    // loại sản phẩm đang xem/sửa ở các tab Item Code / Spec. / Độ lặp lại / Parameters
   editingRecordId: null,  // nếu đang mở lại 1 bản nháp để sửa tiếp, lưu id để ghi đè thay vì tạo phiếu mới
+  customerAutoFilled: null, // giá trị Customer do app tự điền từ PO (để PO đổi thì cập nhật theo, không đè giá trị người dùng chọn)
+  missingShown: false,    // đã bấm lưu và bị báo thiếu kết quả -> ghi chú thiếu tại khối cập nhật trực tiếp khi nhập
   editingWasApproved: false, // đang sửa 1 phiếu ĐÃ DUYỆT -> submitRecord tạo phiên bản mới thay vì ghi đè (item 9)
   currentUser: null,      // { name, role } sau khi đăng nhập
   profiles: [],           // hồ sơ vai trò từ Supabase (chế độ Auth): {user_id, email, display_name, role}
@@ -2297,15 +2338,15 @@ const SIEVE_COLS_POWDER = [
 const TYPE_CONFIG = {
   powder: {
     sampleFields: [
-      { name: 'itemCode', label: 'Item Code', input: 'number', placeholder: 'VD: 11000050', required: true, behavior: 'itemLookup' },
+      { name: 'itemCode', label: 'Item Code', input: 'digits', placeholder: 'VD: 11000050', required: true, behavior: 'itemLookup', format: 'itemCode' },
       { name: 'recipe', label: 'Recipe', input: 'readonly', placeholder: 'Tự động' },
       { name: 'productName', label: 'Product Name', input: 'readonly', placeholder: 'Tự động' },
       { name: 'customer', label: 'Customer', input: 'select', options: ['INS', 'LDC'], required: true, thresholdKey: true },
-      { name: 'batch', label: 'Batch', input: 'text', placeholder: 'VD: 62600083F1', required: true, behavior: 'julianBatch', hintId: 'batch-hint' },
+      { name: 'batch', label: 'Batch', input: 'text', placeholder: 'VD: 62600083F1', required: true, behavior: 'julianBatch', format: 'batch', hintId: 'batch-hint' },
       { name: 'productionYear', label: 'Năm SX (xác nhận)', input: 'number', placeholder: 'VD: 2026', hintId: 'batch-year-hint' },
       { name: 'productionDate', label: 'Ngày sản xuất', input: 'readonly', placeholder: 'Tự động từ Batch + Năm SX' },
-      { name: 'po', label: 'PO', input: 'number', placeholder: 'VD: 712600110', behavior: 'ssccFromPo' },
-      { name: 'sscc', label: 'SSCC', input: 'text', placeholder: 'VD: 71260011000027', hintId: 'sscc-hint' }
+      { name: 'po', label: 'PO', input: 'digits', placeholder: 'VD: 712600110', behavior: 'ssccFromPo', format: 'po', customerByPrefix: { '6': 'INS', '7': 'LDC' } },
+      { name: 'sscc', label: 'SSCC', input: 'text', placeholder: 'VD: 71260011000027', hintId: 'sscc-hint', format: 'sscc14' }
     ],
     blocks: [
       { key: 'doAm', label: '1. Độ Ẩm (Halogen)', prefix: 'do_am', kind: 'pair', unit: '%', avgLabel: 'Giá trị trung bình (%)',
@@ -2319,7 +2360,7 @@ const TYPE_CONFIG = {
           { key: 'khoi_luong_binh', rec: 'khoiLuongBinh', label: 'Khối lượng bình (g)', input: 'number' },
           { key: 'khoi_luong_mau', rec: 'khoiLuongMau', label: 'Khối lượng mẫu (g)', input: 'number' },
           { key: 'the_tich_binh', rec: 'theTichBinh', label: 'Thể tích bình (L)', input: 'number', def: 0.205 },
-          { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả tỷ trọng (g/L)', input: 'computed', result: true,
+          { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả tỷ trọng (g/L)', input: 'computed', result: true, needs: ['khoi_luong_mau', 'the_tich_binh'],
             formula: (n) => { const m = n('khoi_luong_mau'), v = n('the_tich_binh'); return (m !== null && v) ? m / v : null; } }] },
       { key: 'doMau', label: '3. Độ màu', prefix: 'do_mau', kind: 'pair', unit: 'ACN', avgLabel: 'Giá trị trung bình (ACN)',
         cols: [STAFF_COL,
@@ -2342,7 +2383,7 @@ const TYPE_CONFIG = {
           { key: 'the_tich_nuoc', rec: 'theTichNuoc', label: 'Thể tích nước (ml)', input: 'number', def: 100 },
           { key: 'nong_do_naoh', rec: 'nongDoNaOH', label: 'Nồng độ NaOH', input: 'number' },
           { key: 'the_tich_tieu_ton', rec: 'theTichTieuTon', label: 'Thể tích tiêu tốn', input: 'number' },
-          { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả Acidity', input: 'computed', result: true,
+          { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả Acidity', input: 'computed', result: true, needs: ['nong_do_naoh', 'the_tich_tieu_ton'],
             formula: (n) => { const naoh = n('nong_do_naoh'), vol = n('the_tich_tieu_ton'); return (naoh !== null && vol !== null) ? vol * naoh / 0.1 : null; } }] },
       { key: 'hoaTan', label: '7. Độ hòa tan', prefix: 'hoa_tan', kind: 'hotCold', unit: 'V/X',
         rows: [
@@ -2659,6 +2700,8 @@ const BLOCK_KINDS = {
         '<tr><td>% mẫu trên sàng</td>' + cols.map(c => '<td><output class="field__input field__input--computed" name="sieve_' + c.key + '_pct">--</output></td>').join('') + '</tr></tbody></table>';
       return grid + table + '<div class="param-summary">' + STATUS_SUMMARY_HTML + '</div>';
     },
+    // % mẫu trên sàng = (KL mẫu+sàng − KL sàng) / tổng KL thu hồi trên tất cả sàng × 100 (đã xác nhận đúng công thức).
+    // Chỉ tính khi đủ 8 cỡ hợp lệ và tổng > 0; thiếu/sai/mẫu số 0 -> '--' (không biến thành 0).
     // Từng cỡ sàng phải thỏa Khối lượng mẫu+sàng ≥ Khối lượng sàng (item 6) — không còn Math.max(0,…)
     // che số âm. Chỉ tính %/kết luận khi ĐỦ 8 cỡ sàng và TẤT CẢ đều hợp lệ; thiếu/sai ô nào thì cả
     // bảng hiện "--" (Range vẫn pending) thay vì suy ra tỷ lệ từ dữ liệu một phần/không hợp lệ.
@@ -2708,16 +2751,17 @@ const BLOCK_KINDS = {
         setFieldValue('sieve_' + row.mesh + '_wt', row.khoiLuongMauSang);
       });
     },
-    // Chặn lưu chính thức/Force khi có cỡ sàng vi phạm KL mẫu+sàng ≥ KL sàng, thiếu 1 trong 2 ô của
-    // 1 dòng, giá trị âm, hoặc (đủ dữ liệu nhưng) tổng khối lượng giữ lại = 0. Thiếu TOÀN BỘ (chưa
-    // nhập gì) không phải lỗi — chỉ là chưa hoàn tất, để nguyên luồng "pending"/Force xử lý.
+    // Chặn lưu chính thức/Force khi có cỡ sàng vi phạm KL mẫu+sàng ≥ KL sàng, giá trị âm, hoặc (đủ dữ
+    // liệu nhưng) tổng khối lượng giữ lại = 0. Ô còn thiếu KHÔNG phải lỗi hợp lệ — xem missing() bên dưới.
     validate(b) {
       let anyFilled = false, allFilled = true, total = 0;
       for (const c of b.sieveCols) {
         const w = toNumber(fval('sieve_' + c.key + '_w')), wt = toNumber(fval('sieve_' + c.key + '_wt'));
         if (w === null && wt === null) { allFilled = false; continue; }
         anyFilled = true;
-        if (w === null || wt === null) return b.label + ' — Cỡ lưới ' + c.label + ': thiếu Khối lượng sàng hoặc Khối lượng mẫu + sàng.';
+        // 1 dòng mới nhập 1 trong 2 ô = THIẾU dữ liệu (báo ở alarm "thiếu kết quả" bên dưới, Force bỏ qua được),
+        // không còn coi là lỗi hợp lệ chặn cả Force.
+        if (w === null || wt === null) { allFilled = false; continue; }
         if (w < 0 || wt < 0) return b.label + ' — Cỡ lưới ' + c.label + ': khối lượng không được âm.';
         if (wt < w) return b.label + ' — Cỡ lưới ' + c.label + ': Khối lượng mẫu + sàng (' + wt + ') phải ≥ Khối lượng sàng (' + w + ').';
         total += wt - w;
@@ -2749,7 +2793,9 @@ function recomputeConclusion(statuses) {
     out.dataset.status = 'pending';
   }
   const forceBtn = document.getElementById('btn-force-submit');
-  if (forceBtn) forceBtn.hidden = out.dataset.status !== 'pending' || !typeCfg().blocks.length;
+  // Force vẫn là lối đóng phiếu khi chưa đủ kết quả — kể cả khi 1 chỉ tiêu đã Không đạt (kết luận không
+  // còn 'pending' nhưng các chỉ tiêu khác chưa nhập, nay bị alarm chặn lưu thường).
+  if (forceBtn) forceBtn.hidden = !typeCfg().blocks.length || (out.dataset.status !== 'pending' && collectMissingResults().length === 0);
 }
 
 function recomputeAll() {
@@ -2757,25 +2803,244 @@ function recomputeAll() {
   const statuses = cfg.blocks.map((b, i) => BLOCK_KINDS[b.kind].compute(b, i));
   recomputeConclusion(statuses);
   calcCompletion();
+  refreshMissingNotes();
 }
 
-// % hoàn thành = số trường người dùng cần tự nhập (input/select, không tính trường
-// readonly/computed hay file) đã có giá trị / tổng số trường đó.
-function calcCompletion() {
-  const els = form.querySelectorAll('input, select');
-  let total = 0, filled = 0;
-  els.forEach(el => {
-    if (el.type === 'file' || el.type === 'hidden') return;
-    if (el.readOnly || el.disabled) return;
-    total++;
-    if (el.value && String(el.value).trim() !== '') filled++;
+/* ---------------- HOÀN THÀNH CHỈ TIÊU + TIẾN ĐỘ ----------------
+   MỘT quy tắc dùng chung cho: thanh tiến độ trên form, tiến độ khi xem phiếu, màu xanh tên chỉ tiêu và
+   cảnh báo thiếu trường khi lưu. Logic thuần: nhận getter get(tênTrường) nên chạy được cả với form (fval)
+   lẫn bản ghi đã lưu.
+   - 1 chỉ tiêu HOÀN THÀNH khi ĐỦ MỌI trường của phương pháp (người thực hiện, mọi ô đo/điều kiện, mọi cỡ sàng,
+     kết quả tự tính tính ra được) và các giá trị hợp lệ (số, mm:ss, sàng: mẫu+sàng ≥ sàng, tổng thu hồi > 0).
+     Số 0 hợp lệ là đã nhập. Ô có giá trị mặc định sẵn của form (VD KL mẫu 100 g) được tính là đã có giá trị.
+     Ảnh đính kèm (tuỳ chọn) không tính là trường bắt buộc.
+   - Độc lập Đạt/Không đạt: đủ dữ liệu nhưng Không đạt vẫn là hoàn thành.
+   - Tiến độ = số chỉ tiêu hoàn thành / tổng chỉ tiêu × 100. */
+const isFilledValue = (v) => v !== null && v !== undefined && String(v).trim() !== '';
+const NO_STRUCT = { noStruct: true }; // bản ghi thiếu hẳn khối/dòng chứa dữ liệu -> không tính được đáng tin cậy
+const blockShortName = (b) => String(b.label).replace(/^\s*\d+\.\s*/, '');
+
+function summarizeCompletion(entries) {
+  const total = entries.length, filled = entries.filter(e => e.filled).length;
+  return { pct: total ? Math.round(filled / total * 100) : 0, filled, total };
+}
+
+// Các trường của 1 phương pháp: { name (tên input), label, kind, where, needs?, legacy? }.
+function blockSpecs(b) {
+  const specs = [];
+  const kindOf = (c) => c.input === 'staff' ? 'staff' : c.input === 'mmss' ? 'mmss' : c.input === 'computed' ? 'computed'
+    : c.input === 'select' ? 'select' : c.input === 'text' ? 'text' : 'number';
+  const staff = () => ({ name: staffFieldName(b), label: 'Người thực hiện', kind: 'staff', where: '', legacy: true });
+  if (b.kind === 'pair') {
+    if (hasStaffCol(b.cols)) specs.push(staff());
+    [1, 2].forEach(i => withoutStaffCol(b.cols).forEach(c => {
+      const sp = { name: b.prefix + '_' + i + '_' + c.key, label: c.label, kind: kindOf(c), where: ' lần ' + i };
+      if (c.input === 'computed') sp.needs = (c.needs || []).map(k => b.prefix + '_' + i + '_' + k);
+      specs.push(sp);
+    }));
+  } else if (b.kind === 'single' || b.kind === 'sieve') {
+    if (hasStaffCol(b.fields)) specs.push(staff());
+    withoutStaffCol(b.fields).forEach(f => specs.push({ name: b.prefix + '_' + f.key, label: f.label, kind: kindOf(f), where: '' }));
+    if (b.kind === 'sieve') b.sieveCols.forEach(c => {
+      specs.push({ name: 'sieve_' + c.key + '_w', label: 'Khối lượng sàng', kind: 'number', where: ' tại cỡ ' + c.label });
+      specs.push({ name: 'sieve_' + c.key + '_wt', label: 'Khối lượng mẫu + sàng', kind: 'number', where: ' tại cỡ ' + c.label });
+    });
+  } else if (b.kind === 'hotCold') {
+    if (hasStaffCol(b.cols)) specs.push(staff());
+    b.rows.forEach(rw => withoutStaffCol(b.cols).forEach(c =>
+      specs.push({ name: b.prefix + '_' + rw.key + '_' + c.key, label: c.label, kind: kindOf(c), where: ' ' + rw.label.toLowerCase() })));
+  }
+  return specs;
+}
+
+// Cách đọc từng trường từ BẢN GHI đã lưu: { name, read(record), legacy }. read() trả NO_STRUCT nếu thiếu khối chứa,
+// undefined nếu bản ghi không có khoá đó. legacy = trường thêm vào SAU các bản ghi cũ (Người thực hiện) -> thiếu khoá thì bỏ qua.
+function blockReaders(b) {
+  const out = [];
+  const add = (name, read, legacy) => out.push({ name, read, legacy: !!legacy });
+  const P = (r) => (r.parameters && r.parameters[b.key]) || null;
+  const mmssParts = (t) => { const m = String(t == null ? '' : t).match(/^\s*(\d+)\s*\D\s*(\d+)\s*$/); return m ? [m[1], m[2]] : [t, t]; };
+  const staffRead = (list) => (r) => {
+    const d = P(r); if (!d) return NO_STRUCT;
+    const arr = list(d); if (!arr) return NO_STRUCT;
+    const vals = arr.map(x => (x ? x.nguoiThucHien : undefined));
+    if (vals.every(v => v === undefined)) return undefined;
+    return vals.find(isFilledValue) || '';
+  };
+  if (b.kind === 'pair') {
+    if (hasStaffCol(b.cols)) add(staffFieldName(b), staffRead(d => (Array.isArray(d.reps) && d.reps.length >= 2 ? d.reps : null)), true);
+    [1, 2].forEach(i => withoutStaffCol(b.cols).forEach(c => {
+      const rep = (r) => { const d = P(r); return d && Array.isArray(d.reps) && d.reps[i - 1] ? d.reps[i - 1] : null; };
+      const name = b.prefix + '_' + i + '_' + c.key;
+      if (c.input === 'mmss') {
+        add(name + '_mm', r => { const x = rep(r); return x ? mmssParts(x[c.rec])[0] : NO_STRUCT; });
+        add(name + '_ss', r => { const x = rep(r); return x ? mmssParts(x[c.rec])[1] : NO_STRUCT; });
+      } else add(name, r => { const x = rep(r); return x ? x[c.rec] : NO_STRUCT; });
+    }));
+  } else if (b.kind === 'single' || b.kind === 'sieve') {
+    if (hasStaffCol(b.fields)) add(staffFieldName(b), staffRead(d => [d]), true);
+    withoutStaffCol(b.fields).forEach(f => add(b.prefix + '_' + f.key, r => { const d = P(r); return d ? d[f.rec] : NO_STRUCT; }));
+    if (b.kind === 'sieve') b.sieveCols.forEach(c => {
+      const row = (r) => { const d = P(r); return d && Array.isArray(d.sieve) ? (d.sieve.find(x => x.mesh === c.key) || null) : null; };
+      add('sieve_' + c.key + '_w', r => { const x = row(r); return x ? x.khoiLuongSang : NO_STRUCT; });
+      add('sieve_' + c.key + '_wt', r => { const x = row(r); return x ? x.khoiLuongMauSang : NO_STRUCT; });
+    });
+  } else if (b.kind === 'hotCold') {
+    if (hasStaffCol(b.cols)) add(staffFieldName(b), staffRead(d => b.rows.map(r => d[r.rec] || null)), true);
+    b.rows.forEach(rw => withoutStaffCol(b.cols).forEach(c =>
+      add(b.prefix + '_' + rw.key + '_' + c.key, r => { const d = P(r); return d && d[rw.rec] ? d[rw.rec][c.rec] : NO_STRUCT; })));
+  }
+  return out;
+}
+
+// Mức hoàn thành của 1 chỉ tiêu: { complete, missing:[{text,name}], invalid:[{text,name}] }.
+// missing = trường chưa nhập; invalid = đã nhập nhưng giá trị không hợp lệ. Hoàn thành = không còn cả hai.
+function blockCompletion(b, get) {
+  const short = blockShortName(b), missing = [], invalid = [];
+  const miss = (sp, name) => missing.push({ text: short + ': thiếu ' + sp.label + sp.where, name: name || sp.name });
+  blockSpecs(b).forEach(sp => {
+    if (sp.kind === 'mmss') {
+      const mm = get(sp.name + '_mm'), ss = get(sp.name + '_ss');
+      if (mm === undefined && ss === undefined && sp.legacy) return;
+      if (!isFilledValue(mm)) return miss(sp, sp.name + '_mm');
+      if (!isFilledValue(ss)) return miss(sp, sp.name + '_ss');
+      const m = Number(mm), s = Number(ss);
+      if (!Number.isInteger(m) || m < 0 || !Number.isInteger(s) || s < 0 || s > 59)
+        invalid.push({ text: short + ': ' + sp.label + sp.where + ' không hợp lệ (phút nguyên ≥ 0, giây 0–59)', name: sp.name + '_mm' });
+      return;
+    }
+    const v = get(sp.name);
+    if (v === undefined && sp.legacy) return;
+    if (sp.kind === 'computed') {
+      if ((sp.needs || []).some(k => !isFilledValue(get(k)))) return; // đầu vào thiếu đã được báo ở chính ô đó
+      if (toNumber(v) === null) missing.push({ text: short + ': chưa tính được ' + sp.label + sp.where + ' — kiểm tra các giá trị đầu vào', name: (sp.needs || [sp.name])[0] });
+      return;
+    }
+    if (!isFilledValue(v)) return miss(sp);
+    if (sp.kind === 'number' && toNumber(v) === null) invalid.push({ text: short + ': ' + sp.label + sp.where + ' không phải số hợp lệ', name: sp.name });
   });
-  const pct = total ? Math.round(filled / total * 100) : 0;
+  if (b.kind === 'sieve' && !missing.length && !invalid.length) {
+    let total = 0, bad = null;
+    b.sieveCols.forEach(c => {
+      const w = toNumber(get('sieve_' + c.key + '_w')), wt = toNumber(get('sieve_' + c.key + '_wt'));
+      if (w < 0 || wt < 0 || wt < w) { if (!bad) bad = { text: short + ': Khối lượng mẫu + sàng phải ≥ Khối lượng sàng (và không âm) tại cỡ ' + c.label, name: 'sieve_' + c.key + '_wt' }; }
+      else total += wt - w;
+    });
+    if (bad) invalid.push(bad);
+    else if (!(total > 0)) invalid.push({ text: short + ': tổng khối lượng thu hồi trên các sàng phải > 0', name: 'sieve_' + b.sieveCols[0].key + '_wt' });
+  }
+  return { complete: !missing.length && !invalid.length, missing, invalid };
+}
+
+// Getter đọc 1 chỉ tiêu từ bản ghi; null nếu bản ghi cũ không đủ khối/khoá để đánh giá đáng tin cậy.
+function recordBlockGetter(b, r) {
+  const vals = {};
+  for (const f of blockReaders(b)) {
+    let v;
+    try { v = f.read(r); } catch (e) { return null; }
+    if (v === NO_STRUCT) return null;
+    if (v === undefined && !f.legacy) return null;
+    vals[f.name] = v;
+  }
+  return (name) => vals[name];
+}
+
+// Tiến độ của FORM đang nhập (đọc DOM qua fval) — cùng quy tắc với bản ghi.
+function completionOfForm() {
+  const cfg = typeCfg();
+  return summarizeCompletion(cfg.blocks.map(b => ({ filled: blockCompletion(b, fval).complete })));
+}
+// Tiến độ của 1 BẢN GHI đã lưu — chỉ đọc bản ghi truyền vào (không đụng form/DOM/phiếu khác, không ghi lại).
+// null nếu dữ liệu cũ không đủ thông tin tin cậy -> UI hiện "Chưa xác định".
+function completionOfRecord(r) {
+  if (!r || !r.sampleInfo || !r.parameters) return null;
+  const cfg = TYPE_CONFIG[typeOf(r)];
+  if (!cfg || !cfg.blocks.length) return null;
+  const entries = [];
+  for (const b of cfg.blocks) {
+    const get = recordBlockGetter(b, r);
+    if (!get) return null;
+    entries.push({ filled: blockCompletion(b, get).complete });
+  }
+  return summarizeCompletion(entries);
+}
+function progressBarHtml(c) {
+  const label = '<span class="detail-progress__label">Tiến độ nhập liệu</span>';
+  if (!c) return '<div class="detail-progress">' + label + '<span class="completion-label">Chưa xác định</span></div>';
+  return '<div class="detail-progress">' + label +
+    '<div class="completion-bar" role="progressbar" aria-label="Tiến độ nhập liệu" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + c.pct + '"><div class="completion-bar__fill" style="width:' + c.pct + '%"></div></div>' +
+    '<span class="completion-label">' + c.pct + '% (' + c.filled + '/' + c.total + ' chỉ tiêu)</span></div>';
+}
+// Cập nhật thanh tiến độ + đổi màu tên chỉ tiêu đã hoàn thành (xanh); chưa hoàn thành giữ màu cũ.
+function calcCompletion() {
+  const cfg = typeCfg();
+  const done = cfg.blocks.map(b => blockCompletion(b, fval).complete);
+  cfg.blocks.forEach((b, i) => {
+    const lg = document.querySelector('#block-param-' + (i + 1) + ' > legend');
+    if (lg) lg.classList.toggle('card__title--done', done[i]);
+  });
+  const c = summarizeCompletion(done.map(d => ({ filled: d })));
   const bar = document.getElementById('form-completion-bar');
   const label = document.getElementById('form-completion-label');
-  if (bar) bar.style.width = pct + '%';
-  if (label) label.textContent = pct + '% hoàn thành (' + filled + '/' + total + ' trường)';
-  return pct;
+  if (bar) bar.style.width = c.pct + '%';
+  if (label) label.textContent = c.pct + '% hoàn thành (' + c.filled + '/' + c.total + ' chỉ tiêu)';
+  return c.pct;
+}
+// Thanh tiến độ sticky nằm ngay dưới thanh tab (cũng sticky) -> đo chiều cao thanh tab.
+function updateStickyOffset() {
+  const sb = document.getElementById('sidebar');
+  if (sb) document.documentElement.style.setProperty('--sticky-offset', sb.offsetHeight + 'px');
+}
+
+/* ---------------- ALARM THIẾU DỮ LIỆU CHỈ TIÊU (lưu chính thức) ----------------
+   Cùng quy tắc hoàn thành ở trên: liệt kê từng chỉ tiêu + trường còn thiếu. Không dựa vào kết luận chung
+   'pending' và tách biệt hoàn toàn với cảnh báo Không đạt. (Giá trị không hợp lệ do blockValidationErrors chặn riêng.) */
+function collectMissingResults(cfg) {
+  cfg = cfg || typeCfg();
+  const out = [];
+  cfg.blocks.forEach((b, i) => blockCompletion(b, fval).missing.forEach(m => out.push(Object.assign({ blockIndex: i }, m))));
+  return out;
+}
+function focusFormField(name) {
+  const el = fel(name);
+  if (!el) return;
+  el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  setTimeout(() => { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } }, 250);
+}
+// Ghi chú thiếu ngay tại khối liên quan + viền ô còn thiếu; tự cập nhật khi người dùng nhập tiếp.
+function refreshMissingNotes() {
+  document.querySelectorAll('.block-missing-note').forEach(n => n.remove());
+  document.querySelectorAll('.field__input--missing').forEach(n => n.classList.remove('field__input--missing'));
+  if (!state.missingShown) return;
+  const list = collectMissingResults();
+  const byBlock = {};
+  list.forEach(m => { (byBlock[m.blockIndex] = byBlock[m.blockIndex] || []).push(m); const el = fel(m.name); if (el) el.classList.add('field__input--missing'); });
+  Object.keys(byBlock).forEach(i => {
+    const fs = document.getElementById('block-param-' + (parseInt(i, 10) + 1));
+    if (!fs) return;
+    const note = document.createElement('div');
+    note.className = 'block-missing-note';
+    note.setAttribute('role', 'alert');
+    const ul = document.createElement('ul');
+    byBlock[i].forEach(m => { const li = document.createElement('li'); li.textContent = m.text; ul.appendChild(li); });
+    note.appendChild(ul);
+    const legend = fs.querySelector('legend');
+    if (legend && legend.nextSibling) fs.insertBefore(note, legend.nextSibling); else fs.appendChild(note);
+  });
+}
+function showMissingResultsModal(list) {
+  return new Promise((resolve) => {
+    Modal.open(
+      '<h2>Chưa nhập đủ dữ liệu chỉ tiêu</h2>' +
+      '<p>Còn <b>' + list.length + '</b> trường chưa nhập — bấm vào từng mục để tới đúng ô cần nhập:</p>' +
+      '<ul class="missing-list">' + list.map((m, i) => '<li><a href="#" data-missing-idx="' + i + '">' + escapeAttr(m.text) + '</a></li>').join('') + '</ul>' +
+      '<p class="field__hint">Nếu cần đóng phiếu dù chưa đủ dữ liệu, dùng nút "Force đóng Report". Lưu nháp vẫn dùng được bình thường.</p>' +
+      '<div class="form-actions"><button type="button" class="btn btn--primary" id="btn-missing-back">Quay lại nhập liệu</button></div>'
+    );
+    const done = (name) => { Modal.close(); if (name) focusFormField(name); resolve(); };
+    document.querySelectorAll('#modal-body [data-missing-idx]').forEach(a => a.addEventListener('click', (e) => { e.preventDefault(); done(list[parseInt(a.dataset.missingIdx, 10)].name); }));
+    document.getElementById('btn-missing-back').addEventListener('click', () => done(list[0] && list[0].name));
+  });
 }
 
 /* ---------------- FORM: dựng form theo loại sản phẩm ---------------- */
@@ -2788,6 +3053,7 @@ function sampleInfoHtml(cfg) {
         f.options.map(o => '<option value="' + escapeAttr(o) + '">' + escapeAttr(o) + '</option>').join('') + '</select>';
       else if (f.input === 'readonly') inner = '<input type="text" name="' + f.name + '" class="field__input" readonly placeholder="' + escapeAttr(f.placeholder || '') + '" />';
       else if (f.input === 'number') inner = '<input type="number" inputmode="numeric" name="' + f.name + '" class="field__input" placeholder="' + escapeAttr(f.placeholder || '') + '" />';
+      else if (f.input === 'digits') inner = '<input type="text" inputmode="numeric" autocomplete="off" name="' + f.name + '" class="field__input" placeholder="' + escapeAttr(f.placeholder || '') + '" />';
       else inner = '<input type="text" name="' + f.name + '" class="field__input" placeholder="' + escapeAttr(f.placeholder || '') + '" />';
       return '<label class="field"><span class="field__label">' + escapeAttr(f.label) + '</span>' + inner +
         (f.hintId ? '<span class="field__hint" id="' + f.hintId + '"></span>' : '') + '</label>';
@@ -2810,6 +3076,20 @@ function bindSampleBehaviors(cfg) {
     }
     if (f.behavior === 'ssccFromPo') on(e, onPoChange);
     if (f.thresholdKey) e.addEventListener('change', updateThresholdsForCustomer);
+    if (f.thresholdKey) e.addEventListener('change', () => {
+      if (state.customerAutoFilled && e.value !== state.customerAutoFilled) state.customerAutoFilled = null;
+      setFieldError(f.name, validateCustomerAgainstPo());
+    });
+    // Báo lỗi định dạng: đủ khi rời ô (blur/change); đã báo lỗi thì cập nhật/xoá ngay khi người dùng sửa.
+    // Không báo liên tục lúc đang gõ mã chưa đủ. Item Code do onItemCodeChange xử lý, Batch do onBatchChange.
+    if (f.format && f.format !== 'batch' && f.format !== 'itemCode') {
+      const run = () => setFieldError(f.name, validateSampleField(f, e.value));
+      e.addEventListener('blur', run);
+      e.addEventListener('change', run);
+      e.addEventListener('input', () => { if (hasFieldError(f.name)) run(); });
+    }
+    if (f.format === 'itemCode') e.addEventListener('input', () => { if (hasFieldError(f.name)) setFieldError(f.name, validateSampleField(f, e.value)); });
+    if (f.format === 'batch') e.addEventListener('input', () => { if (hasFieldError(f.name)) onBatchChange(); });
   });
   const yearEl = form.elements['productionYear'];
   if (yearEl) on(yearEl, onProductionYearChange);
@@ -2817,6 +3097,8 @@ function bindSampleBehaviors(cfg) {
 function renderFormForType(type) {
   if (!TYPE_CONFIG[type]) type = DEFAULT_TYPE;
   state.formType = type;
+  state.missingShown = false;
+  state.customerAutoFilled = null;
   const cfg = typeCfg(type);
   let html = sampleInfoHtml(cfg) + cfg.blocks.map(blockHtml).join('');
   if (!html) html = '<div class="card"><p class="empty-type-note">Loại sản phẩm <b>' + escapeAttr(PRODUCT_TYPES[type]) +
@@ -2862,6 +3144,101 @@ function updateThresholdsForCustomer() {
   recomputeAll();
 }
 
+/* ---------------- BÁO LỖI ĐỊNH DẠNG TẠI TRƯỜNG (Item Code / Batch / PO / SSCC) ----------------
+   MỘT validator (validateSampleField / collectFieldErrors) dùng cho cả giao diện (blur/sửa lại) lẫn lúc lưu.
+   Chỉ kiểm tra quy tắc đã rõ: chuỗi chữ số (giữ số 0 đầu), Item Code có trong danh mục, Batch (parseBatchStructure),
+   SSCC Powder đủ 14 chữ số. CHƯA kiểm tra chéo Item Code/Batch/PO/SSCC/Customer. Lỗi hiển thị bằng textContent. */
+function setFieldError(name, msg) {
+  const el = fel(name);
+  if (!el) return;
+  const label = el.closest('label.field');
+  let box = label ? label.querySelector('.field__error') : null;
+  if (msg) {
+    if (!box && label) { box = document.createElement('span'); box.className = 'field__error'; box.id = 'err-' + name; label.appendChild(box); }
+    if (box) { box.textContent = msg; el.setAttribute('aria-describedby', box.id); }
+    el.classList.add('field__input--error');
+    el.setAttribute('aria-invalid', 'true');
+  } else {
+    if (box) box.remove();
+    el.classList.remove('field__input--error');
+    el.removeAttribute('aria-invalid');
+    el.removeAttribute('aria-describedby');
+  }
+}
+function hasFieldError(name) { const el = fel(name); return !!(el && el.classList.contains('field__input--error')); }
+function sampleFieldCfg(name) { return typeCfg().sampleFields.find(f => f.name === name); }
+function validateSampleField(f, rawValue) {
+  const v = String(rawValue == null ? '' : rawValue).trim();
+  if (!v) return ''; // trống: không báo lỗi định dạng (trường bắt buộc kiểm riêng khi lưu)
+  if (f.format === 'digits') return /^\d+$/.test(v) ? '' : f.label + ' chỉ gồm chữ số (giữ số 0 đầu), không có khoảng trắng hoặc ký tự khác.';
+  if (f.format === 'po') {
+    if (!/^\d+$/.test(v)) return f.label + ' chỉ gồm chữ số (giữ số 0 đầu), không có khoảng trắng hoặc ký tự khác.';
+    if (f.customerByPrefix && !f.customerByPrefix[v.charAt(0)]) return 'PO "' + v + '" bắt đầu bằng "' + v.charAt(0) + '" không hợp lệ — PO phải bắt đầu bằng ' +
+      Object.keys(f.customerByPrefix).map(k => k + ' (' + f.customerByPrefix[k] + ')').join(' hoặc ') + '.';
+  }
+  if (f.format === 'itemCode') {
+    if (!/^\d+$/.test(v)) return f.label + ' chỉ gồm chữ số (giữ số 0 đầu), không có khoảng trắng hoặc ký tự khác.';
+    return findItemByCode(v) ? '' : 'Item Code "' + v + '" không có trong danh mục ' + PRODUCT_TYPES[state.formType] + '.';
+  }
+  if (f.format === 'batch') { const parsed = parseBatchStructure(v); return parsed.ok ? '' : parsed.error; }
+  if (f.format === 'sscc14') {
+    const po = fval('po').trim();
+    if (po && v === po + '000') return 'SSCC mới chỉ là tiền tố gợi ý (' + v + ') — cần hoàn tất đủ 14 chữ số trước khi lưu chính thức (hoặc xoá trống nếu chưa có).';
+    if (!/^\d+$/.test(v)) return 'SSCC chỉ gồm chữ số, không có khoảng trắng hoặc ký tự khác.';
+    if (v.length !== 14) return 'SSCC phải đủ đúng 14 chữ số (đang có ' + v.length + ').' + (po && v.startsWith(po + '000') ? ' Đây mới là tiền tố gợi ý, cần hoàn tất mã.' : '');
+  }
+  return '';
+}
+// Toàn bộ lỗi của khối Thông tin mẫu: [{ name, message }] theo thứ tự trường.
+function collectFieldErrors(cfg) {
+  const errs = [];
+  for (const f of cfg.sampleFields) {
+    const v = fval(f.name).trim();
+    if (f.required && !v) { errs.push({ name: f.name, message: 'Vui lòng nhập/chọn ' + f.label + ' trước khi lưu.' }); continue; }
+    if (!v) continue;
+    if (f.format === 'batch') {
+      const parsed = parseBatchStructure(v);
+      if (!parsed.ok) { errs.push({ name: f.name, message: parsed.error }); continue; }
+      const yearStr = fval('productionYear').trim();
+      if (!yearStr) { errs.push({ name: 'productionYear', message: 'Batch chỉ có 1 số năm — vui lòng xác nhận "Năm SX (xác nhận)" trước khi lưu.' }); continue; }
+      const year = parseInt(yearStr, 10);
+      if (isNaN(year) || String(((year % 10) + 10) % 10) !== String(parsed.yearDigit)) { errs.push({ name: 'productionYear', message: 'Năm SX phải có chữ số cuối khớp với Batch ("' + parsed.yearDigit + '").' }); continue; }
+      if (parsed.day === 366 && !isLeapYear(year)) errs.push({ name: f.name, message: 'Ngày Julian 366 trong Batch chỉ hợp lệ với năm nhuận — năm ' + year + ' không phải năm nhuận.' });
+    } else if (f.format) {
+      const m = validateSampleField(f, v);
+      if (m) errs.push({ name: f.name, message: m });
+    }
+  }
+  const cm = fel('customer') ? validateCustomerAgainstPo() : '';
+  if (cm && !errs.some(e => e.name === 'customer')) errs.push({ name: 'customer', message: cm });
+  return errs;
+}
+
+// Customer theo PO (Powder): PO bắt đầu 6 -> INS, 7 -> LDC (quy tắc xác nhận mới nhất, thay mapping ngược ở ghi chú cũ).
+function poCustomerFor(po) {
+  const f = sampleFieldCfg('po');
+  po = String(po || '').trim();
+  if (!f || !f.customerByPrefix || !/^\d+$/.test(po)) return null;
+  return f.customerByPrefix[po.charAt(0)] || null; // tiền tố khác: null (báo PO không hợp lệ, KHÔNG đoán Customer)
+}
+function validateCustomerAgainstPo() {
+  const po = fval('po').trim(), cust = fval('customer'), exp = poCustomerFor(po);
+  if (!exp || !cust || cust === exp) return '';
+  return 'Customer "' + cust + '" không khớp PO "' + po + '" (PO bắt đầu bằng ' + po.charAt(0) + ' -> ' + exp + '). Sửa Customer hoặc PO.';
+}
+// Tự điền Customer khi PO có tiền tố hợp lệ — chỉ khi Customer đang trống hoặc do chính app điền trước đó;
+// giá trị người dùng đã chọn KHÔNG bị ghi đè (nếu lệch thì báo lỗi tại ô Customer). Chỉ chạy khi nhập PO, không chạy khi mở xem phiếu.
+function applyCustomerFromPo() {
+  const cEl = fel('customer');
+  if (!cEl) return;
+  const exp = poCustomerFor(fval('po'));
+  if (exp && (!cEl.value || (state.customerAutoFilled && cEl.value === state.customerAutoFilled))) {
+    if (cEl.value !== exp) { cEl.value = exp; updateThresholdsForCustomer(); }
+    state.customerAutoFilled = exp;
+  }
+  setFieldError('customer', validateCustomerAgainstPo());
+}
+
 function onItemCodeChange() {
   const code = fval('itemCode');
   const item = findItemByCode(code);
@@ -2871,8 +3248,9 @@ function onItemCodeChange() {
   } else {
     if (fel('recipe')) fel('recipe').value = '';
     if (fel('productName')) fel('productName').value = '';
-    if (code) toast('Không tìm thấy Item Code "' + code + '" trong danh mục ' + PRODUCT_TYPES[state.formType] + '.', 'warn');
   }
+  const icf = sampleFieldCfg('itemCode');
+  if (icf) setFieldError('itemCode', validateSampleField(icf, code));
   updateThresholdsForCustomer();
 }
 
@@ -2886,14 +3264,14 @@ function recomputeProductionDate(autoGuessYear) {
   const raw = batchEl.value.toUpperCase().trim();
   if (batchEl.value !== raw) batchEl.value = raw; // uppercase + trim trước khi lưu/tính toán
   setWarn('batch', false); setWarn('productionYear', false);
+  setFieldError('batch', ''); setFieldError('productionYear', '');
   if (hint) hint.textContent = '';
   if (yearHint) yearHint.textContent = '';
   if (!raw) { dateEl.value = ''; return; }
 
   const parsed = parseBatchStructure(raw);
   if (!parsed.ok) {
-    setWarn('batch', true);
-    if (hint) hint.textContent = parsed.error;
+    setFieldError('batch', parsed.error);
     dateEl.value = '--';
     return;
   }
@@ -2912,16 +3290,14 @@ function recomputeProductionDate(autoGuessYear) {
   }
   const year = parseInt(yearStr, 10);
   if (isNaN(year) || String(((year % 10) + 10) % 10) !== String(parsed.yearDigit)) {
-    setWarn('productionYear', true);
-    if (yearHint) yearHint.textContent = 'Năm SX phải có chữ số cuối khớp với Batch ("' + parsed.yearDigit + '").';
+    setFieldError('productionYear', 'Năm SX phải có chữ số cuối khớp với Batch ("' + parsed.yearDigit + '").');
     dateEl.value = '--';
     return;
   }
   if (yearHint) yearHint.textContent = (guess.year === year)
     ? 'Năm SX tự động theo Batch (chọn năm gần năm hiện tại nhất) — kiểm tra lại trước khi lưu.' : '';
   if (parsed.day === 366 && !isLeapYear(year)) {
-    setWarn('batch', true);
-    if (hint) hint.textContent = 'Ngày Julian 366 chỉ hợp lệ với năm nhuận — năm ' + year + ' không phải năm nhuận.';
+    setFieldError('batch', 'Ngày Julian 366 chỉ hợp lệ với năm nhuận — năm ' + year + ' không phải năm nhuận.');
     dateEl.value = '--';
     return;
   }
@@ -2935,12 +3311,14 @@ function onProductionYearChange() { recomputeProductionDate(false); }
 // dùng chỉ cần gõ tiếp 3 số cuối (không ghi đè nếu SSCC đã khớp tiền tố PO này rồi).
 function onPoChange() {
   const po = fval('po').trim();
+  applyCustomerFromPo();
   const scEl = fel('sscc');
   const hint = document.getElementById('sscc-hint');
   if (!po || !scEl) { if (hint) hint.textContent = ''; return; }
   const prefix = po + '000';
   if (hint) hint.textContent = 'Gợi ý SSCC: ' + prefix + ' + 3 số cuối tự nhập';
   if (!scEl.value || !scEl.value.startsWith(prefix)) scEl.value = prefix;
+  if (hasFieldError('sscc')) setFieldError('sscc', validateSampleField(sampleFieldCfg('sscc'), scEl.value));
 }
 
 /* ---------------- NAVIGATION (Sidebar) ---------------- */
@@ -3529,12 +3907,12 @@ function renderHistoryTable() {
     tr.innerHTML =
       '<td>' + (r.meta && r.meta.savedAt ? formatDateVN(new Date(r.meta.savedAt)) : '--') + (r.isDraft ? ' <span style="color:var(--accept-text);font-size:0.85em;">(Nháp)</span>' : '') + '</td>' +
       '<td>' + PRODUCT_TYPES[typeOf(r)] + '</td>' +
-      '<td>' + (s.itemCode || '--') + '</td>' +
-      '<td>' + (s.productName || '--') + '</td>' +
-      '<td>' + (s.batch || '--') + '</td>' +
-      '<td>' + (s.po || '--') + '</td>' +
-      '<td>' + (s.productionDate || '--') + '</td>' +
-      '<td>' + (s.customer || '--') + '</td>' +
+      '<td>' + escapeAttr(s.itemCode || '--') + '</td>' +
+      '<td>' + escapeAttr(s.productName || '--') + '</td>' +
+      '<td>' + escapeAttr(s.batch || '--') + '</td>' +
+      '<td>' + escapeAttr(s.po || '--') + '</td>' +
+      '<td>' + escapeAttr(s.productionDate || '--') + '</td>' +
+      '<td>' + escapeAttr(s.customer || '--') + '</td>' +
       '<td><span class="param-summary__status" data-status="' + resultStatus + '">' + resultLabel + '</span></td>' +
       '<td>' + approvalBadgeHtml(r) + '</td>' +
       '<td>' + (r.reviewedBy || '--') + '</td>' +
@@ -3576,7 +3954,8 @@ function orderedParams(r) {
 
 const STATUS_LABELS = { pass: 'Đạt', fail: 'Không đạt', accept: 'Chấp nhận', pending: '--' };
 
-function renderRecordDetailHtml(r) {
+function renderRecordDetailHtml(r, opts) {
+  opts = opts || {};
   const rows = orderedParams(r);
   const paramHtml = rows.map(item => {
     if (!item) return '';
@@ -3591,10 +3970,12 @@ function renderRecordDetailHtml(r) {
   const badges = (r.isDraft ? ' <span style="font-size:0.7em;color:var(--accept-text);">(Nháp)</span>' : '') +
     (r.forcedClose ? ' <span style="font-size:0.7em;color:var(--fail-text);">⚠ Force đóng report</span>' : '');
 
-  return '<h2>Phiếu ' + (s.batch || '(chưa có Batch)') + badges + '</h2>' +
+  return '<h2>Phiếu ' + escapeAttr(s.batch || '(chưa có Batch)') + badges + '</h2>' +
     '<p><b>Loại sản phẩm:</b> ' + PRODUCT_TYPES[typeOf(r)] + '</p>' +
-    '<p><b>Item Code:</b> ' + (s.itemCode || '--') + ' — ' + (s.productName || '') + '</p>' +
-    '<p><b>Customer:</b> ' + (s.customer || '--') + ' &nbsp; <b>Ngày SX:</b> ' + (s.productionDate || '--') + ' &nbsp; <b>PO:</b> ' + (s.po || '--') + ' &nbsp; <b>SSCC:</b> ' + (s.sscc || '--') + '</p>' +
+    '<p><b>Item Code:</b> ' + escapeAttr(s.itemCode || '--') + ' — ' + escapeAttr(s.productName || '') + '</p>' +
+    '<p><b>Customer:</b> ' + escapeAttr(s.customer || '--') + ' &nbsp; <b>Ngày SX:</b> ' + escapeAttr(s.productionDate || '--') + ' &nbsp; <b>PO:</b> ' + escapeAttr(s.po || '--') + ' &nbsp; <b>SSCC:</b> ' + escapeAttr(s.sscc || '--') + '</p>' +
+    // Tiến độ tính TỪ CHÍNH bản ghi r (không đọc form/DOM, không ghi lại bản ghi); dữ liệu cũ thiếu -> "Chưa xác định".
+    (opts.noProgress ? '' : progressBarHtml(completionOfRecord(r))) +
     '<div class="detail-param-list">' + paramHtml + '</div>' +
     '<p><b>Kết luận:</b> <span class="param-summary__status" data-status="' + (r.conclusion ? r.conclusion.statusKey : 'pending') + '">' + (r.conclusion ? r.conclusion.result : '--') + '</span></p>' +
     (r.qcAlarm ? '<p><b>Xác nhận lưu dù Không đạt:</b> ' + escapeAttr(r.qcAlarm.confirmedBy || '--') + ' lúc ' + new Date(r.qcAlarm.confirmedAt).toLocaleString('vi-VN') +
@@ -3740,7 +4121,7 @@ function exportHistoryCsv(records) {
 
 function printRecord(r) {
   const printArea = document.getElementById('print-area');
-  printArea.innerHTML = renderRecordDetailHtml(r).replace(/<div class="form-actions">[\s\S]*?<\/div>/, '');
+  printArea.innerHTML = renderRecordDetailHtml(r, { noProgress: true }).replace(/<div class="form-actions">[\s\S]*?<\/div>/, '');
   document.body.classList.add('is-printing');
   window.print();
   setTimeout(() => { document.body.classList.remove('is-printing'); printArea.innerHTML = ''; }, 300);
@@ -4269,20 +4650,14 @@ function handleReviewedByChange() {
 function validateBeforeSubmit() {
   const cfg = typeCfg();
   if (!cfg.blocks.length) return 'Loại sản phẩm ' + PRODUCT_TYPES[state.formType] + ' chưa được cấu hình chỉ tiêu nên chưa thể lưu phiếu.';
-  for (const f of cfg.sampleFields) {
-    if (f.required && !fval(f.name).trim()) return 'Vui lòng nhập/chọn ' + f.label + ' trước khi lưu.';
-    if (f.behavior === 'itemLookup' && fval(f.name).trim() && !findItemByCode(fval(f.name)))
-      return 'Item Code "' + fval(f.name).trim() + '" không có trong danh mục ' + PRODUCT_TYPES[state.formType] + ' — kiểm tra lại trước khi lưu.';
-    if (f.behavior === 'julianBatch' && fval(f.name).trim()) {
-      const parsed = parseBatchStructure(fval(f.name));
-      if (!parsed.ok) return parsed.error;
-      const yearStr = fval('productionYear').trim();
-      if (!yearStr) return 'Batch chỉ có 1 số năm — vui lòng xác nhận "Năm SX (xác nhận)" trước khi lưu.';
-      const year = parseInt(yearStr, 10);
-      if (isNaN(year) || String(year % 10) !== String(parsed.yearDigit)) return 'Năm SX phải có chữ số cuối khớp với Batch ("' + parsed.yearDigit + '").';
-      if (parsed.day === 366 && !isLeapYear(year)) return 'Ngày Julian 366 trong Batch chỉ hợp lệ với năm nhuận — năm ' + year + ' không phải năm nhuận.';
-    }
-  }
+  // Cùng 1 validator với báo lỗi tại trường: hiện lỗi ngay dưới MỌI trường sai, đưa con trỏ tới trường sai đầu tiên.
+  applyCustomerFromPo(); // PO vừa nhập mà chưa kịp rời ô -> vẫn tự điền Customer trống trước khi kiểm
+  const errs = collectFieldErrors(cfg);
+  cfg.sampleFields.forEach(f => {
+    if (f.format || f.required || f.thresholdKey) setFieldError(f.name, (errs.find(e => e.name === f.name) || {}).message || '');
+  });
+  if (fel('productionYear')) setFieldError('productionYear', (errs.find(e => e.name === 'productionYear') || {}).message || '');
+  if (errs.length) { focusFormField(errs[0].name); return errs[0].message; }
   return null;
 }
 
@@ -4304,9 +4679,19 @@ async function submitRecord(forced) {
   const err = validateBeforeSubmit() || blockValidationErrors(cfg);
   if (err) { toast(err, 'warn'); return; }
 
-  if (!forced && form.elements['ketLuan'].dataset.status === 'pending') {
-    toast('Phiếu chưa đầy đủ (còn chỉ tiêu chưa hoàn tất) — dùng nút "Force đóng Report" nếu cần đóng phiếu ngay.', 'warn');
-    return;
+  // Alarm thiếu kết quả CỤ THỂ từng chỉ tiêu (không dựa vào kết luận chung): chặn lưu thường, Force vẫn bỏ qua.
+  if (!forced) {
+    const missing = collectMissingResults(cfg);
+    if (missing.length) {
+      state.missingShown = true;
+      refreshMissingNotes();
+      await showMissingResultsModal(missing);
+      return;
+    }
+    if (form.elements['ketLuan'].dataset.status === 'pending') {
+      toast('Phiếu chưa có kết luận (chưa xác định được ngưỡng áp dụng) — kiểm tra Customer/Item Code hoặc dùng "Force đóng Report".', 'warn');
+      return;
+    }
   }
 
   const batch = fval('batch').trim();
@@ -4727,6 +5112,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     e.target.value = '';
   });
 
+  updateStickyOffset();
+  window.addEventListener('resize', updateStickyOffset);
   renderStaffList();
   document.getElementById('btn-sync-now').addEventListener('click', () => Sync.syncNow(true));
   Sync.start();
