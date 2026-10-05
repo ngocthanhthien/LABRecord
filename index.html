@@ -1569,6 +1569,23 @@ const THRESHOLDS = [{"customer": "INS", "parameter": "1. Độ Ẩm (Halogen)", 
 
 const FIELD_MAPPING = [{"parameter": "Thông tin mẫu", "field": "Item code", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "Thông tin mẫu", "field": "Recipe", "format": "number", "type": "Dependent", "remark": "Phụ thuộc Item Code"}, {"parameter": "Thông tin mẫu", "field": "Batch", "format": "text", "type": "Independent", "remark": ""}, {"parameter": "Thông tin mẫu", "field": "Product Name", "format": "text", "type": "Dependent", "remark": "Phụ thuộc Item Code"}, {"parameter": "Thông tin mẫu", "field": "Customer", "format": "text", "type": "Independent", "remark": "Chọn: INS/LDC"}, {"parameter": "Thông tin mẫu", "field": "Ngày sản xuất", "format": "date", "type": "Dependent", "remark": "Phụ thuộc vào số thứ 2-3-4 số Batch là 3 số Julian date"}, {"parameter": "Thông tin mẫu", "field": "PO", "format": "number", "type": "Dependent", "remark": "Số đầu tiên: 6-LDC, 7-INS & 3 số cuối thì nhập (110)\nVD: X12600XXX"}, {"parameter": "Thông tin mẫu", "field": "SSCC", "format": "number", "type": "Dependent", "remark": "Số batch + 000 + 3 số cuối tự nhập"}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Khối lượng mẫu (g)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Nhiệt độ sấy (℃)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Thời gian sấy (mm:ss)", "format": "time", "type": "Independent", "remark": ""}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Kết quả ẩm (%)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Giá trị trung bình (%)", "format": "number", "type": "Dependent", "remark": "average 2 kết quả ẩm"}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Sự khác nhau", "format": "number", "type": "Dependent", "remark": "abs 2 kết quả ẩm"}, {"parameter": "1. Độ Ẩm (Halogen)", "field": "Range", "format": "text", "type": "Dependent", "remark": "Phụ thuộc vào bảng Thông tin Kết luận"}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Khối lượng bình (g)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Khối lượng mẫu(g)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Thể tích bình (L)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Kết quả tỷ trọng (g/L)", "format": "number", "type": "Dependent", "remark": "khối lượng mẫu/thể tích bình"}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Giá trị trung bình (g/L)", "format": "number", "type": "Dependent", "remark": "average 2 kết quả tỷ trọng"}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Sự khác nhau", "format": "number", "type": "Dependent", "remark": "abs 2 kết quả"}, {"parameter": "2. Tỷ trọng - mật độ chảy tự do", "field": "Range", "format": "text", "type": "Dependent", "remark": "Phụ thuộc vào bảng Thông tin Kết luận"}, {"parameter": "3. Độ màu", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "3. Độ màu", "field": "Kết quả độ màu (ACN)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "3. Độ màu", "field": "Giá trị trung bình (ACN)", "format": "number", "type": "Dependent", "remark": "average 2 kết quả độ màu"}, {"parameter": "3. Độ màu", "field": "Sự khác nhau", "format": "number", "type": "Dependent", "remark": "abs 2 kết quả"}, {"parameter": "3. Độ màu", "field": "Range", "format": "text", "type": "Dependent", "remark": "Phụ thuộc vào bảng Thông tin Kết luận"}, {"parameter": "4. Độ cặn", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "4. Độ cặn", "field": "Khối lượng mẫu(g)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "4. Độ cặn", "field": "Thể tích nước (ml)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "4. Độ cặn", "field": "Kết quả độ cặn (Grade)", "format": "number", "type": "Independent", "remark": "Chọn 1/1.5/2/2.5/3"}, {"parameter": "4. Độ cặn", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định"}, {"parameter": "4. Độ cặn", "field": "Vị trí dán mẫu cặn", "format": "Picture", "type": "Independent", "remark": "Adding Picture"}, {"parameter": "5. pH", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "5. pH", "field": "Khối lượng mẫu(g)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "5. pH", "field": "Thể tích nước (ml)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "5. pH", "field": "Nhiệt độ mẫu 25±0.5 (℃)", "format": "number", "type": "Dependent", "remark": "Nằm ngoài range 24.5-25.5 -> tô đỏ"}, {"parameter": "5. pH", "field": "Kết quả pH", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "5. pH", "field": "Giá trị trung bình", "format": "number", "type": "Dependent", "remark": "average 2 kết quả pH"}, {"parameter": "5. pH", "field": "Sự khác nhau", "format": "number", "type": "Dependent", "remark": "abs 2 kết quả"}, {"parameter": "5. pH", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định"}, {"parameter": "6. Acidity", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "6. Acidity", "field": "Khối lượng mẫu(g)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "6. Acidity", "field": "Thể tích nước (ml)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "6. Acidity", "field": "Nồng độ NaOH", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "6. Acidity", "field": "Thể tích tiêu tốn", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "6. Acidity", "field": "Kết quả Acidity", "format": "number", "type": "Dependent", "remark": "Thể tích tiêu tốn * nồng độ NaOH/ 0.1"}, {"parameter": "6. Acidity", "field": "Giá trị trung bình", "format": "number", "type": "Dependent", "remark": "average 2 kết quả"}, {"parameter": "6. Acidity", "field": "Sự khác nhau", "format": "number", "type": "Dependent", "remark": "abs 2 kết quả"}, {"parameter": "6. Acidity", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định"}, {"parameter": "7. Độ hòa tan", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "7. Độ hòa tan", "field": "Khối lượng mẫu(g)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "7. Độ hòa tan", "field": "Thể tích nước (ml)", "format": "number", "type": "Independent", "remark": "Cố định: Nóng"}, {"parameter": "7. Độ hòa tan", "field": "Thể tích nước (ml)", "format": "number", "type": "Independent", "remark": "Cố định: Lạnh"}, {"parameter": "7. Độ hòa tan", "field": "Nhiệt độ mẫu (oC)", "format": "number", "type": "Dependent", "remark": "Nóng: Nằm ngoài range 96-98 -> tô đỏ"}, {"parameter": "7. Độ hòa tan", "field": "Nhiệt độ mẫu (oC)", "format": "number", "type": "Dependent", "remark": "Lạnh: Nằm ngoài range 18-20 -> tô đỏ"}, {"parameter": "7. Độ hòa tan", "field": "Thời gian khuấy", "format": "number", "type": "Independent", "remark": "Cố định: Nóng"}, {"parameter": "7. Độ hòa tan", "field": "Thời gian khuấy", "format": "number", "type": "Independent", "remark": "Cố định: Lạnh"}, {"parameter": "7. Độ hòa tan", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định"}, {"parameter": "7. Độ hòa tan", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định"}, {"parameter": "8. Kích thước hạt", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều"}, {"parameter": "8. Kích thước hạt", "field": "Khối lượng mẫu (g)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "8. Kích thước hạt", "field": "Biên độ (mm)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "8. Kích thước hạt", "field": "Thời gian (s)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "8. Kích thước hạt", "field": "Khối lượng mẫu sau sàng (g)", "format": "number", "type": "Dependent", "remark": "Công thức như File Excel"}, {"parameter": "8. Kích thước hạt", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định"}, {"parameter": "8. Kích thước hạt", "field": "Khối lượng sàng (g)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "8. Kích thước hạt", "field": "Khối lượng mẫu + sàng (g)", "format": "number", "type": "Independent", "remark": ""}, {"parameter": "8. Kích thước hạt", "field": "% mẫu trên sàng", "format": "number", "type": "Dependent", "remark": "Công thức như File Excel"}, {"parameter": "9. Ngoại vật", "field": "Khối lượng mẫu(g)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "9. Ngoại vật", "field": "Thể tích nước (ml)", "format": "number", "type": "Independent", "remark": "Cố định"}, {"parameter": "9. Ngoại vật", "field": "Kết quả", "format": "text", "type": "Independent", "remark": "Absent/Present (ghi cụ thể FB)"}, {"parameter": "9. Ngoại vật", "field": "Hình ảnh ngoại vật", "format": "Picture", "type": "Independent", "remark": "Adding Picture"}, {"parameter": "9. Ngoại vật", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định"}];
 
+/* ---------------- DỮ LIỆU KHỞI TẠO CHO COFFEE OIL / LIQUID ----------------
+   Lấy từ 4 file Excel "1. Chemical Analysis Result Form 03.10 - Coffee Oil/Liquid" và "2. Chemical_Analysis_Field_Mapping 03.10 - ...".
+   - itemCodes: chỉ 1 mã ví dụ trong mỗi file (danh mục đầy đủ do Supervisor nhập ở tab Item Code).
+   - thresholds: CHỈ theo Customer có trong form mẫu (Coffee Oil: LDC; Liquid: INS). Customer khác (Coffee Oil Semi-FGs = NA, Liquid LDC)
+     chưa có ngưỡng -> chỉ tiêu ở trạng thái chờ cho tới khi Supervisor thêm dòng ở tab Spec.
+   - Không có REPEATABILITY khởi tạo (Excel chưa nêu dung sai) — thêm ở tab Độ lặp lại.
+   Chỉ được nạp vào bộ nhớ khi loại đó CHƯA có dòng nào (không đè dữ liệu người dùng đã sửa/lưu). */
+const SEED_BY_TYPE = {"coffeeOil": {"itemCodes": [{"item": "12200002", "name": "Arabica coffee oil", "recipe": "", "productType": "coffeeOil"}], "thresholds": [{"customer": "LDC", "parameter": "1. Moisture (Oven)", "unit": "%", "requirement": "≤ 1", "recipe": "-", "productType": "coffeeOil"}, {"customer": "LDC", "parameter": "2. Sediment", "unit": "%", "requirement": "≤ 1.5", "recipe": "-", "productType": "coffeeOil"}, {"customer": "LDC", "parameter": "3. Density", "unit": "g/L", "requirement": "0.92-1.2", "recipe": "-", "productType": "coffeeOil"}], "fieldMapping": [{"parameter": "Thông tin mẫu", "field": "Item code", "format": "number", "type": "Independent", "remark": "", "productType": "coffeeOil"}, {"parameter": "Thông tin mẫu", "field": "Type", "format": "text", "type": "Dependent", "remark": "Chọn: FGs/ Semi-FGs", "productType": "coffeeOil"}, {"parameter": "Thông tin mẫu", "field": "Batch", "format": "text", "type": "Independent", "remark": "Nguyên tắc đặt batch, chữ cái trong batch toàn viết hoa\n- Nếu Type là FGs:\n+ 1 digit: Last number of Year \n+ 3 digits: Julian Date of manufacturing\n+ 4 digits: 4 last number of PO No\n+ 2 digit: OF cố định\n+ 1: Curent line\n- Nếu Type là Semi-FGs:\n+ 1 digit: Last number of Year \n+ 3 digits: Julian Date of manufacturing\n+ 4 digits: 4 last number of PO No\n+ 1 digit: O cố định\n+ 1: Curent line", "productType": "coffeeOil"}, {"parameter": "Thông tin mẫu", "field": "Product Name", "format": "text", "type": "Dependent", "remark": "Phụ thuộc Item Code", "productType": "coffeeOil"}, {"parameter": "Thông tin mẫu", "field": "Customer", "format": "text", "type": "Dependent", "remark": "Tự động điền theo Type:\n- Nếu Type là FGs: LDC\n- Nếu Type là Semi-FGs: NA", "productType": "coffeeOil"}, {"parameter": "Thông tin mẫu", "field": "Ngày sản xuất", "format": "date", "type": "", "remark": "Phụ thuộc vào số thứ 2-3-4 số Batch là 3 số Julian date ", "productType": "coffeeOil"}, {"parameter": "Thông tin mẫu", "field": "PO", "format": "number", "type": "Dependent", "remark": "Nguyên tắc đặt PO\n- Nếu Type là FGs:\n+ 2 digits: Coffee oil Product for FGs\n+ 26: 2 last number of Year (2026)\n+ 5 Digits: 5 last number of PO\n- Nếu Type là Semi-FGs:\n+  2 digits: Coffee oil Product for Semi-FGs\n+ 2 digits: 2 last number of Year (2026)\n+ 5 Digits: 5 last number of PO", "productType": "coffeeOil"}, {"parameter": "Thông tin mẫu", "field": "SSCC", "format": "number", "type": "Dependent", "remark": "Nguyên tắc đặt số SSCC=> Tự động điền thông tin, chỉ nhập 3 số cuối SSCC:\n- Nếu Type là FGs:\n+ 2 digits: Coffee oil Product for FGs\n+ 2 Digit: 2 last number of Year (2026)\n+ 5 Digits: 5 last number of PO\n+ 5 Digits: 5 last of Number\n- Nếu Type là Semi-FGs:\n+ 2 digits: Coffee oil Product for Semi-FGs \n+ 2 Digit: 2 last number of Year (2026)\n+ 5 Digits: 5 last number of PO\n+ 5 Digits: 5 last of Number", "productType": "coffeeOil"}, {"parameter": "1. Moisture (Oven)", "field": "Người thực hiện", "format": "text", "type": "Dependent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều", "productType": "coffeeOil"}, {"parameter": "1. Moisture (Oven)", "field": "Đĩa số", "format": "number", "type": "Independent", "remark": "", "productType": "coffeeOil"}, {"parameter": "1. Moisture (Oven)", "field": "Khối lượng (g)\n(đĩa + nắp)", "format": "number", "type": "Independent", "remark": "", "productType": "coffeeOil"}, {"parameter": "1. Moisture (Oven)", "field": "Khối lượng mẫu (g)", "format": "number", "type": "Independent", "remark": "", "productType": "coffeeOil"}, {"parameter": "1. Moisture (Oven)", "field": "Nhiệt độ vào lò (oC)\n(102-104oC)", "format": "number", "type": "Independent", "remark": "Inrange tô xanh, out range tô đỏ", "productType": "coffeeOil"}, {"parameter": "1. Moisture (Oven)", "field": "Thời gian vào lò (hh:mm)", "format": "time", "type": "Independent", "remark": "định dạng hh:mm (cố định dấu \":\")", "productType": "coffeeOil"}, {"parameter": "1. Moisture (Oven)", "field": "Nhiệt độ ra lò (oC)\n(102-104oC)", "format": "number", "type": "Independent", "remark": "Inrange tô xanh, out range tô đỏ", "productType": "coffeeOil"}, {"parameter": "1. Moisture (Oven)", "field": "Thời gian ra lò (hh:mm)", "format": "time", "type": "Independent", "remark": "định dạng hh:mm (cố định dấu \":\")", "productType": "coffeeOil"}, {"parameter": "1. Moisture (Oven)", "field": "Khối lượng sau khi sấy (g)\n(đĩa + nắp + mẫu)", "format": "number", "type": "Independent", "remark": "", "productType": "coffeeOil"}, {"parameter": "1. Moisture (Oven)", "field": "Kết quả độ ẩm (%)", "format": "number", "type": "Independent", "remark": "theo công thức", "productType": "coffeeOil"}, {"parameter": "1. Moisture (Oven)", "field": "Giá trị trung bình", "format": "number", "type": "Independent", "remark": "average 2 kết quả", "productType": "coffeeOil"}, {"parameter": "1. Moisture (Oven)", "field": "Sự khác nhau", "format": "number", "type": "Independent", "remark": "abs 2 kết quả", "productType": "coffeeOil"}, {"parameter": "1. Moisture (Oven)", "field": "Range", "format": "text", "type": "Dependent", "remark": "Phụ thuộc vào bảng Thông tin Kết luận", "productType": "coffeeOil"}, {"parameter": "2. Sediment", "field": "Người thực hiện", "format": "text", "type": "Dependent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều", "productType": "coffeeOil"}, {"parameter": "2. Sediment", "field": "Khối lượng ống ly tâm (g)", "format": "number", "type": "Independent", "remark": "", "productType": "coffeeOil"}, {"parameter": "2. Sediment", "field": "Khối lượng ống ly tâm + mẫu (g)", "format": "number", "type": "Independent", "remark": "Cố định", "productType": "coffeeOil"}, {"parameter": "2. Sediment", "field": "Khối lượng mẫu (g)", "format": "number", "type": "Independent", "remark": "Công thức", "productType": "coffeeOil"}, {"parameter": "2. Sediment", "field": "Khối lượng ống ly tâm + cặn sau ly tâm (g)", "format": "number", "type": "Independent", "remark": "", "productType": "coffeeOil"}, {"parameter": "2. Sediment", "field": "Kết quả cặn (%) ", "format": "number", "type": "Independent", "remark": "Công thức", "productType": "coffeeOil"}, {"parameter": "2. Sediment", "field": "Giá trị trung bình", "format": "number", "type": "Independent", "remark": "average 2 kết quả", "productType": "coffeeOil"}, {"parameter": "2. Sediment", "field": "Sự khác nhau", "format": "number", "type": "Independent", "remark": "abs 2 kết quả", "productType": "coffeeOil"}, {"parameter": "2. Sediment", "field": "Range", "format": "text", "type": "Independent", "remark": "Phụ thuộc vào bảng Thông tin Kết luận", "productType": "coffeeOil"}, {"parameter": "3. Density", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều", "productType": "coffeeOil"}, {"parameter": "3. Density", "field": "Khối lượng bình tỷ trọng (g)", "format": "number", "type": "Independent", "remark": "", "productType": "coffeeOil"}, {"parameter": "3. Density", "field": "Dung tích bình tỷ trọng (ml)", "format": "number", "type": "Independent", "remark": "", "productType": "coffeeOil"}, {"parameter": "3. Density", "field": "Khối lượng bình tỷ trọng + mẫu (g)", "format": "number", "type": "Independent", "remark": "", "productType": "coffeeOil"}, {"parameter": "3. Density", "field": "Kết quả tỷ trọng (g/L)", "format": "number", "type": "Independent", "remark": "Công thức", "productType": "coffeeOil"}, {"parameter": "3. Density", "field": "Giá trị trung bình", "format": "number", "type": "Dependent", "remark": "average 2 kết quả", "productType": "coffeeOil"}, {"parameter": "3. Density", "field": "Sự khác nhau", "format": "number", "type": "Dependent", "remark": "abs 2 kết quả", "productType": "coffeeOil"}, {"parameter": "3. Density", "field": "Range", "format": "number", "type": "Dependent", "remark": "Phụ thuộc vào bảng Thông tin Kết luận", "productType": "coffeeOil"}]}, "liquid": {"itemCodes": [{"item": "11000137", "name": "Frozen Liquid Coffee Extract Estrella 03", "recipe": "L450", "productType": "liquid"}], "thresholds": [{"customer": "INS", "parameter": "1. Độ Brix", "unit": "-", "requirement": "48-53", "recipe": "-", "productType": "liquid"}, {"customer": "INS", "parameter": "2. Dry Matter (TS by Oven)", "unit": "%", "requirement": "41.7-45.9", "recipe": "-", "productType": "liquid"}, {"customer": "INS", "parameter": "3. Sediment", "unit": "Grade", "requirement": "≤ 2", "recipe": "-", "productType": "liquid"}, {"customer": "INS", "parameter": "4. pH", "unit": "-", "requirement": "4.8-5.4", "recipe": "-", "productType": "liquid"}, {"customer": "INS", "parameter": "5. Acidity", "unit": "-", "requirement": "≤ 4.8", "recipe": "-", "productType": "liquid"}, {"customer": "INS", "parameter": "6. Density", "unit": "g/L", "requirement": "1.184-1.223", "recipe": "-", "productType": "liquid"}, {"customer": "INS", "parameter": "7. Foreign Matter", "unit": "-", "requirement": "Max 10 units < 1.00mm\nMax 1 unit > 1.0mm", "recipe": "-", "productType": "liquid"}], "fieldMapping": [{"parameter": "Thông tin mẫu", "field": "Item code", "format": "number", "type": "Independent", "remark": "", "productType": "liquid"}, {"parameter": "Thông tin mẫu", "field": "Recipe", "format": "number", "type": "Dependent", "remark": "Phụ thuộc Item Code", "productType": "liquid"}, {"parameter": "Thông tin mẫu", "field": "Batch", "format": "text", "type": "Independent", "remark": "Nguyên tắc đặt batch, chữ cái trong batch toàn viết hoa\n+ 1 digit: Last number of Year \n+ 3 digits: Julian Date of manufacturing\n+ 4 digits: 4 last number of PO No\n+ 1 digit: L Liquid product\n+ 1: Curent line", "productType": "liquid"}, {"parameter": "Thông tin mẫu", "field": "Product Name", "format": "text", "type": "Dependent", "remark": "Phụ thuộc Item Code", "productType": "liquid"}, {"parameter": "Thông tin mẫu", "field": "Customer", "format": "text", "type": "Independent", "remark": "Chọn: INS/LDC", "productType": "liquid"}, {"parameter": "Thông tin mẫu", "field": "Ngày sản xuất", "format": "date", "type": "", "remark": "Phụ thuộc vào số thứ 2-3-4 số Batch là 3 số Julian date ", "productType": "liquid"}, {"parameter": "Thông tin mẫu", "field": "PO", "format": "number", "type": "Dependent", "remark": "Nguyên tắc đặt PO\n+ 1 Digit: 6-LDC, 7-Instanta\n+ 1: Liquid Product\n+ 26: 2 last number of Year (2026)\n+ 5 Digits: 5 last number of PO", "productType": "liquid"}, {"parameter": "Thông tin mẫu", "field": "SSCC", "format": "number", "type": "Dependent", "remark": "Nguyên tắc đặt số SSCC:\n+ 1 Digit: 6-LDC, 7-Instanta\n+ 1 Digit: Liquid product\n+ 2 Digit: 2 last number of Year (2026)\n+ 5 Digits: 5 last number of PO\n+ 5 Digits: 5 last of Number\n=> Tự động điền thông tin, chỉ nhập 3 số cuối SSCC", "productType": "liquid"}, {"parameter": "1. Độ Brix", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều", "productType": "liquid"}, {"parameter": "1. Độ Brix", "field": "Kết quả độ Brix", "format": "number", "type": "Independent", "remark": "", "productType": "liquid"}, {"parameter": "1. Độ Brix", "field": "Giá trị trung bình", "format": "number", "type": "Dependent", "remark": "average 2 kết quả", "productType": "liquid"}, {"parameter": "1. Độ Brix", "field": "Sự khác nhau", "format": "number", "type": "Dependent", "remark": "abs 2 kết quả", "productType": "liquid"}, {"parameter": "1. Độ Brix", "field": "Range", "format": "number", "type": "Dependent", "remark": "Phụ thuộc vào bảng Thông tin Kết luận", "productType": "liquid"}, {"parameter": "2. Dry Matter (TS by Oven)", "field": "Người thực hiện", "format": "text", "type": "Dependent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều", "productType": "liquid"}, {"parameter": "2. Dry Matter (TS by Oven)", "field": "Đĩa số", "format": "number", "type": "Independent", "remark": "", "productType": "liquid"}, {"parameter": "2. Dry Matter (TS by Oven)", "field": "Khối lượng (g)\n(đĩa + nắp + cát + đũa)", "format": "number", "type": "Independent", "remark": "", "productType": "liquid"}, {"parameter": "2. Dry Matter (TS by Oven)", "field": "Khối lượng mẫu", "format": "number", "type": "Independent", "remark": "", "productType": "liquid"}, {"parameter": "2. Dry Matter (TS by Oven)", "field": "Nhiệt độ vào lò (oC) (94-96oC)", "format": "number", "type": "Independent", "remark": "Inrange tô xanh, out range tô đỏ", "productType": "liquid"}, {"parameter": "2. Dry Matter (TS by Oven)", "field": "Thời gian vào lò (hh:mm)", "format": "time", "type": "Independent", "remark": "định dạng hh:mm (cố định dấu \":\")", "productType": "liquid"}, {"parameter": "2. Dry Matter (TS by Oven)", "field": "Nhiệt độ ra lò (oC) (94-96oC)", "format": "number", "type": "Independent", "remark": "Inrange tô xanh, out range tô đỏ", "productType": "liquid"}, {"parameter": "2. Dry Matter (TS by Oven)", "field": "Thời gian ra lò (hh:mm)", "format": "time", "type": "Independent", "remark": "định dạng hh:mm (cố định dấu \":\")", "productType": "liquid"}, {"parameter": "2. Dry Matter (TS by Oven)", "field": "Khối lượng sau khi sấy (g)\n(đĩa + nắp + cát + đũa)", "format": "number", "type": "Independent", "remark": "", "productType": "liquid"}, {"parameter": "2. Dry Matter (TS by Oven)", "field": "Kết quả hàm lượng chất khô (%)", "format": "number", "type": "Independent", "remark": "theo công thức", "productType": "liquid"}, {"parameter": "2. Dry Matter (TS by Oven)", "field": "Giá trị trung bình", "format": "number", "type": "Independent", "remark": "average 2 kết quả", "productType": "liquid"}, {"parameter": "2. Dry Matter (TS by Oven)", "field": "Sự khác nhau", "format": "number", "type": "Independent", "remark": "abs 2 kết quả", "productType": "liquid"}, {"parameter": "2. Dry Matter (TS by Oven)", "field": "Range", "format": "text", "type": "Dependent", "remark": "Phụ thuộc vào bảng Thông tin Kết luận", "productType": "liquid"}, {"parameter": "3. Sediment", "field": "Người thực hiện", "format": "text", "type": "Dependent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều", "productType": "liquid"}, {"parameter": "3. Sediment", "field": "Khối lượng mẫu(g)", "format": "number", "type": "Independent", "remark": "", "productType": "liquid"}, {"parameter": "3. Sediment", "field": "Thể tích nước (ml)", "format": "number", "type": "Independent", "remark": "Cố định", "productType": "liquid"}, {"parameter": "3. Sediment", "field": "Kết quả độ cặn (Grade)", "format": "number", "type": "Independent", "remark": "Chọn 1/1.5/2/2.5/3", "productType": "liquid"}, {"parameter": "3. Sediment", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định", "productType": "liquid"}, {"parameter": "3. Sediment", "field": "Vị trí dán mẫu cặn", "format": "Picture", "type": "Independent", "remark": "Adding Picture", "productType": "liquid"}, {"parameter": "4. pH", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều", "productType": "liquid"}, {"parameter": "4. pH", "field": "Khối lượng mẫu(g)", "format": "number", "type": "Dependent", "remark": "", "productType": "liquid"}, {"parameter": "4. pH", "field": "Thể tích nước (ml)", "format": "number", "type": "Independent", "remark": "Cố định", "productType": "liquid"}, {"parameter": "4. pH", "field": "Nhiệt độ mẫu 25±0.5 (℃)", "format": "number", "type": "Dependent", "remark": "Nằm ngoài range 24.5-25.5 -> tô đỏ", "productType": "liquid"}, {"parameter": "4. pH", "field": "Kết quả pH", "format": "number", "type": "Independent", "remark": "", "productType": "liquid"}, {"parameter": "4. pH", "field": "Giá trị trung bình", "format": "number", "type": "Dependent", "remark": "average 2 kết quả pH", "productType": "liquid"}, {"parameter": "4. pH", "field": "Sự khác nhau", "format": "number", "type": "Dependent", "remark": "abs 2 kết quả", "productType": "liquid"}, {"parameter": "4. pH", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định", "productType": "liquid"}, {"parameter": "5. Acidity", "field": "Người thực hiện", "format": "text", "type": "Dependent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều", "productType": "liquid"}, {"parameter": "5. Acidity", "field": "Khối lượng mẫu(g)", "format": "number", "type": "Independent", "remark": "", "productType": "liquid"}, {"parameter": "5. Acidity", "field": "Thể tích nước (ml)", "format": "number", "type": "Independent", "remark": "Cố định", "productType": "liquid"}, {"parameter": "5. Acidity", "field": "Nồng độ NaOH", "format": "number", "type": "Independent", "remark": "", "productType": "liquid"}, {"parameter": "5. Acidity", "field": "Thể tích tiêu tốn", "format": "number", "type": "Independent", "remark": "", "productType": "liquid"}, {"parameter": "5. Acidity", "field": "Kết quả Acidity", "format": "number", "type": "Dependent", "remark": "Thể tích tiêu tốn * nồng độ NaOH/ 0.1", "productType": "liquid"}, {"parameter": "5. Acidity", "field": "Giá trị trung bình", "format": "number", "type": "Dependent", "remark": "average 2 kết quả", "productType": "liquid"}, {"parameter": "5. Acidity", "field": "Sự khác nhau", "format": "number", "type": "Dependent", "remark": "abs 2 kết quả", "productType": "liquid"}, {"parameter": "5. Acidity", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định", "productType": "liquid"}, {"parameter": "6. Density", "field": "Người thực hiện", "format": "text", "type": "Independent", "remark": "Chọn: Trân/Huy/Hiền/Định/Trang/Triều", "productType": "liquid"}, {"parameter": "6. Density", "field": "Khối lượng bình tỷ trọng (g)", "format": "number", "type": "Independent", "remark": "", "productType": "liquid"}, {"parameter": "6. Density", "field": "Dung tích bình tỷ trọng (ml)", "format": "number", "type": "Independent", "remark": "", "productType": "liquid"}, {"parameter": "6. Density", "field": "Khối lượng bình tỷ trọng + mẫu (g)", "format": "number", "type": "Independent", "remark": "", "productType": "liquid"}, {"parameter": "6. Density", "field": "Kết quả tỷ trọng (g/L)", "format": "number", "type": "Independent", "remark": "", "productType": "liquid"}, {"parameter": "6. Density", "field": "Giá trị trung bình", "format": "number", "type": "Dependent", "remark": "average 2 kết quả", "productType": "liquid"}, {"parameter": "6. Density", "field": "Sự khác nhau", "format": "number", "type": "Dependent", "remark": "abs 2 kết quả", "productType": "liquid"}, {"parameter": "6. Density", "field": "Range", "format": "number", "type": "Dependent", "remark": "Phụ thuộc vào bảng Thông tin Kết luận", "productType": "liquid"}, {"parameter": "7. Foreign Matter", "field": "Khối lượng mẫu(g)", "format": "number", "type": "Independent", "remark": "", "productType": "liquid"}, {"parameter": "7. Foreign Matter", "field": "Thể tích nước (ml)", "format": "number", "type": "Independent", "remark": "Cố định", "productType": "liquid"}, {"parameter": "7. Foreign Matter", "field": "Kết quả", "format": "text", "type": "Independent", "remark": "Absent/Present (ghi cụ thể FB)", "productType": "liquid"}, {"parameter": "7. Foreign Matter", "field": "Hình ảnh ngoại vật", "format": "Picture", "type": "Independent", "remark": "Adding Picture", "productType": "liquid"}, {"parameter": "7. Foreign Matter", "field": "Range", "format": "text", "type": "Independent", "remark": "Cố định", "productType": "liquid"}]}};
+function ensureTypeSeeds() {
+  Object.keys(SEED_BY_TYPE).forEach(type => {
+    [[ITEM_CODES, 'itemCodes'], [THRESHOLDS, 'thresholds'], [FIELD_MAPPING, 'fieldMapping']].forEach(([arr, key]) => {
+      if (!arr.some(r => r && r.productType === type)) SEED_BY_TYPE[type][key].forEach(r => arr.push(Object.assign({}, r)));
+    });
+  });
+}
+ensureTypeSeeds();
+
 // An toàn với dữ liệu cũ: item có thể lưu dạng số hoặc thiếu hẳn field (so sánh bằng String()).
 function findItemByCodeIn(type, code) {
   if (!code) return null;
@@ -1615,9 +1632,25 @@ function formatDateVN(d) {
   const yyyy = d.getFullYear();
   return dd + '/' + mm + '/' + yyyy;
 }
-// Cấu trúc Batch (theo phản hồi người dùng, VD "62600083F1"):
-//  1 số năm (chữ số cuối) + 3 số ngày Julian + 4 số cuối PO + 1 chữ loại sản phẩm + 1 số line = 10 ký tự.
+// Cấu trúc Batch theo từng loại sản phẩm: mọi quy tắc đều gồm 5 nhóm bắt đầu bằng 1 số năm + 3 số ngày Julian + 4 số cuối PO,
+// rồi mã loại + 1 số line. Powder (VD 62600083F1): 1 chữ loại bất kỳ A-Z. Coffee Oil FGs: "OF" cố định (VD 62550019OF1);
+// Semi-FGs: "O" cố định (VD 62730013O1). Liquid: "L" (VD 62440010L1). Chọn quy tắc qua `batchRule` của field Batch (mặc định Powder).
 const BATCH_RE = /^([0-9])([0-9]{3})([0-9]{4})([A-Z])([0-9])$/;
+const BATCH_PREFIX_DESC = '1 số năm + 3 số ngày Julian + 4 số cuối PO + ';
+const BATCH_RULE_POWDER = { re: BATCH_RE, desc: 'đúng 10 ký tự: ' + BATCH_PREFIX_DESC + '1 chữ loại sản phẩm + 1 số line (VD 62600083F1)' };
+const BATCH_RULE_OIL_FGS = { re: /^([0-9])([0-9]{3})([0-9]{4})(OF)([0-9])$/, desc: 'đúng 11 ký tự (Type FGs): ' + BATCH_PREFIX_DESC + '"OF" cố định + 1 số line (VD 62550019OF1)' };
+const BATCH_RULE_OIL_SEMI = { re: /^([0-9])([0-9]{3})([0-9]{4})(O)([0-9])$/, desc: 'đúng 10 ký tự (Type Semi-FGs): ' + BATCH_PREFIX_DESC + '"O" cố định + 1 số line (VD 62730013O1)' };
+const BATCH_RULE_OIL_ANY = { re: /^([0-9])([0-9]{3})([0-9]{4})(OF|O)([0-9])$/, desc: 'FGs: ' + BATCH_PREFIX_DESC + '"OF" + 1 số line (VD 62550019OF1) hoặc Semi-FGs: ... + "O" + 1 số line (VD 62730013O1) — chọn Type để kiểm tra chính xác' };
+const BATCH_RULE_LIQUID = { re: /^([0-9])([0-9]{3})([0-9]{4})(L)([0-9])$/, desc: 'đúng 10 ký tự: ' + BATCH_PREFIX_DESC + 'chữ "L" (Liquid) + 1 số line (VD 62440010L1)' };
+function oilBatchRule() {
+  const t = fval('sampleType');
+  return t === 'FGs' ? BATCH_RULE_OIL_FGS : (t === 'Semi-FGs' ? BATCH_RULE_OIL_SEMI : BATCH_RULE_OIL_ANY);
+}
+function batchRuleFor() {
+  const f = typeof sampleFieldCfg === 'function' ? sampleFieldCfg('batch') : null;
+  const r = f && f.batchRule;
+  return (typeof r === 'function' ? r() : r) || BATCH_RULE_POWDER;
+}
 function isLeapYear(y) { return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0; }
 
 // Chỉ 1 chữ số năm trong Batch → nhiều năm khớp (VD '6' = 2016/2026/2036...). Không âm thầm suy
@@ -1635,12 +1668,13 @@ function resolveBatchYear(lastDigit, refDate) {
   return { year: ambiguous ? null : candidates[0], ambiguous, candidates: candidates.slice(0, 4) };
 }
 
-// Phân tích + kiểm tra cấu trúc Batch. Trả về { ok, error } hoặc { ok:true, yearDigit, day, poLast4, typeChar, line }.
-function parseBatchStructure(batch) {
+// Phân tích + kiểm tra cấu trúc Batch theo quy tắc của loại sản phẩm đang chọn.
+function parseBatchStructure(batch, rule) {
+  rule = rule || batchRuleFor();
   const s = (batch || '').trim().toUpperCase();
   if (!s) return { ok: false, error: '' };
-  const m = s.match(BATCH_RE);
-  if (!m) return { ok: false, error: 'Batch "' + s + '" sai cấu trúc — cần đúng 10 ký tự: 1 số năm + 3 số ngày Julian + 4 số cuối PO + 1 chữ loại sản phẩm + 1 số line (VD 62600083F1).' };
+  const m = s.match(rule.re);
+  if (!m) return { ok: false, error: 'Batch "' + s + '" sai cấu trúc — cần ' + rule.desc + '.' };
   const yearDigit = parseInt(m[1], 10);
   const day = parseInt(m[2], 10);
   if (day < 1 || day > 366) return { ok: false, error: 'Ngày Julian "' + m[2] + '" trong Batch không hợp lệ (phải 001-366).' };
@@ -2410,9 +2444,117 @@ const TYPE_CONFIG = {
         photos: { name: 'ngoai_vat_anh', label: 'Hình ảnh ngoại vật (có thể chọn/chụp nhiều)' } }
     ]
   },
-  // Chưa có thông tin — sẽ được điền ở giai đoạn 3 khi có danh sách trường/chỉ tiêu của từng loại.
-  coffeeOil: { sampleFields: [], blocks: [] },
-  liquid: { sampleFields: [], blocks: [] }
+  /* Coffee Oil — theo "1. Chemical Analysis Result Form 03.10-Coffee Oil.xlsx" + "2. Chemical_Analysis_Field_Mapping 03.10 - Coffee oil.xlsx".
+     Customer tự điền theo Type (FGs -> LDC, Semi-FGs -> NA). Batch phụ thuộc Type. Nhiệt độ/thời gian vào-ra lò dùng CHUNG cho cả 2 mẫu (`shared`). */
+  coffeeOil: {
+    sampleFields: [
+      { name: 'itemCode', label: 'Item Code', input: 'digits', placeholder: 'VD: 12200002', required: true, behavior: 'itemLookup', format: 'itemCode' },
+      { name: 'productName', label: 'Product Name', input: 'readonly', placeholder: 'Tự động' },
+      { name: 'sampleType', label: 'Type', input: 'select', options: ['FGs', 'Semi-FGs'], required: true, behavior: 'sampleType',
+        customerField: 'customer', customerByType: { 'FGs': 'LDC', 'Semi-FGs': 'NA' } },
+      { name: 'customer', label: 'Customer', input: 'readonly', placeholder: 'Tự động theo Type', thresholdKey: true },
+      { name: 'batch', label: 'Batch', input: 'text', placeholder: 'FGs: 62550019OF1 · Semi-FGs: 62730013O1', required: true, behavior: 'julianBatch', format: 'batch', hintId: 'batch-hint', batchRule: () => oilBatchRule() },
+      { name: 'productionYear', label: 'Năm SX (xác nhận)', input: 'number', placeholder: 'VD: 2026', hintId: 'batch-year-hint' },
+      { name: 'productionDate', label: 'Ngày sản xuất', input: 'readonly', placeholder: 'Tự động từ Batch + Năm SX' },
+      { name: 'po', label: 'PO', input: 'digits', placeholder: 'VD: 642600019', behavior: 'ssccFromPo', format: 'digits' },
+      { name: 'sscc', label: 'SSCC', input: 'text', placeholder: 'VD: 64260001900008', hintId: 'sscc-hint', format: 'sscc14', suggestZeros: 2 }
+    ],
+    blocks: [
+      { key: 'moisture', label: '1. Moisture (Oven)', prefix: 'moisture', kind: 'pair', unit: '%', avgLabel: 'Giá trị trung bình (%)',
+        shared: [
+          { key: 'nhiet_vao_lo', rec: 'nhietDoVaoLo', label: 'Nhiệt độ vào lò (℃) (102-104℃)', input: 'number', range: { min: 102, max: 104, unit: '℃' } },
+          { key: 'tg_vao_lo', rec: 'thoiGianVaoLo', label: 'Thời gian vào lò (hh:mm)', input: 'time' },
+          { key: 'nhiet_ra_lo', rec: 'nhietDoRaLo', label: 'Nhiệt độ ra lò (℃) (102-104℃)', input: 'number', range: { min: 102, max: 104, unit: '℃' } },
+          { key: 'tg_ra_lo', rec: 'thoiGianRaLo', label: 'Thời gian ra lò (hh:mm)', input: 'time' }],
+        cols: [STAFF_COL,
+          { key: 'dia_so', rec: 'diaSo', label: 'Đĩa số', input: 'number' },
+          { key: 'khoi_luong_dia', rec: 'khoiLuongDia', label: 'Khối lượng (g) (đĩa + nắp)', input: 'number' },
+          { key: 'khoi_luong_mau', rec: 'khoiLuongMau', label: 'Khối lượng mẫu (g)', input: 'number' },
+          { key: 'khoi_luong_sau_say', rec: 'khoiLuongSauSay', label: 'Khối lượng sau khi sấy (g) (đĩa + nắp + mẫu)', input: 'number' },
+          { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả độ ẩm (%)', input: 'computed', result: true, needs: ['khoi_luong_dia', 'khoi_luong_mau', 'khoi_luong_sau_say'],
+            formula: (n) => { const c = n('khoi_luong_dia'), d = n('khoi_luong_mau'), i = n('khoi_luong_sau_say'); return (c !== null && d !== null && i !== null && d > 0) ? ((c + d) - i) / d * 100 : null; } }] },
+      { key: 'sediment', label: '2. Sediment', prefix: 'sediment', kind: 'pair', unit: '%', avgLabel: 'Giá trị trung bình (%)', digits: 3,
+        cols: [STAFF_COL,
+          { key: 'khoi_luong_ong', rec: 'khoiLuongOng', label: 'Khối lượng ống ly tâm (g)', input: 'number' },
+          { key: 'khoi_luong_ong_mau', rec: 'khoiLuongOngMau', label: 'Khối lượng ống ly tâm + mẫu (g)', input: 'number' },
+          { key: 'khoi_luong_mau', rec: 'khoiLuongMau', label: 'Khối lượng mẫu (g)', input: 'computed', digits: 4, needs: ['khoi_luong_ong', 'khoi_luong_ong_mau'],
+            formula: (n) => { const b = n('khoi_luong_ong'), c = n('khoi_luong_ong_mau'); return (b !== null && c !== null) ? c - b : null; } },
+          { key: 'khoi_luong_ong_can', rec: 'khoiLuongOngCan', label: 'Khối lượng ống ly tâm + cặn sau ly tâm (g)', input: 'number' },
+          { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả cặn (%)', input: 'computed', result: true, needs: ['khoi_luong_ong', 'khoi_luong_ong_mau', 'khoi_luong_ong_can'],
+            formula: (n) => { const b = n('khoi_luong_ong'), d = n('khoi_luong_mau'), e = n('khoi_luong_ong_can'); return (b !== null && d !== null && e !== null && d > 0) ? (e - b) / d * 100 : null; } }] },
+      { key: 'density', label: '3. Density', prefix: 'density', kind: 'pair', unit: 'g/L', avgLabel: 'Giá trị trung bình (g/L)', digits: 3,
+        cols: [STAFF_COL,
+          { key: 'khoi_luong_binh', rec: 'khoiLuongBinh', label: 'Khối lượng bình tỷ trọng (g)', input: 'number' },
+          { key: 'dung_tich', rec: 'dungTich', label: 'Dung tích bình tỷ trọng (ml)', input: 'number', def: 50 },
+          { key: 'khoi_luong_binh_mau', rec: 'khoiLuongBinhMau', label: 'Khối lượng bình tỷ trọng + mẫu (g)', input: 'number' },
+          { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả tỷ trọng (g/L)', input: 'computed', result: true, needs: ['khoi_luong_binh', 'dung_tich', 'khoi_luong_binh_mau'],
+            formula: (n) => { const b = n('khoi_luong_binh'), c = n('dung_tich'), d = n('khoi_luong_binh_mau'); return (b !== null && c !== null && d !== null && c > 0) ? (d - b) / c : null; } }] }
+    ]
+  },
+  /* Liquid — theo "1. Chemical Analysis Result Form 03.10-Liquid.xlsx" + "2. Chemical_Analysis_Field_Mapping 03.10 - Liquid.xlsx". */
+  liquid: {
+    sampleFields: [
+      { name: 'itemCode', label: 'Item Code', input: 'digits', placeholder: 'VD: 11000137', required: true, behavior: 'itemLookup', format: 'itemCode' },
+      { name: 'recipe', label: 'Recipe', input: 'readonly', placeholder: 'Tự động' },
+      { name: 'productName', label: 'Product Name', input: 'readonly', placeholder: 'Tự động' },
+      { name: 'customer', label: 'Customer', input: 'select', options: ['INS', 'LDC'], required: true, thresholdKey: true },
+      { name: 'batch', label: 'Batch', input: 'text', placeholder: 'VD: 62440010L1', required: true, behavior: 'julianBatch', format: 'batch', hintId: 'batch-hint', batchRule: BATCH_RULE_LIQUID },
+      { name: 'productionYear', label: 'Năm SX (xác nhận)', input: 'number', placeholder: 'VD: 2026', hintId: 'batch-year-hint' },
+      { name: 'productionDate', label: 'Ngày sản xuất', input: 'readonly', placeholder: 'Tự động từ Batch + Năm SX' },
+      { name: 'po', label: 'PO', input: 'digits', placeholder: 'VD: 722600010', behavior: 'ssccFromPo', format: 'digits' },
+      { name: 'sscc', label: 'SSCC', input: 'text', placeholder: 'VD: 72260001000018', hintId: 'sscc-hint', format: 'sscc14', suggestZeros: 2 }
+    ],
+    blocks: [
+      { key: 'brix', label: '1. Độ Brix', prefix: 'brix', kind: 'pair', unit: '-', avgLabel: 'Giá trị trung bình',
+        cols: [STAFF_COL, { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả độ Brix', input: 'number', result: true }] },
+      { key: 'dryMatter', label: '2. Dry Matter (TS by Oven)', prefix: 'dry_matter', kind: 'pair', unit: '%', avgLabel: 'Giá trị trung bình (%)',
+        shared: [
+          { key: 'nhiet_vao_lo', rec: 'nhietDoVaoLo', label: 'Nhiệt độ vào lò (℃) (94-96℃)', input: 'number', range: { min: 94, max: 96, unit: '℃' } },
+          { key: 'tg_vao_lo', rec: 'thoiGianVaoLo', label: 'Thời gian vào lò (hh:mm)', input: 'time' },
+          { key: 'nhiet_ra_lo', rec: 'nhietDoRaLo', label: 'Nhiệt độ ra lò (℃) (94-96℃)', input: 'number', range: { min: 94, max: 96, unit: '℃' } },
+          { key: 'tg_ra_lo', rec: 'thoiGianRaLo', label: 'Thời gian ra lò (hh:mm)', input: 'time' }],
+        cols: [STAFF_COL,
+          { key: 'dia_so', rec: 'diaSo', label: 'Đĩa số', input: 'number' },
+          { key: 'khoi_luong_dia', rec: 'khoiLuongDia', label: 'Khối lượng (g) (đĩa + nắp + cát + đũa)', input: 'number' },
+          { key: 'khoi_luong_mau', rec: 'khoiLuongMau', label: 'Khối lượng mẫu (g)', input: 'number' },
+          { key: 'khoi_luong_sau_say', rec: 'khoiLuongSauSay', label: 'Khối lượng sau khi sấy (g) (đĩa + nắp + cát + đũa)', input: 'number' },
+          { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả hàm lượng chất khô (%)', input: 'computed', result: true, needs: ['khoi_luong_dia', 'khoi_luong_mau', 'khoi_luong_sau_say'],
+            formula: (n) => { const c = n('khoi_luong_dia'), d = n('khoi_luong_mau'), i = n('khoi_luong_sau_say'); return (c !== null && d !== null && i !== null && d > 0) ? (i - c) / d * 100 : null; } }] },
+      { key: 'sediment', label: '3. Sediment', prefix: 'sediment', kind: 'single', unit: 'Grade', evaluate: 'numericRange',
+        fields: [STAFF_COL,
+          { key: 'khoi_luong_mau', rec: 'khoiLuongMau', label: 'Khối lượng mẫu (g)', input: 'number' },
+          { key: 'the_tich_nuoc', rec: 'theTichNuoc', label: 'Thể tích nước (ml)', input: 'number', def: 300 },
+          { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả độ cặn (Grade)', input: 'select', options: ['1', '1.5', '2', '2.5', '3'], numeric: true, result: true }],
+        photos: { name: 'sediment_anh', label: 'Vị trí dán mẫu cặn (ảnh — có thể chọn/chụp nhiều)' } },
+      { key: 'ph', label: '4. pH', prefix: 'ph', kind: 'pair', unit: '-', avgLabel: 'Giá trị trung bình',
+        cols: [STAFF_COL,
+          { key: 'khoi_luong_mau', rec: 'khoiLuongMau', label: 'Khối lượng mẫu (g)', input: 'number' },
+          { key: 'the_tich_nuoc', rec: 'theTichNuoc', label: 'Thể tích nước (ml)', input: 'number', def: 100 },
+          { key: 'nhiet_do', rec: 'nhietDoMau', label: 'Nhiệt độ mẫu 25±0.5 (℃)', input: 'number', warn: { min: 24.5, max: 25.5 } },
+          { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả pH', input: 'number', result: true }] },
+      { key: 'acidity', label: '5. Acidity', prefix: 'acidity', kind: 'pair', unit: '-', avgLabel: 'Giá trị trung bình',
+        cols: [STAFF_COL,
+          { key: 'khoi_luong_mau', rec: 'khoiLuongMau', label: 'Khối lượng mẫu (g)', input: 'number' },
+          { key: 'the_tich_nuoc', rec: 'theTichNuoc', label: 'Thể tích nước (ml)', input: 'number', def: 100 },
+          { key: 'nong_do_naoh', rec: 'nongDoNaOH', label: 'Nồng độ NaOH', input: 'number' },
+          { key: 'the_tich_tieu_ton', rec: 'theTichTieuTon', label: 'Thể tích tiêu tốn', input: 'number' },
+          { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả Acidity', input: 'computed', result: true, needs: ['nong_do_naoh', 'the_tich_tieu_ton'],
+            formula: (n) => { const naoh = n('nong_do_naoh'), vol = n('the_tich_tieu_ton'); return (naoh !== null && vol !== null) ? vol * naoh / 0.1 : null; } }] },
+      { key: 'density', label: '6. Density', prefix: 'density', kind: 'pair', unit: 'g/L', avgLabel: 'Giá trị trung bình (g/L)', digits: 3,
+        cols: [STAFF_COL,
+          { key: 'khoi_luong_binh', rec: 'khoiLuongBinh', label: 'Khối lượng bình tỷ trọng (g)', input: 'number' },
+          { key: 'dung_tich', rec: 'dungTich', label: 'Dung tích bình tỷ trọng (ml)', input: 'number', def: 50 },
+          { key: 'khoi_luong_binh_mau', rec: 'khoiLuongBinhMau', label: 'Khối lượng bình tỷ trọng + mẫu (g)', input: 'number' },
+          { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả tỷ trọng (g/L)', input: 'computed', result: true, needs: ['khoi_luong_binh', 'dung_tich', 'khoi_luong_binh_mau'],
+            formula: (n) => { const b = n('khoi_luong_binh'), c = n('dung_tich'), d = n('khoi_luong_binh_mau'); return (b !== null && c !== null && d !== null && c > 0) ? (d - b) / c : null; } }] },
+      { key: 'foreignMatter', label: '7. Foreign Matter', prefix: 'foreign_matter', kind: 'single', unit: '-', evaluate: 'absentPresent',
+        fields: [STAFF_COL,
+          { key: 'khoi_luong_mau', rec: 'khoiLuongMau', label: 'Khối lượng mẫu (g)', input: 'number' },
+          { key: 'the_tich_nuoc', rec: 'theTichNuoc', label: 'Thể tích nước (ml)', input: 'number', def: 500 },
+          { key: 'ket_qua', rec: 'ketQua', label: 'Kết quả', input: 'select', options: ['Absent', 'Present'], result: true }],
+        photos: { name: 'foreign_matter_anh', label: 'Hình ảnh ngoại vật (có thể chọn/chụp nhiều)' } }
+    ]
+  }
 };
 function typeCfg(type) { return TYPE_CONFIG[type || state.formType] || { sampleFields: [], blocks: [] }; }
 function typeParamLabels(type) {
@@ -2436,7 +2578,7 @@ function setWarn(name, on) {
   if (e) e.classList.toggle('field__input--warn', !!on);
 }
 function colValue(c, raw) {
-  return (c.input === 'staff' || c.input === 'text' || (c.input === 'select' && !c.numeric)) ? raw : toNumber(raw);
+  return (c.input === 'staff' || c.input === 'text' || c.input === 'time' || (c.input === 'select' && !c.numeric)) ? raw : toNumber(raw);
 }
 function inputCellHtml(name, c, def) {
   const d = (def !== undefined) ? def : c.def;
@@ -2446,6 +2588,8 @@ function inputCellHtml(name, c, def) {
     c.options.map(o => '<option value="' + escapeAttr(o) + '">' + escapeAttr(o) + '</option>').join('') + '</select>';
   if (c.input === 'computed') return '<output class="field__input field__input--computed" name="' + name + '">--</output>';
   if (c.input === 'text') return '<input type="text" class="field__input" name="' + name + '"' + (c.placeholder ? ' placeholder="' + c.placeholder + '"' : '') + v + ' />';
+  // hh:mm (giờ trong ngày, dấu ":" cố định do trình duyệt hiển thị)
+  if (c.input === 'time') return '<input type="time" step="60" class="field__input" name="' + name + '"' + v + ' />';
   // mm:ss — 2 ô số phút/giây, dấu ":" do app tự hiển thị (nhân viên không gõ dấu phân cách).
   if (c.input === 'mmss') return '<span class="mmss-input">' +
     '<input type="number" step="1" min="0" inputmode="numeric" class="field__input field__input--mm" style="width:4.2em" name="' + name + '_mm" placeholder="phút" />' +
@@ -2503,6 +2647,16 @@ function applySharedStaff(b, values) {
     el.title = 'Phiếu cũ có người thực hiện khác nhau (' + distinct.join(', ') + ') — vui lòng chọn lại người thực hiện chung.';
   } else { el.value = ''; setWarn(staffFieldName(b), false); el.title = ''; }
 }
+// Ô điều kiện đo có ngưỡng (VD nhiệt độ lò): trong khoảng xanh, ngoài khoảng đỏ, trống trung tính + chữ mô tả cạnh ô.
+// Chỉ là cảnh báo điều kiện đo, KHÔNG đổi quy tắc kết luận của chỉ tiêu.
+function applyRangeState(name, t, rng) {
+  const inRange = t !== null && t >= rng.min && t <= rng.max;
+  setWarn(name, t !== null && !inRange);
+  const el = fel(name);
+  if (el) el.classList.toggle('field__input--ok', inRange);
+  const hint = document.getElementById(name + '_hint');
+  if (hint) hint.textContent = 'Ngưỡng: ' + rng.min + '–' + rng.max + (rng.unit || '') + (t === null ? '' : (inRange ? ' — ✓ trong khoảng' : ' — ✗ ngoài khoảng'));
+}
 function photosHtml(p) {
   if (!p) return '';
   return '<label class="field field--upload"><span class="field__label">' + escapeAttr(p.label) + '</span>' +
@@ -2521,7 +2675,11 @@ const BLOCK_KINDS = {
       const head = cols.map(c => '<th>' + escapeAttr(c.label) + '</th>').join('');
       const rows = [1, 2].map(i => '<tr class="param-table__row" data-rep="' + i + '">' +
         cols.map(c => '<td>' + inputCellHtml(b.prefix + '_' + i + '_' + c.key, c) + '</td>').join('') + '</tr>').join('');
-      return sharedStaffHtml(b) + '<table class="param-table"><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table>' +
+      // Điều kiện chung của cả 2 mẫu (VD nhiệt độ/thời gian vào-ra lò) hiển thị 1 lần trên bảng, ngưỡng cạnh ô nhập.
+      const sharedGrid = (b.shared && b.shared.length) ? '<div class="field-grid">' + b.shared.map(c =>
+        '<label class="field"><span class="field__label">' + escapeAttr(c.label) + '</span>' + inputCellHtml(b.prefix + '_' + c.key, c) +
+        (c.range ? '<span class="field__hint" id="' + b.prefix + '_' + c.key + '_hint">Ngưỡng: ' + c.range.min + '–' + c.range.max + (c.range.unit || '') + '</span>' : '') + '</label>').join('') + '</div>' : '';
+      return sharedStaffHtml(b) + sharedGrid + '<table class="param-table"><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table>' +
         '<div class="param-summary"><span>' + escapeAttr(b.avgLabel) + ': <output name="' + b.prefix + '_avg">--</output></span>' +
         '<span>Sự khác nhau: <output name="' + b.prefix + '_diff">--</output></span>' +
         '<span>Range: <output name="' + b.prefix + '_range">--</output></span>' + STATUS_SUMMARY_HTML + '</div>';
@@ -2529,25 +2687,30 @@ const BLOCK_KINDS = {
     compute(b, idx) {
       const req = state.currentThresholds[b.label];
       const rc = b.cols.find(c => c.result);
+      const dg = b.digits || 2;
+      (b.shared || []).forEach(c => { if (c.range) applyRangeState(b.prefix + '_' + c.key, toNumber(fval(b.prefix + '_' + c.key)), c.range); });
       const vals = [1, 2].map(i => {
         const nm = (k) => b.prefix + '_' + i + '_' + k;
-        const n = (k) => toNumber(fval(nm(k)));
+        const cv = {}; // giá trị các cột TỰ TÍNH (giữ nguyên độ chính xác khi cột tự tính này làm đầu vào cho cột khác)
+        const n = (k) => (k in cv ? cv[k] : toNumber(fval(nm(k))));
         b.cols.forEach(c => {
           if (c.warn) { const t = n(c.key); setWarn(nm(c.key), t !== null && (t < c.warn.min || t > c.warn.max)); }
+          if (c.input === 'computed') {
+            let v = null;
+            try { v = c.formula(n); } catch (e) { v = null; }
+            if (typeof v !== 'number' || !isFinite(v)) v = null;
+            cv[c.key] = v;
+            fel(nm(c.key)).value = v === null ? '--' : formatNumber(v, c.digits || dg);
+          }
         });
-        if (rc.input === 'computed') {
-          const v = rc.formula(n);
-          fel(nm(rc.key)).value = v === null ? '--' : formatNumber(v);
-          return v;
-        }
-        return n(rc.key);
+        return rc.input === 'computed' ? cv[rc.key] : n(rc.key);
       });
       let status = 'pending';
       const avgEl = fel(b.prefix + '_avg'), diffEl = fel(b.prefix + '_diff');
       if (vals[0] !== null && vals[1] !== null) {
         const avg = average(vals[0], vals[1]), diff = diffAbs(vals[0], vals[1]);
-        avgEl.value = formatNumber(avg);
-        diffEl.value = formatNumber(diff);
+        avgEl.value = formatNumber(avg, dg);
+        diffEl.value = formatNumber(diff, dg);
         status = checkRange(avg, req);
         applyRepeatabilityWarn(diffEl, diff, b.label);
       } else {
@@ -2569,9 +2732,12 @@ const BLOCK_KINDS = {
         });
         return o;
       });
-      return { label: b.label, unit: b.unit, reps,
+      const out = { label: b.label, unit: b.unit, reps,
         average: toNumber(fval(b.prefix + '_avg')), difference: toNumber(fval(b.prefix + '_diff')),
         range: fval(b.prefix + '_range'), status: statusOf(b) };
+      if (b.digits) out.digits = b.digits;
+      if (b.shared && b.shared.length) { out.dieuKien = {}; b.shared.forEach(c => { out.dieuKien[c.rec] = colValue(c, fval(b.prefix + '_' + c.key)); }); }
+      return out;
     },
     apply(b, d) {
       (d.reps || []).forEach((rep, i) => b.cols.forEach(c => {
@@ -2580,6 +2746,7 @@ const BLOCK_KINDS = {
         if (c.input !== 'computed') setFieldValue(b.prefix + '_' + (i + 1) + '_' + c.key, rep[c.rec]);
       }));
       applySharedStaff(b, (d.reps || []).map(r => r.nguoiThucHien));
+      if (b.shared && d.dieuKien) b.shared.forEach(c => setFieldValue(b.prefix + '_' + c.key, d.dieuKien[c.rec]));
     },
     // Kiểm tra hợp lệ (item 4): giây 0–59, phút nguyên ≥0, không được chỉ nhập 1 trong 2 ô.
     validate(b) {
@@ -2828,11 +2995,12 @@ function summarizeCompletion(entries) {
 // Các trường của 1 phương pháp: { name (tên input), label, kind, where, needs?, legacy? }.
 function blockSpecs(b) {
   const specs = [];
-  const kindOf = (c) => c.input === 'staff' ? 'staff' : c.input === 'mmss' ? 'mmss' : c.input === 'computed' ? 'computed'
+  const kindOf = (c) => c.input === 'staff' ? 'staff' : c.input === 'mmss' ? 'mmss' : c.input === 'computed' ? 'computed' : c.input === 'time' ? 'time'
     : c.input === 'select' ? 'select' : c.input === 'text' ? 'text' : 'number';
   const staff = () => ({ name: staffFieldName(b), label: 'Người thực hiện', kind: 'staff', where: '', legacy: true });
   if (b.kind === 'pair') {
     if (hasStaffCol(b.cols)) specs.push(staff());
+    (b.shared || []).forEach(c => specs.push({ name: b.prefix + '_' + c.key, label: c.label, kind: kindOf(c), where: '' }));
     [1, 2].forEach(i => withoutStaffCol(b.cols).forEach(c => {
       const sp = { name: b.prefix + '_' + i + '_' + c.key, label: c.label, kind: kindOf(c), where: ' lần ' + i };
       if (c.input === 'computed') sp.needs = (c.needs || []).map(k => b.prefix + '_' + i + '_' + k);
@@ -2869,6 +3037,7 @@ function blockReaders(b) {
   };
   if (b.kind === 'pair') {
     if (hasStaffCol(b.cols)) add(staffFieldName(b), staffRead(d => (Array.isArray(d.reps) && d.reps.length >= 2 ? d.reps : null)), true);
+    (b.shared || []).forEach(c => add(b.prefix + '_' + c.key, r => { const d = P(r); return d && d.dieuKien ? d.dieuKien[c.rec] : NO_STRUCT; }));
     [1, 2].forEach(i => withoutStaffCol(b.cols).forEach(c => {
       const rep = (r) => { const d = P(r); return d && Array.isArray(d.reps) && d.reps[i - 1] ? d.reps[i - 1] : null; };
       const name = b.prefix + '_' + i + '_' + c.key;
@@ -2918,6 +3087,7 @@ function blockCompletion(b, get) {
     }
     if (!isFilledValue(v)) return miss(sp);
     if (sp.kind === 'number' && toNumber(v) === null) invalid.push({ text: short + ': ' + sp.label + sp.where + ' không phải số hợp lệ', name: sp.name });
+    if (sp.kind === 'time' && !/^([01]\d|2[0-3]):[0-5]\d$/.test(String(v).trim())) invalid.push({ text: short + ': ' + sp.label + sp.where + ' không hợp lệ (định dạng hh:mm)', name: sp.name });
   });
   if (b.kind === 'sieve' && !missing.length && !invalid.length) {
     let total = 0, bad = null;
@@ -3075,6 +3245,7 @@ function bindSampleBehaviors(cfg) {
       on(e, onBatchChange);
     }
     if (f.behavior === 'ssccFromPo') on(e, onPoChange);
+    if (f.behavior === 'sampleType') on(e, onSampleTypeChange);
     if (f.thresholdKey) e.addEventListener('change', updateThresholdsForCustomer);
     if (f.thresholdKey) e.addEventListener('change', () => {
       if (state.customerAutoFilled && e.value !== state.customerAutoFilled) state.customerAutoFilled = null;
@@ -3183,9 +3354,10 @@ function validateSampleField(f, rawValue) {
   if (f.format === 'batch') { const parsed = parseBatchStructure(v); return parsed.ok ? '' : parsed.error; }
   if (f.format === 'sscc14') {
     const po = fval('po').trim();
-    if (po && v === po + '000') return 'SSCC mới chỉ là tiền tố gợi ý (' + v + ') — cần hoàn tất đủ 14 chữ số trước khi lưu chính thức (hoặc xoá trống nếu chưa có).';
+    const sugg = po ? ssccSuggestPrefix(po) : null;
+    if (po && v === sugg) return 'SSCC mới chỉ là tiền tố gợi ý (' + v + ') — cần hoàn tất đủ 14 chữ số trước khi lưu chính thức (hoặc xoá trống nếu chưa có).';
     if (!/^\d+$/.test(v)) return 'SSCC chỉ gồm chữ số, không có khoảng trắng hoặc ký tự khác.';
-    if (v.length !== 14) return 'SSCC phải đủ đúng 14 chữ số (đang có ' + v.length + ').' + (po && v.startsWith(po + '000') ? ' Đây mới là tiền tố gợi ý, cần hoàn tất mã.' : '');
+    if (v.length !== 14) return 'SSCC phải đủ đúng 14 chữ số (đang có ' + v.length + ').' + (sugg && v.startsWith(sugg) ? ' Đây mới là tiền tố gợi ý, cần hoàn tất mã.' : '');
   }
   return '';
 }
@@ -3243,8 +3415,8 @@ function onItemCodeChange() {
   const code = fval('itemCode');
   const item = findItemByCode(code);
   if (item) {
-    fel('recipe').value = item.recipe;
-    fel('productName').value = item.name;
+    if (fel('recipe')) fel('recipe').value = item.recipe;
+    if (fel('productName')) fel('productName').value = item.name;
   } else {
     if (fel('recipe')) fel('recipe').value = '';
     if (fel('productName')) fel('productName').value = '';
@@ -3309,13 +3481,26 @@ function onProductionYearChange() { recomputeProductionDate(false); }
 
 // SSCC = PO + '000' + 3 số cuối tự nhập. Khi có PO, tự gợi ý sẵn phần đầu để người
 // dùng chỉ cần gõ tiếp 3 số cuối (không ghi đè nếu SSCC đã khớp tiền tố PO này rồi).
+// Coffee Oil: Customer tự điền theo Type (FGs -> LDC, Semi-FGs -> NA); Batch kiểm theo Type nên kiểm lại khi đổi Type.
+function onSampleTypeChange() {
+  const f = typeCfg().sampleFields.find(x => x.behavior === 'sampleType');
+  if (!f) return;
+  const cEl = fel(f.customerField);
+  if (cEl) { cEl.value = (f.customerByType || {})[fval(f.name)] || ''; updateThresholdsForCustomer(); }
+  if (fel('batch') && fval('batch').trim()) recomputeProductionDate(false);
+}
+// Tiền tố SSCC gợi ý = PO + số chữ số 0 theo cấu hình loại (Powder: 3 như cũ; Coffee Oil/Liquid: 2 — PO 9 chữ số + "00" + 3 số cuối = 14).
+function ssccSuggestPrefix(po) {
+  const f = sampleFieldCfg('sscc');
+  return po + '0'.repeat(f && f.suggestZeros != null ? f.suggestZeros : 3);
+}
 function onPoChange() {
   const po = fval('po').trim();
   applyCustomerFromPo();
   const scEl = fel('sscc');
   const hint = document.getElementById('sscc-hint');
   if (!po || !scEl) { if (hint) hint.textContent = ''; return; }
-  const prefix = po + '000';
+  const prefix = ssccSuggestPrefix(po);
   if (hint) hint.textContent = 'Gợi ý SSCC: ' + prefix + ' + 3 số cuối tự nhập';
   if (!scEl.value || !scEl.value.startsWith(prefix)) scEl.value = prefix;
   if (hasFieldError('sscc')) setFieldError('sscc', validateSampleField(sampleFieldCfg('sscc'), scEl.value));
@@ -3938,8 +4123,8 @@ function renderHistoryTable() {
 function paramSummaryLine(p) {
   if (!p) return '';
   const parts = [];
-  if (p.average !== undefined && p.average !== null) parts.push('TB: ' + formatNumber(p.average));
-  if (p.difference !== undefined && p.difference !== null) parts.push('Sai khác: ' + formatNumber(p.difference));
+  if (p.average !== undefined && p.average !== null) parts.push('TB: ' + formatNumber(p.average, p.digits || 2));
+  if (p.difference !== undefined && p.difference !== null) parts.push('Sai khác: ' + formatNumber(p.difference, p.digits || 2));
   if (p.range) parts.push('Range: ' + p.range);
   return parts.join(' · ') || '--';
 }
@@ -4082,6 +4267,7 @@ function exportRecordCsv(r) {
         Object.entries(rep).forEach(([k, v]) => lines.push([' Lần ' + (i + 1) + ' - ' + k, v].map(csvEscape).join(',')));
       });
     }
+    if (param.dieuKien) Object.entries(param.dieuKien).forEach(([k, v]) => lines.push([' Điều kiện chung - ' + k, v].map(csvEscape).join(',')));
     if (param.hot) Object.entries(param.hot).forEach(([k, v]) => lines.push([' Nóng - ' + k, v].map(csvEscape).join(',')));
     if (param.cold) Object.entries(param.cold).forEach(([k, v]) => lines.push([' Lạnh - ' + k, v].map(csvEscape).join(',')));
     if (param.average !== undefined) lines.push([' Trung bình', param.average].map(csvEscape).join(','));
@@ -4130,7 +4316,10 @@ function printRecord(r) {
 /* ---------------- FULL REPORT (Phần 6, mục 8): số liệu thô + giá trị nhập đầu, cho QA Lab Supervisor rà soát ---------------- */
 const KEY_LABELS = {
   nguoiThucHien: 'Người thực hiện', khoiLuongMau: 'Khối lượng mẫu (g)', nhietDoSay: 'Nhiệt độ sấy (℃)',
-  thoiGianSay: 'Thời gian sấy', ketQua: 'Kết quả', khoiLuongBinh: 'Khối lượng bình (g)',
+  thoiGianSay: 'Thời gian sấy', ketQua: 'Kết quả',
+  diaSo: 'Đĩa số', khoiLuongDia: 'Khối lượng đĩa + nắp (g)', khoiLuongSauSay: 'Khối lượng sau khi sấy (g)', khoiLuongOng: 'Khối lượng ống ly tâm (g)',
+  khoiLuongOngMau: 'Khối lượng ống + mẫu (g)', khoiLuongOngCan: 'Khối lượng ống + cặn (g)', dungTich: 'Dung tích bình (ml)', khoiLuongBinhMau: 'Khối lượng bình + mẫu (g)',
+  nhietDoVaoLo: 'Nhiệt độ vào lò (℃)', thoiGianVaoLo: 'Thời gian vào lò', nhietDoRaLo: 'Nhiệt độ ra lò (℃)', thoiGianRaLo: 'Thời gian ra lò', khoiLuongBinh: 'Khối lượng bình (g)',
   theTichBinh: 'Thể tích bình (L)', theTichNuoc: 'Thể tích nước (ml)', nhietDoMau: 'Nhiệt độ mẫu',
   nongDoNaOH: 'Nồng độ NaOH', theTichTieuTon: 'Thể tích tiêu tốn', thoiGianKhuay: 'Thời gian khuấy (s)',
   bienDo: 'Biên độ (mm)', thoiGian: 'Thời gian (s)'
@@ -4149,6 +4338,7 @@ function renderFullReportHtml(r) {
     if (item.reps) {
       item.reps.forEach((rep, i) => { rows += '<tr><td colspan="2"><b>Lần đo ' + (i + 1) + '</b></td></tr>' + objRowsHtml(rep); });
     }
+    if (item.dieuKien) rows += '<tr><td colspan="2"><b>Điều kiện chung</b></td></tr>' + objRowsHtml(item.dieuKien);
     if (item.hot) rows += '<tr><td colspan="2"><b>Nóng</b></td></tr>' + objRowsHtml(item.hot);
     if (item.cold) rows += '<tr><td colspan="2"><b>Lạnh</b></td></tr>' + objRowsHtml(item.cold);
     ['nguoiThucHien', 'khoiLuongMau', 'theTichNuoc', 'ketQua', 'bienDo', 'thoiGian'].forEach(k => {
@@ -4462,6 +4652,7 @@ async function loadMasterDataFromDb() {
   if (repeatDoc && Array.isArray(repeatDoc.value) && repeatDoc.value.length) {
     REPEATABILITY.length = 0; REPEATABILITY.push(...repeatDoc.value);
   }
+  ensureTypeSeeds(); // danh mục đã lưu từ trước chưa có Coffee Oil/Liquid -> bổ sung dữ liệu khởi tạo (không ghi lại Storage)
   const themeDoc = await Storage.get('settings', 'theme');
   if (themeDoc && themeDoc.value) {
     document.documentElement.dataset.theme = themeDoc.value;
