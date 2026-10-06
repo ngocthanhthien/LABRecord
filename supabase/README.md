@@ -9,6 +9,7 @@ Chạy theo thứ tự, trong **SQL Editor** (Dashboard → SQL Editor → New q
 | 3 | `users.sql` | Cột `disabled` / `username`, vô hiệu hoá tài khoản |
 | 4 | `approval_flow.sql` | Flow phê duyệt Nháp→Chờ duyệt→Đã duyệt/Trả lại sửa (khoá nội dung bản đã duyệt, bắt buộc lý do khi trả lại, quyền sửa phiếu đã lưu: Supervisor+, Inspector chỉ phiếu bị trả) — **CHƯA chạy trên project thật**, tự chạy khi sẵn sàng |
 | 4b | `settings_permissions.sql` | Quyền ghi danh mục theo ma trận vai trò (Item Code: mọi vai trò; Spec/Parameter/Độ lặp lại/nhân viên: chỉ Admin) — **CHƯA chạy trên project thật** |
+| 4c | `permissions_matrix.sql` | Máy chủ đọc **ma trận quyền Admin chỉnh trong Cài đặt → Phân quyền** (hàm `lab_can`, policy `lab_settings`, trigger phiếu). Thay thế 4 + 4b khi áp dụng — **CHƯA chạy trên project thật** |
 | 5 | Edge Function `admin-users` | Cho tab **Người dùng** tạo/khoá tài khoản (bên dưới) |
 
 ## Triển khai Edge Function `admin-users`

@@ -732,6 +732,8 @@ body {
 #analysis-form input, #analysis-form select, #analysis-form textarea { scroll-margin-top: 9rem; }
 .card__title--done { color: var(--pass-text); }
 .spec-row--needs-unit td { background: var(--warn-bg); }
+.perm-table .perm-cell { text-align: center; }
+.perm-table .perm-group td { background: var(--surface-alt); }
 .card__title--done::after { content: " \2713"; }
 .detail-progress { display: flex; align-items: center; gap: 0.6rem; margin: 0.5rem 0; font-size: 0.85rem; }
 .detail-progress__label { font-weight: 600; white-space: nowrap; }
@@ -1340,6 +1342,13 @@ body { font-weight: var(--ild-fw-body, 400); }
               <input type="text" class="field__input" id="staff-new-name" placeholder="Tên nhân viên mới" />
               <button type="button" class="btn btn--secondary" id="btn-add-staff">Thêm</button>
             </div>
+          </div>
+
+          <div class="card" id="settings-permissions" style="grid-column: 1 / -1;">
+            <h2 class="card__title">Phân quyền theo vai trò</h2>
+            <p class="storage-mode">Chỉ Admin thay đổi. Mặc định theo file "Quản lý người dùng.xlsx". Admin luôn có đủ quyền. Bật quyền thêm/sửa/duyệt sẽ tự bật quyền hiển thị tab tương ứng; tắt quyền hiển thị sẽ tắt các quyền phụ thuộc. Áp dụng ngay ở giao diện; ở máy chủ cần chạy <code>supabase/permissions_matrix.sql</code> (chưa chạy = RLS cũ).</p>
+            <div class="table-wrapper" id="permissions-matrix"></div>
+            <div class="settings-backup__actions"><button type="button" class="btn btn--secondary" id="btn-reset-permissions">Khôi phục mặc định</button></div>
           </div>
 
           <div class="card" id="settings-appearance">
@@ -2073,7 +2082,7 @@ const Auth = (function () {
    Schema/RLS: xem supabase/schema.sql. */
 const Sync = (function () {
   const Q_KEY = 'labrecord_syncq', LP_KEY = 'labrecord_sync_lastpull', FIRST_KEY = 'labrecord_sync_seeded';
-  const SYNC_SETTINGS = ['staff', 'thresholds', 'fieldMapping', 'itemCodes', 'repeatability'];
+  const SYNC_SETTINGS = ['staff', 'thresholds', 'fieldMapping', 'itemCodes', 'repeatability', 'permissions'];
   let status = 'off', lastSync = null, lastError = '', busy = false, timer = null, started = false;
 
   const cfg = () => CONFIG.supabase;
@@ -2261,6 +2270,7 @@ const Sync = (function () {
     renderHistoryTable();
     renderAdminTab();
     updateThresholdsForCustomer();
+    if (typeof applyRolePermissions === 'function' && state.currentUser) applyRolePermissions();
   }
 
   function label() {
@@ -3701,7 +3711,7 @@ function switchTab(tabName) {
   if (tabName === 'spec') renderSpecTable();
   if (tabName === 'repeatability') renderRepeatabilityTable();
   if (tabName === 'parameters') renderParametersTable();
-  if (tabName === 'settings') { renderStaffList(); renderAuditLogList(); }
+  if (tabName === 'settings') { renderStaffList(); renderAuditLogList(); renderPermissionsMatrix(); }
   if (tabName === 'users') renderUsersTab(true);
   if (tabName === 'datalog') renderDataLog(true);
 }
@@ -3878,45 +3888,142 @@ function updateHeaderUser() {
 }
 // Ẩn các tab/khối chỉ Supervisor+/Admin mới được vào. Ở chế độ Supabase Auth, quyền THẬT được
 // chặn bởi RLS trên server (supabase/auth.sql); phần ẩn UI này chỉ để giao diện gọn.
-/* MA TRẬN QUYỀN (theo file "Quản lý người dùng.xlsx"; Inspector < Supervisor/Manager < Admin):
-   Nhập liệu: cả 3 · Lịch sử: tìm/xem + tiếp tục nháp cả 3; phê duyệt + điều chỉnh phiếu đã duyệt: Supervisor trở lên
-   Item Code: cả 3 được thêm/sửa/xoá · Spec, Parameter, Độ lặp lại: tab ẩn với Inspector, Supervisor chỉ XEM, chỉ Admin thêm/sửa/xoá
-   Người dùng: chỉ Admin (ẩn với Inspector; Supervisor cũng không thấy vì danh sách người dùng phải qua Edge Function dành cho Admin).
-   Ngoài file (giữ như cũ): Data Log Supervisor+, Cài đặt Admin, xoá phiếu Supervisor+.
-   Đây là kiểm soát ở GIAO DIỆN; ở máy chủ do RLS (supabase/auth.sql + settings_permissions.sql). */
-const canEditAdminTabs = () => hasRole('admin'); // Spec / Parameter / Độ lặp lại
+/* MA TRẬN QUYỀN CẤU HÌNH ĐƯỢC (Cài đặt → Phân quyền; chỉ Admin sửa). Mặc định theo file "Quản lý người dùng.xlsx".
+   Mỗi quyền có giá trị cho Inspector / Supervisor; Admin LUÔN có đủ quyền (không thể tự khoá mình). Lưu ở settings.permissions
+   (đồng bộ giữa các máy). Đây là kiểm soát ở GIAO DIỆN; máy chủ do RLS/trigger (supabase/permissions_matrix.sql đọc cùng ma trận). */
+const PERMISSION_DEFS = [
+  { group: 'Nhập liệu', key: 'form.entry', label: 'Nhập liệu kết quả', def: [1, 1] },
+  { group: 'Lịch sử & Tra cứu', key: 'history.view', label: 'Tìm kiếm & xem kết quả', def: [1, 1] },
+  { group: 'Lịch sử & Tra cứu', key: 'history.resumeDraft', label: 'Tiếp tục nhập kết quả Nháp', def: [1, 1], needs: 'history.view' },
+  { group: 'Lịch sử & Tra cứu', key: 'history.approve', label: 'Phê duyệt / Trả lại', def: [0, 1], needs: 'history.view' },
+  { group: 'Lịch sử & Tra cứu', key: 'history.editSaved', label: 'Điều chỉnh kết quả đã lưu (chờ duyệt)', def: [0, 1], needs: 'history.view' },
+  { group: 'Lịch sử & Tra cứu', key: 'history.editApproved', label: 'Điều chỉnh kết quả đã Phê duyệt (tạo phiên bản mới)', def: [0, 1], needs: 'history.view' },
+  { group: 'Lịch sử & Tra cứu', key: 'history.delete', label: 'Xoá phiếu', def: [0, 1], needs: 'history.view' },
+  { group: 'Item Code', key: 'itemcode.view', label: 'Hiển thị tab Item Code', def: [1, 1] },
+  { group: 'Item Code', key: 'itemcode.add', label: 'Cập nhật Item Code mới (gồm nhập Excel)', def: [1, 1], needs: 'itemcode.view' },
+  { group: 'Item Code', key: 'itemcode.edit', label: 'Điều chỉnh & xoá Item Code', def: [1, 1], needs: 'itemcode.view' },
+  { group: 'Spec', key: 'spec.view', label: 'Hiển thị tab Spec', def: [0, 1] },
+  { group: 'Spec', key: 'spec.add', label: 'Cập nhật Spec mới', def: [0, 0], needs: 'spec.view' },
+  { group: 'Spec', key: 'spec.edit', label: 'Điều chỉnh & xoá Spec', def: [0, 0], needs: 'spec.view' },
+  { group: 'Parameter', key: 'param.view', label: 'Hiển thị tab Parameter', def: [0, 1] },
+  { group: 'Parameter', key: 'param.add', label: 'Cập nhật Parameter mới', def: [0, 0], needs: 'param.view' },
+  { group: 'Parameter', key: 'param.edit', label: 'Điều chỉnh & xoá Parameter', def: [0, 0], needs: 'param.view' },
+  { group: 'Độ lặp lại', key: 'repeat.view', label: 'Hiển thị tab Độ lặp lại', def: [0, 1] },
+  { group: 'Độ lặp lại', key: 'repeat.add', label: 'Cập nhật Độ lặp lại mới', def: [0, 0], needs: 'repeat.view' },
+  { group: 'Độ lặp lại', key: 'repeat.edit', label: 'Điều chỉnh & xoá Độ lặp lại', def: [0, 0], needs: 'repeat.view' },
+  { group: 'Data Log', key: 'datalog.view', label: 'Xem Data Log', def: [0, 1] },
+  { group: 'Người dùng', key: 'users.manage', label: 'Điều chỉnh người dùng (chỉ Admin — cần Edge Function dành cho Admin)', def: [0, 0], locked: true }
+];
+const PERM_BY_KEY = Object.fromEntries(PERMISSION_DEFS.map(d => [d.key, d]));
+let PERMISSIONS = {}; // ghi đè theo { key: { inspector: bool, supervisor: bool } }; thiếu = mặc định
+function permAllowed(key, role) {
+  if (role === 'admin') return true;
+  const d = PERM_BY_KEY[key];
+  if (!d || d.locked) return false;
+  const o = PERMISSIONS[key];
+  if (o && typeof o[role] === 'boolean') return o[role];
+  return !!d.def[role === 'supervisor' ? 1 : 0];
+}
+const userCan = (key) => !!state.currentUser && permAllowed(key, state.currentUser.role);
+const requirePerm = (key, msg) => { if (userCan(key)) return true; toast(msg || 'Bạn không có quyền thực hiện thao tác này (Admin có thể cấp ở Cài đặt → Phân quyền).', 'warn'); return false; };
+function sanitizePermissions(v) {
+  const out = {};
+  if (v && typeof v === 'object') Object.keys(v).forEach(k => {
+    const d = PERM_BY_KEY[k];
+    if (!d || d.locked || !v[k] || typeof v[k] !== 'object') return;
+    out[k] = {};
+    ['inspector', 'supervisor'].forEach(r => { if (typeof v[k][r] === 'boolean') out[k][r] = v[k][r]; });
+  });
+  return out;
+}
+
+const TAB_PERMS = { form: 'form.entry', history: 'history.view', itemcode: 'itemcode.view', spec: 'spec.view', repeatability: 'repeat.view', parameters: 'param.view', datalog: 'datalog.view' };
 function applyRolePermissions() {
-  const supervisorPlus = hasRole('supervisor');
+  Object.keys(TAB_PERMS).forEach(t => {
+    const btn = document.querySelector('[data-tab="' + t + '"]');
+    if (btn) btn.hidden = !userCan(TAB_PERMS[t]);
+  });
   const adminOnly = hasRole('admin');
-  document.querySelectorAll('[data-tab="spec"], [data-tab="repeatability"], [data-tab="parameters"], [data-tab="datalog"]').forEach(btn => {
-    btn.hidden = !supervisorPlus;
-  });
-  document.querySelectorAll('[data-tab="settings"], [data-tab="users"]').forEach(btn => {
-    btn.hidden = !adminOnly;
-  });
-  applyAdminOnlyEditing();
+  document.querySelectorAll('[data-tab="settings"], [data-tab="users"]').forEach(btn => { btn.hidden = !adminOnly; });
+  const nb = document.getElementById('btn-new-record');
+  if (nb) nb.hidden = !userCan('form.entry');
+  const act = document.querySelector('.sidebar__item.is-active');
+  if (act && act.hidden) switchTab('dashboard'); // tab đang mở bị thu quyền -> về Tổng quan
+  applyEditPermissions();
   populateStaffSelects();
 }
-// Spec / Parameter / Độ lặp lại: người không phải Admin chỉ xem (ẩn dòng thêm mới, vô hiệu hoá ô sửa và nút xoá).
-function applyAdminOnlyEditing() {
-  const can = canEditAdminTabs();
-  ['panel-spec', 'panel-parameters', 'panel-repeatability'].forEach(id => {
+// Item Code / Spec / Parameter / Độ lặp lại: ẩn dòng thêm mới khi thiếu quyền "thêm", khoá ô sửa + nút xoá khi thiếu quyền "sửa/xoá".
+const EDIT_PANELS = { 'panel-itemcode': ['itemcode.add', 'itemcode.edit'], 'panel-spec': ['spec.add', 'spec.edit'], 'panel-parameters': ['param.add', 'param.edit'], 'panel-repeatability': ['repeat.add', 'repeat.edit'] };
+function applyEditPermissions() {
+  Object.keys(EDIT_PANELS).forEach(id => {
     const panel = document.getElementById(id);
     if (!panel) return;
-    panel.querySelectorAll('.settings-add-row').forEach(el => { el.hidden = !can; });
-    panel.querySelectorAll('.data-table input, .data-table select, .data-table button').forEach(el => { el.disabled = !can; });
+    const canAdd = userCan(EDIT_PANELS[id][0]), canEdit = userCan(EDIT_PANELS[id][1]);
+    const addRow = panel.querySelector('.settings-add-row');
+    if (addRow) addRow.hidden = !canAdd;
+    panel.querySelectorAll('.data-table input, .data-table select, .data-table button').forEach(el => { el.disabled = !canEdit; });
+    const imp = document.getElementById('btn-itemcode-import');
+    if (id === 'panel-itemcode' && imp) imp.disabled = !(canAdd && canEdit); // nhập Excel vừa thêm vừa cập nhật
     let note = panel.querySelector('.view-only-note');
-    if (!can && !note) {
-      note = document.createElement('p');
-      note.className = 'storage-mode view-only-note';
-      note.textContent = 'Bạn chỉ có quyền XEM mục này — chỉ Admin được thêm/sửa/xoá.';
-      const card = panel.querySelector('.card');
-      if (card) card.insertBefore(note, card.firstChild);
-    }
-    if (can && note) note.remove();
+    const msg = (!canAdd && !canEdit) ? 'Bạn chỉ có quyền XEM mục này.' : (!canAdd ? 'Bạn không có quyền thêm mới ở mục này.' : (!canEdit ? 'Bạn không có quyền sửa/xoá ở mục này.' : ''));
+    if (msg) {
+      if (!note) {
+        note = document.createElement('p');
+        note.className = 'storage-mode view-only-note';
+        const card = panel.querySelector('.card');
+        if (card) card.insertBefore(note, card.firstChild);
+      }
+      note.textContent = msg + ' (Admin cấp quyền ở Cài đặt → Phân quyền.)';
+    } else if (note) note.remove();
   });
 }
-const requireAdminEdit = () => { if (canEditAdminTabs()) return true; toast('Chỉ Admin được thêm/sửa/xoá mục này.', 'warn'); return false; };
+const applyAdminOnlyEditing = applyEditPermissions; // tên cũ (các hàm render gọi)
+
+// ---- Giao diện ma trận ở tab Cài đặt (chỉ Admin vào được tab này) ----
+function renderPermissionsMatrix() {
+  const host = document.getElementById('permissions-matrix');
+  if (!host) return;
+  let lastGroup = '';
+  const chk = (d, role) => {
+    const disabled = d.locked || role === 'admin' || !hasRole('admin');
+    const on = role === 'admin' ? true : permAllowed(d.key, role);
+    return '<td class="perm-cell"><input type="checkbox" data-perm="' + d.key + '" data-role="' + role + '"' + (on ? ' checked' : '') + (disabled ? ' disabled' : '') +
+      ' aria-label="' + escapeAttr(d.label + ' — ' + ROLES[role].label) + '" /></td>';
+  };
+  host.innerHTML = '<table class="data-table perm-table"><thead><tr><th>Tab / Quyền</th><th>Inspector</th><th>Manager/Supervisor</th><th>Admin</th></tr></thead><tbody>' +
+    PERMISSION_DEFS.map(d => {
+      const head = d.group !== lastGroup ? '<tr class="perm-group"><td colspan="4"><b>' + escapeAttr(d.group) + '</b></td></tr>' : '';
+      lastGroup = d.group;
+      return head + '<tr><td>' + escapeAttr(d.label) + '</td>' + chk(d, 'inspector') + chk(d, 'supervisor') + chk(d, 'admin') + '</tr>';
+    }).join('') + '</tbody></table>';
+  host.querySelectorAll('input[data-perm]').forEach(el => el.addEventListener('change', onPermissionToggle));
+}
+function onPermissionToggle(e) {
+  if (!requirePerm('users.manage', 'Chỉ Admin được thay đổi ma trận quyền.')) { renderPermissionsMatrix(); return; }
+  const key = e.target.dataset.perm, role = e.target.dataset.role, val = e.target.checked;
+  const set = (k, v) => { PERMISSIONS[k] = Object.assign({}, PERMISSIONS[k], { [role]: v }); };
+  const before = permAllowed(key, role);
+  set(key, val);
+  // Phụ thuộc: quyền thêm/sửa/phê duyệt... cần quyền hiển thị tab; tắt quyền hiển thị thì tắt các quyền phụ thuộc.
+  const d = PERM_BY_KEY[key];
+  if (val && d.needs && !permAllowed(d.needs, role)) set(d.needs, true);
+  if (!val) PERMISSION_DEFS.filter(x => x.needs === key && permAllowed(x.key, role)).forEach(x => set(x.key, false));
+  AuditLog.log('edit-permissions', { quyen: d.label, vaiTro: ROLES[role].label, tu: before ? 'Có' : 'Không', thanh: val ? 'Có' : 'Không' });
+  persistPermissions();
+  applyRolePermissions();
+  renderPermissionsMatrix();
+  toast('Đã lưu ma trận quyền (' + d.label + ' — ' + ROLES[role].label + ': ' + (val ? 'Có' : 'Không') + ').', 'success');
+}
+function resetPermissions() {
+  if (!requirePerm('users.manage', 'Chỉ Admin được thay đổi ma trận quyền.')) return;
+  PERMISSIONS = {};
+  AuditLog.log('edit-permissions', { quyen: 'Khôi phục mặc định (theo file Quản lý người dùng.xlsx)' });
+  persistPermissions();
+  applyRolePermissions();
+  renderPermissionsMatrix();
+  toast('Đã khôi phục ma trận quyền mặc định.', 'success');
+}
+function persistPermissions() { return Storage.put('settings', { key: 'permissions', value: PERMISSIONS }); }
 
 /* ---------------- HỒ SƠ NGƯỜI DÙNG (Supabase) ---------------- */
 async function loadProfiles() {
@@ -4055,7 +4162,7 @@ const ACTION_LABELS = {
   'add-repeatability': 'Thêm độ lặp lại', 'edit-repeatability': 'Sửa độ lặp lại', 'delete-repeatability': 'Xoá độ lặp lại',
   'add-param': 'Thêm trường (Parameters)', 'edit-param': 'Sửa trường (Parameters)', 'delete-param': 'Xoá trường (Parameters)',
   'add-staff': 'Thêm nhân viên đo', 'remove-staff': 'Xoá nhân viên đo',
-  'rename-device': 'Đặt tên máy', 'import-itemcode': 'Nhập Item Code từ Excel', 'export-itemcode': 'Xuất Item Code ra Excel', 'edit-saved-record': 'Sửa phiếu đã lưu', 'rename-param': 'Đổi tên Chỉ tiêu/Trường (Parameters)', 'add-user': 'Tạo người dùng', 'remove-user': 'Xoá người dùng', 'set-role': 'Đổi vai trò', 'disable-user': 'Vô hiệu hoá người dùng', 'enable-user': 'Kích hoạt người dùng',
+  'rename-device': 'Đặt tên máy', 'edit-permissions': 'Sửa ma trận quyền', 'import-itemcode': 'Nhập Item Code từ Excel', 'export-itemcode': 'Xuất Item Code ra Excel', 'edit-saved-record': 'Sửa phiếu đã lưu', 'rename-param': 'Đổi tên Chỉ tiêu/Trường (Parameters)', 'add-user': 'Tạo người dùng', 'remove-user': 'Xoá người dùng', 'set-role': 'Đổi vai trò', 'disable-user': 'Vô hiệu hoá người dùng', 'enable-user': 'Kích hoạt người dùng',
   'USER_CREATED': 'Tạo người dùng', 'ROLE_CHANGED': 'Đổi vai trò', 'USER_DISABLED': 'Vô hiệu hoá người dùng', 'USER_ENABLED': 'Kích hoạt người dùng'
 };
 const actionLabel = (a) => ACTION_LABELS[a] || a;
@@ -4191,7 +4298,7 @@ function pushApprovalHistory(r, entry) {
   r.approval = { status: entry.status, by: entry.by || '', at: entry.at, reason: entry.reason || '', history: (cur.history || []).concat([entry]) };
 }
 async function approveRecord(r) {
-  if (!hasRole('supervisor')) { toast('Chỉ Supervisor/Admin mới được phê duyệt phiếu.', 'warn'); return; }
+  if (!requirePerm('history.approve', 'Bạn không có quyền phê duyệt phiếu.')) return;
   if (r.isDraft) { toast('Phiếu nháp chưa thể phê duyệt.', 'warn'); return; }
   if (approvalOf(r).status !== 'pending') { toast('Chỉ duyệt được phiếu đang ở trạng thái Chờ duyệt.', 'warn'); return; }
   pushApprovalHistory(r, { status: 'approved', by: state.currentUser ? state.currentUser.name : '(?)', at: new Date().toISOString() });
@@ -4204,7 +4311,7 @@ async function approveRecord(r) {
   viewRecord(r.id);
 }
 async function returnRecordForEdit(r, reason) {
-  if (!hasRole('supervisor')) { toast('Chỉ Supervisor/Admin mới được trả lại phiếu.', 'warn'); return; }
+  if (!requirePerm('history.approve', 'Bạn không có quyền trả lại phiếu.')) return;
   if (r.isDraft) { toast('Phiếu nháp chưa thể trả lại.', 'warn'); return; }
   if (approvalOf(r).status !== 'pending') { toast('Chỉ trả lại được phiếu đang ở trạng thái Chờ duyệt.', 'warn'); return; }
   reason = (reason || '').trim();
@@ -4242,6 +4349,7 @@ function promptModal(title, label, placeholder) {
 // "Sửa phiếu" từ Lịch sử/chi tiết: nạp vào form; nếu phiếu đang Đã duyệt, đánh dấu để submitRecord
 // biết cần tạo PHIÊN BẢN MỚI thay vì ghi đè (khoá nội dung bản đã duyệt).
 function resumeRecordForEdit(r) {
+  if (r.isDraft && !requirePerm('history.resumeDraft', 'Bạn không có quyền tiếp tục nhập phiếu nháp.')) return;
   state.editingRecordId = r.id;
   state.editingWasApproved = approvalOf(r).status === 'approved';
   applyRecordToForm(r);
@@ -4332,7 +4440,7 @@ function renderHistoryTable() {
       '<td>' + approvalBadgeHtml(r) + '</td>' +
       '<td>' + (r.reviewedBy || '--') + '</td>' +
       '<td><button type="button" class="btn btn--secondary btn-view-record" data-id="' + r.id + '">Xem</button>' +
-      (r.isDraft ? ' <button type="button" class="btn btn--secondary btn-resume-record" data-id="' + r.id + '">Tiếp tục nhập</button>' : '') + '</td>';
+      (r.isDraft && userCan('history.resumeDraft') ? ' <button type="button" class="btn btn--secondary btn-resume-record" data-id="' + r.id + '">Tiếp tục nhập</button>' : '') + '</td>';
     tbody.appendChild(tr);
   });
   tbody.querySelectorAll('.btn-view-record').forEach(btn => {
@@ -4403,13 +4511,13 @@ function renderRecordDetailHtml(r, opts) {
     (r.isDraft ? '' : renderApprovalSectionHtml(r) + renderEditsHtml(r)) +
     '<div class="form-actions">' +
     approvalActionButtonsHtml(r) +
-    (r.isDraft ? '<button type="button" class="btn btn--secondary" id="btn-detail-resume">Tiếp tục chỉnh sửa</button>' : '') +
+    (r.isDraft && userCan('history.resumeDraft') ? '<button type="button" class="btn btn--secondary" id="btn-detail-resume">Tiếp tục chỉnh sửa</button>' : '') +
     (canEditSavedRecord(r) ? '<button type="button" class="btn btn--secondary" id="btn-detail-edit">' +
       (approvalOf(r).status === 'approved' ? 'Sửa phiếu (tạo phiên bản mới)' : (approvalOf(r).status === 'returned' ? 'Chỉnh sửa & gửi duyệt lại' : 'Sửa phiếu')) + '</button>' : '') +
     '<button type="button" class="btn btn--secondary" id="btn-detail-csv">Xuất Excel (CSV)</button>' +
     '<button type="button" class="btn btn--secondary" id="btn-detail-print">In tóm tắt</button>' +
     '<button type="button" class="btn btn--secondary" id="btn-detail-fullreport">Full Report (PDF)</button>' +
-    (hasRole('supervisor') ? '<button type="button" class="btn btn--secondary" id="btn-detail-delete">Xoá phiếu</button>' : '') +
+    (userCan('history.delete') ? '<button type="button" class="btn btn--secondary" id="btn-detail-delete">Xoá phiếu</button>' : '') +
     '</div>' +
     (r.versionOf ? '<p><small style="color:var(--text-faint);">Phiên bản ' + (r.version || 1) + ' — <a href="#" id="btn-detail-versions">xem các phiên bản trước đã duyệt</a></small></p>' : '');
 }
@@ -4419,7 +4527,9 @@ function renderRecordDetailHtml(r, opts) {
 // Inspector chỉ sửa phiếu bị TRẢ LẠI để gửi duyệt lại (quyền không mở rộng). Kiểm tra lại ở submitRecord và (khi áp dụng) ở máy chủ.
 function canEditSavedRecord(r) {
   if (!r || r.isDraft || r.archived) return false;
-  return hasRole('supervisor') || approvalOf(r).status === 'returned';
+  const st = approvalOf(r).status;
+  if (st === 'returned') return userCan('form.entry'); // người nhập sửa phiếu bị trả để gửi duyệt lại
+  return st === 'approved' ? userCan('history.editApproved') : userCan('history.editSaved');
 }
 // Lịch sử chỉnh sửa (ai/lúc nào/đổi gì) của phiếu đã lưu.
 function renderEditsHtml(r) {
@@ -4442,12 +4552,13 @@ function renderApprovalSectionHtml(r) {
   return html;
 }
 function approvalActionButtonsHtml(r) {
-  if (r.isDraft || !hasRole('supervisor') || approvalOf(r).status !== 'pending') return '';
+  if (r.isDraft || !userCan('history.approve') || approvalOf(r).status !== 'pending') return '';
   return '<button type="button" class="btn btn--secondary" id="btn-approve">Duyệt (Approve)</button>' +
     '<button type="button" class="btn btn--secondary" id="btn-return">Trả lại sửa</button>';
 }
 
 function viewRecord(id) {
+  if (!userCan('history.view')) return;
   const r = state.records.find(x => String(x.id) === String(id));
   if (!r) return;
   Modal.open(renderRecordDetailHtml(r));
@@ -4488,6 +4599,7 @@ function viewRecord(id) {
     document.querySelectorAll('.btn-view-record').forEach(btn => btn.addEventListener('click', () => viewRecord(btn.dataset.id)));
   });
   if (delBtn) delBtn.addEventListener('click', async () => {
+    if (!requirePerm('history.delete', 'Bạn không có quyền xoá phiếu.')) return;
     const ok = await confirmModal('Xoá phiếu?', 'Bạn có chắc muốn xoá phiếu ' + (r.sampleInfo.batch || '') + '? Hành động này không thể hoàn tác.');
     if (!ok) return;
     await Storage.delete('records', r.id);
@@ -4925,6 +5037,7 @@ function showItemCodeImportPreview(plan, fileName) {
   });
 }
 async function applyItemCodeImport(plan, fileName) {
+  if (!(userCan('itemcode.add') && userCan('itemcode.edit'))) { toast('Nhập Excel cần cả quyền thêm mới và sửa Item Code.', 'warn'); return false; }
   plan.add.forEach(p => ITEM_CODES.push({ item: p.item, name: p.name, recipe: p.recipe, productType: p.type }));
   plan.update.forEach(p => { p.target.name = p.name; p.target.recipe = p.recipe; });
   const ok = await persistItemCodes();
@@ -4937,6 +5050,7 @@ async function applyItemCodeImport(plan, fileName) {
 }
 async function onItemCodeXlsxChosen(file) {
   if (!file) return;
+  if (!(userCan('itemcode.add') && userCan('itemcode.edit'))) { toast('Nhập Excel cần cả quyền thêm mới và sửa Item Code.', 'warn'); return; }
   let rows;
   try { rows = await XlsxLite.read(await file.arrayBuffer()); }
   catch (e) { toast('Không đọc được file Excel: ' + e.message, 'warn'); return; }
@@ -4955,6 +5069,7 @@ function renderItemCodeTable() {
       String(it.name || '').toLowerCase().includes(search) ||
       String(it.recipe || '').toLowerCase().includes(search));
 
+  setTimeout(applyEditPermissions, 0);
   document.getElementById('itemcode-count-note').textContent =
     'Hiển thị ' + rows.length + ' / ' + ofType.length + ' mã hàng của ' + PRODUCT_TYPES[state.adminType] + '.';
 
@@ -4969,6 +5084,7 @@ function renderItemCodeTable() {
 
   tbody.querySelectorAll('input[data-field]').forEach(el => {
     el.addEventListener('change', (e) => {
+      if (!requirePerm('itemcode.edit')) { renderItemCodeTable(); return; }
       const idx = parseInt(e.target.dataset.idx, 10);
       ITEM_CODES[idx][e.target.dataset.field] = e.target.value.trim();
       persistItemCodes();
@@ -4978,6 +5094,7 @@ function renderItemCodeTable() {
   });
   tbody.querySelectorAll('.btn-delete-itemcode').forEach(btn => {
     btn.addEventListener('click', async (e) => {
+      if (!requirePerm('itemcode.edit')) return;
       const idx = parseInt(e.target.dataset.idx, 10);
       const ok = await confirmModal('Xoá mã hàng?', 'Xoá Item Code "' + ITEM_CODES[idx].item + '" khỏi danh mục?');
       if (!ok) return;
@@ -5023,7 +5140,7 @@ function renderRepeatabilityTable() {
   applyAdminOnlyEditing();
   tbody.querySelectorAll('.btn-delete-repeat').forEach(btn => {
     btn.addEventListener('click', () => {
-      if (!requireAdminEdit()) return;
+      if (!requirePerm('repeat.edit')) return;
       REPEATABILITY.splice(parseInt(btn.dataset.idx, 10), 1);
       persistRepeatability();
       renderRepeatabilityTable();
@@ -5033,7 +5150,7 @@ function renderRepeatabilityTable() {
   });
   tbody.querySelectorAll('input[data-idx]').forEach(el => {
     el.addEventListener('change', (e) => {
-      if (!requireAdminEdit()) { renderRepeatabilityTable(); return; }
+      if (!requirePerm('repeat.edit')) { renderRepeatabilityTable(); return; }
       const idx = parseInt(e.target.dataset.idx, 10);
       const v = toNumber(e.target.value);
       if (v === null) { toast('Giá trị không hợp lệ.', 'warn'); e.target.value = REPEATABILITY[idx].maxDiff; return; }
@@ -5083,7 +5200,7 @@ function renderSpecTable() {
 
   tbody.querySelectorAll('input[data-field]').forEach(el => {
     el.addEventListener('change', (e) => {
-      if (!requireAdminEdit()) { renderSpecTable(); return; }
+      if (!requirePerm('spec.edit')) { renderSpecTable(); return; }
       const idx = parseInt(e.target.dataset.idx, 10);
       THRESHOLDS[idx][e.target.dataset.field] = e.target.value;
       // Sửa giá trị ngưỡng của chỉ tiêu có đơn vị cơ sở (Density) = xác nhận giá trị mới theo đơn vị đó (cột Đơn vị hiển thị g/L).
@@ -5098,7 +5215,7 @@ function renderSpecTable() {
   });
   tbody.querySelectorAll('.btn-delete-spec').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      if (!requireAdminEdit()) return;
+      if (!requirePerm('spec.edit')) return;
       const idx = parseInt(e.target.dataset.idx, 10);
       THRESHOLDS.splice(idx, 1);
       AuditLog.log('delete-spec-row', {});
@@ -5116,7 +5233,7 @@ function renderSpecTable() {
 //  không có origin = dòng có từ trước khi có cơ chế này — KHÔNG có căn cứ phân biệt hệ thống/người dùng nên khoá tên (không đoán).
 function newParamId() { return 'pm_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 function ensureParamIds() { FIELD_MAPPING.forEach(f => { if (!f.id) f.id = newParamId(); }); }
-const paramRowEditable = (f) => f.origin === 'user' && canEditAdminTabs();
+const paramRowEditable = (f) => f.origin === 'user' && userCan('param.edit');
 function paramFieldSelectHtml(id, field, options, current) {
   return '<select class="field__input" data-id="' + escapeAttr(id) + '" data-field="' + field + '">' +
     options.map(o => '<option value="' + escapeAttr(o) + '"' + (o === current ? ' selected' : '') + '>' + escapeAttr(o) + '</option>').join('') +
@@ -5148,7 +5265,7 @@ function renderParametersTable() {
   tbody.querySelectorAll('input[data-field], select[data-field]').forEach(el => {
     el.addEventListener('change', (e) => {
       const row = FIELD_MAPPING.find(x => x.id === e.target.dataset.id);
-      if (!row || !requireAdminEdit()) return;
+      if (!row || !requirePerm('param.edit')) return;
       row[e.target.dataset.field] = e.target.value;
       AuditLog.log('edit-param', { id: row.id, field: row.field, key: e.target.dataset.field, value: e.target.value });
       persistFieldMapping();
@@ -5175,7 +5292,7 @@ function renderParametersTable() {
   tbody.querySelectorAll('.btn-delete-param').forEach(btn => {
     btn.addEventListener('click', () => {
       const i = FIELD_MAPPING.findIndex(x => x.id === btn.dataset.id);
-      if (i < 0 || !requireAdminEdit()) return;
+      if (i < 0 || !requirePerm('param.edit')) return;
       FIELD_MAPPING.splice(i, 1);
       persistFieldMapping();
       renderParametersTable();
@@ -5206,6 +5323,8 @@ async function loadMasterDataFromDb() {
   if (repeatDoc && Array.isArray(repeatDoc.value) && repeatDoc.value.length) {
     REPEATABILITY.length = 0; REPEATABILITY.push(...repeatDoc.value);
   }
+  const permDoc = await Storage.get('settings', 'permissions');
+  PERMISSIONS = permDoc ? sanitizePermissions(permDoc.value) : {};
   migrateDensityThresholds();
   ensureTypeSeeds(); // danh mục đã lưu từ trước chưa có Coffee Oil/Liquid -> bổ sung dữ liệu khởi tạo (không ghi lại Storage)
   const themeDoc = await Storage.get('settings', 'theme');
@@ -5423,6 +5542,7 @@ function blockValidationErrors(cfg) {
 // Lưu phiếu chính thức. forced=true (nút "Force đóng Report") chỉ bỏ qua yêu cầu phải hoàn tất đủ
 // chỉ tiêu — KHÔNG bỏ qua lỗi hợp lệ dữ liệu (validateBeforeSubmit/blockValidationErrors).
 async function submitRecord(forced) {
+  if (!requirePerm('form.entry', 'Bạn không có quyền nhập liệu.')) return;
   const cfg = typeCfg();
   // Quyền sửa phiếu đã lưu (UI; máy chủ kiểm lại bằng trigger lab_records_guard khi đã áp dụng supabase/approval_flow.sql).
   const editing0 = state.editingRecordId ? state.records.find(x => String(x.id) === String(state.editingRecordId)) : null;
@@ -5535,6 +5655,7 @@ async function exportBackup() {
     fieldMapping: FIELD_MAPPING,
     itemCodes: ITEM_CODES,
     repeatability: REPEATABILITY,
+    permissions: PERMISSIONS,
     records
   };
   downloadFile('lab_record_backup_' + Date.now() + '.json', JSON.stringify(backup, null, 2), 'application/json');
@@ -5566,6 +5687,7 @@ async function importBackupFile(file) {
     if (Array.isArray(data.fieldMapping) && data.fieldMapping.length) { FIELD_MAPPING.length = 0; FIELD_MAPPING.push(...data.fieldMapping); await persistFieldMapping(); }
     if (Array.isArray(data.itemCodes) && data.itemCodes.length) { ITEM_CODES.length = 0; ITEM_CODES.push(...data.itemCodes); await persistItemCodes(); }
     if (Array.isArray(data.repeatability) && data.repeatability.length) { REPEATABILITY.length = 0; REPEATABILITY.push(...data.repeatability); await persistRepeatability(); }
+    if (data.permissions && typeof data.permissions === 'object') { PERMISSIONS = sanitizePermissions(data.permissions); await persistPermissions(); applyRolePermissions(); }
     migrateProductTypes();
     for (const rec of data.records) { await Storage.put('records', rec); }
     await loadRecordsCache();
@@ -5735,6 +5857,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Lưu nháp / Submit
   document.getElementById('btn-save-draft').addEventListener('click', async () => {
+    if (!requirePerm('form.entry', 'Bạn không có quyền nhập liệu.')) return;
     const id = state.editingRecordId || ('rec_' + Date.now());
     const existingDraft = state.editingRecordId ? state.records.find(x => String(x.id) === String(id)) : null;
     if (existingDraft && !existingDraft.isDraft) { toast('Phiếu đã lưu chính thức — dùng "Lưu phiếu" để lưu thay đổi (không chuyển ngược thành nháp).', 'warn'); return; }
@@ -5785,6 +5908,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await onItemCodeXlsxChosen(file);
   });
   document.getElementById('btn-add-itemcode').addEventListener('click', () => {
+    if (!requirePerm('itemcode.add')) return;
     const item = document.getElementById('itemcode-new-item').value.trim();
     const name = document.getElementById('itemcode-new-name').value.trim();
     const recipe = document.getElementById('itemcode-new-recipe').value.trim() || '-';
@@ -5802,7 +5926,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Độ lặp lại: thêm chỉ tiêu mới
   document.getElementById('btn-add-repeat').addEventListener('click', () => {
-    if (!requireAdminEdit()) return;
+    if (!requirePerm('repeat.add')) return;
     const parameter = document.getElementById('repeat-new-parameter').value.trim();
     const unit = document.getElementById('repeat-new-unit').value.trim() || '-';
     const maxDiff = toNumber(document.getElementById('repeat-new-maxdiff').value);
@@ -5820,7 +5944,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Parameters: thêm trường mới
   document.getElementById('btn-add-param').addEventListener('click', () => {
-    if (!requireAdminEdit()) return;
+    if (!requirePerm('param.add')) return;
     const parameter = document.getElementById('param-new-parameter').value.trim();
     const field = document.getElementById('param-new-field').value.trim();
     if (!parameter || !field) { toast('Nhập Chỉ tiêu và Tên trường.', 'warn'); return; }
@@ -5842,7 +5966,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Spec.: thêm dòng ngưỡng mới
   document.getElementById('btn-add-spec').addEventListener('click', () => {
-    if (!requireAdminEdit()) return;
+    if (!requirePerm('spec.add')) return;
     const customer = document.getElementById('spec-new-customer').value.trim();
     const parameter = document.getElementById('spec-new-parameter').value.trim();
     const unit = document.getElementById('spec-new-unit').value.trim();
@@ -5896,6 +6020,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateStickyOffset();
   window.addEventListener('resize', updateStickyOffset);
   renderStaffList();
+  document.getElementById('btn-reset-permissions').addEventListener('click', resetPermissions);
   document.getElementById('btn-sync-now').addEventListener('click', () => Sync.syncNow(true));
   Sync.start();
   // Auto Recovery + Auto Save chỉ chạy SAU khi đăng nhập thành công (xem attemptLogin
