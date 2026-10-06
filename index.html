@@ -3878,17 +3878,45 @@ function updateHeaderUser() {
 }
 // Ẩn các tab/khối chỉ Supervisor+/Admin mới được vào. Ở chế độ Supabase Auth, quyền THẬT được
 // chặn bởi RLS trên server (supabase/auth.sql); phần ẩn UI này chỉ để giao diện gọn.
+/* MA TRẬN QUYỀN (theo file "Quản lý người dùng.xlsx"; Inspector < Supervisor/Manager < Admin):
+   Nhập liệu: cả 3 · Lịch sử: tìm/xem + tiếp tục nháp cả 3; phê duyệt + điều chỉnh phiếu đã duyệt: Supervisor trở lên
+   Item Code: cả 3 được thêm/sửa/xoá · Spec, Parameter, Độ lặp lại: tab ẩn với Inspector, Supervisor chỉ XEM, chỉ Admin thêm/sửa/xoá
+   Người dùng: chỉ Admin (ẩn với Inspector; Supervisor cũng không thấy vì danh sách người dùng phải qua Edge Function dành cho Admin).
+   Ngoài file (giữ như cũ): Data Log Supervisor+, Cài đặt Admin, xoá phiếu Supervisor+.
+   Đây là kiểm soát ở GIAO DIỆN; ở máy chủ do RLS (supabase/auth.sql + settings_permissions.sql). */
+const canEditAdminTabs = () => hasRole('admin'); // Spec / Parameter / Độ lặp lại
 function applyRolePermissions() {
   const supervisorPlus = hasRole('supervisor');
   const adminOnly = hasRole('admin');
-  document.querySelectorAll('[data-tab="itemcode"], [data-tab="spec"], [data-tab="repeatability"], [data-tab="parameters"], [data-tab="datalog"]').forEach(btn => {
+  document.querySelectorAll('[data-tab="spec"], [data-tab="repeatability"], [data-tab="parameters"], [data-tab="datalog"]').forEach(btn => {
     btn.hidden = !supervisorPlus;
   });
   document.querySelectorAll('[data-tab="settings"], [data-tab="users"]').forEach(btn => {
     btn.hidden = !adminOnly;
   });
+  applyAdminOnlyEditing();
   populateStaffSelects();
 }
+// Spec / Parameter / Độ lặp lại: người không phải Admin chỉ xem (ẩn dòng thêm mới, vô hiệu hoá ô sửa và nút xoá).
+function applyAdminOnlyEditing() {
+  const can = canEditAdminTabs();
+  ['panel-spec', 'panel-parameters', 'panel-repeatability'].forEach(id => {
+    const panel = document.getElementById(id);
+    if (!panel) return;
+    panel.querySelectorAll('.settings-add-row').forEach(el => { el.hidden = !can; });
+    panel.querySelectorAll('.data-table input, .data-table select, .data-table button').forEach(el => { el.disabled = !can; });
+    let note = panel.querySelector('.view-only-note');
+    if (!can && !note) {
+      note = document.createElement('p');
+      note.className = 'storage-mode view-only-note';
+      note.textContent = 'Bạn chỉ có quyền XEM mục này — chỉ Admin được thêm/sửa/xoá.';
+      const card = panel.querySelector('.card');
+      if (card) card.insertBefore(note, card.firstChild);
+    }
+    if (can && note) note.remove();
+  });
+}
+const requireAdminEdit = () => { if (canEditAdminTabs()) return true; toast('Chỉ Admin được thêm/sửa/xoá mục này.', 'warn'); return false; };
 
 /* ---------------- HỒ SƠ NGƯỜI DÙNG (Supabase) ---------------- */
 async function loadProfiles() {
@@ -4824,14 +4852,12 @@ function itemCodeGuideRows() {
     ['5. Mã có trong app nhưng KHÔNG có trong file sẽ được GIỮ NGUYÊN (không bao giờ tự xoá). Có bước xem trước và chỉ ghi khi bạn xác nhận; nếu có dòng lỗi/trùng thì không ghi gì.']];
 }
 function downloadItemCodeTemplate() {
-  if (!hasRole('supervisor')) { toast('Chỉ Supervisor/Admin được dùng chức năng Excel của Item Code.', 'warn'); return; }
   itemXlsxDownload(XlsxLite.build([
     { name: 'ItemCode', rows: [ITEM_XLSX_HEADERS], widths: [18, 16, 48, 14] },
     { name: 'Huong dan', rows: itemCodeGuideRows(), widths: [120] }]), 'item_code_template.xlsx');
   toast('Đã tải template Item Code (.xlsx).', 'success');
 }
 function exportItemCodesXlsx() {
-  if (!hasRole('supervisor')) { toast('Chỉ Supervisor/Admin được dùng chức năng Excel của Item Code.', 'warn'); return; }
   const order = Object.keys(PRODUCT_TYPES);
   const rows = [ITEM_XLSX_HEADERS].concat(ITEM_CODES.slice().sort((a, b) => order.indexOf(typeOf(a)) - order.indexOf(typeOf(b)))
     .map(it => [PRODUCT_TYPES[typeOf(it)], String(it.item == null ? '' : it.item), String(it.name == null ? '' : it.name), String(it.recipe == null ? '' : it.recipe)]));
@@ -4899,7 +4925,6 @@ function showItemCodeImportPreview(plan, fileName) {
   });
 }
 async function applyItemCodeImport(plan, fileName) {
-  if (!hasRole('supervisor')) { toast('Chỉ Supervisor/Admin được nhập Item Code từ Excel.', 'warn'); return false; }
   plan.add.forEach(p => ITEM_CODES.push({ item: p.item, name: p.name, recipe: p.recipe, productType: p.type }));
   plan.update.forEach(p => { p.target.name = p.name; p.target.recipe = p.recipe; });
   const ok = await persistItemCodes();
@@ -4912,7 +4937,6 @@ async function applyItemCodeImport(plan, fileName) {
 }
 async function onItemCodeXlsxChosen(file) {
   if (!file) return;
-  if (!hasRole('supervisor')) { toast('Chỉ Supervisor/Admin được nhập Item Code từ Excel.', 'warn'); return; }
   let rows;
   try { rows = await XlsxLite.read(await file.arrayBuffer()); }
   catch (e) { toast('Không đọc được file Excel: ' + e.message, 'warn'); return; }
@@ -4996,8 +5020,10 @@ function renderRepeatabilityTable() {
   const note = document.getElementById('repeat-count-note');
   if (note) note.textContent = 'Hiển thị ' + rows.length + ' / ' + ofType.length + ' dòng của ' + PRODUCT_TYPES[state.adminType] + (cf ? (cf === '__default' ? ' — Mặc định chung' : ' — Customer ' + cf) : '') + '.';
   fillDatalist('repeat-parameter-list', typeParamLabels(state.adminType));
+  applyAdminOnlyEditing();
   tbody.querySelectorAll('.btn-delete-repeat').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (!requireAdminEdit()) return;
       REPEATABILITY.splice(parseInt(btn.dataset.idx, 10), 1);
       persistRepeatability();
       renderRepeatabilityTable();
@@ -5007,6 +5033,7 @@ function renderRepeatabilityTable() {
   });
   tbody.querySelectorAll('input[data-idx]').forEach(el => {
     el.addEventListener('change', (e) => {
+      if (!requireAdminEdit()) { renderRepeatabilityTable(); return; }
       const idx = parseInt(e.target.dataset.idx, 10);
       const v = toNumber(e.target.value);
       if (v === null) { toast('Giá trị không hợp lệ.', 'warn'); e.target.value = REPEATABILITY[idx].maxDiff; return; }
@@ -5047,6 +5074,7 @@ function renderSpecTable() {
   const customers = Array.from(new Set(THRESHOLDS.filter(t => typeOf(t) === state.adminType).map(t => t.customer).filter(Boolean)));
   fillDatalist('spec-parameter-list', typeParamLabels(state.adminType));
   fillDatalist('spec-customer-list', customers);
+  setTimeout(applyAdminOnlyEditing, 0);
   if (custSel) {
     const cur = custSel.value;
     custSel.innerHTML = '<option value="">Tất cả</option>' + customers.map(c => '<option value="' + escapeAttr(c) + '">' + escapeAttr(c) + '</option>').join('');
@@ -5055,6 +5083,7 @@ function renderSpecTable() {
 
   tbody.querySelectorAll('input[data-field]').forEach(el => {
     el.addEventListener('change', (e) => {
+      if (!requireAdminEdit()) { renderSpecTable(); return; }
       const idx = parseInt(e.target.dataset.idx, 10);
       THRESHOLDS[idx][e.target.dataset.field] = e.target.value;
       // Sửa giá trị ngưỡng của chỉ tiêu có đơn vị cơ sở (Density) = xác nhận giá trị mới theo đơn vị đó (cột Đơn vị hiển thị g/L).
@@ -5069,6 +5098,7 @@ function renderSpecTable() {
   });
   tbody.querySelectorAll('.btn-delete-spec').forEach(btn => {
     btn.addEventListener('click', (e) => {
+      if (!requireAdminEdit()) return;
       const idx = parseInt(e.target.dataset.idx, 10);
       THRESHOLDS.splice(idx, 1);
       AuditLog.log('delete-spec-row', {});
@@ -5086,7 +5116,7 @@ function renderSpecTable() {
 //  không có origin = dòng có từ trước khi có cơ chế này — KHÔNG có căn cứ phân biệt hệ thống/người dùng nên khoá tên (không đoán).
 function newParamId() { return 'pm_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 function ensureParamIds() { FIELD_MAPPING.forEach(f => { if (!f.id) f.id = newParamId(); }); }
-const paramRowEditable = (f) => f.origin === 'user' && hasRole('supervisor');
+const paramRowEditable = (f) => f.origin === 'user' && canEditAdminTabs();
 function paramFieldSelectHtml(id, field, options, current) {
   return '<select class="field__input" data-id="' + escapeAttr(id) + '" data-field="' + field + '">' +
     options.map(o => '<option value="' + escapeAttr(o) + '"' + (o === current ? ' selected' : '') + '>' + escapeAttr(o) + '</option>').join('') +
@@ -5113,11 +5143,12 @@ function renderParametersTable() {
   const note = document.getElementById('param-origin-note');
   if (note) note.textContent = rows.filter(f => f.origin === 'user').length + ' / ' + rows.length + ' dòng do người dùng tự nhập (sửa được Chỉ tiêu/Trường); các dòng còn lại là dữ liệu hệ thống hoặc có từ trước nên khoá tên.';
   fillDatalist('param-parameter-list', ['Thông tin mẫu'].concat(typeParamLabels(state.adminType)));
+  applyAdminOnlyEditing();
 
   tbody.querySelectorAll('input[data-field], select[data-field]').forEach(el => {
     el.addEventListener('change', (e) => {
       const row = FIELD_MAPPING.find(x => x.id === e.target.dataset.id);
-      if (!row) return;
+      if (!row || !requireAdminEdit()) return;
       row[e.target.dataset.field] = e.target.value;
       AuditLog.log('edit-param', { id: row.id, field: row.field, key: e.target.dataset.field, value: e.target.value });
       persistFieldMapping();
@@ -5144,7 +5175,7 @@ function renderParametersTable() {
   tbody.querySelectorAll('.btn-delete-param').forEach(btn => {
     btn.addEventListener('click', () => {
       const i = FIELD_MAPPING.findIndex(x => x.id === btn.dataset.id);
-      if (i < 0) return;
+      if (i < 0 || !requireAdminEdit()) return;
       FIELD_MAPPING.splice(i, 1);
       persistFieldMapping();
       renderParametersTable();
@@ -5771,6 +5802,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Độ lặp lại: thêm chỉ tiêu mới
   document.getElementById('btn-add-repeat').addEventListener('click', () => {
+    if (!requireAdminEdit()) return;
     const parameter = document.getElementById('repeat-new-parameter').value.trim();
     const unit = document.getElementById('repeat-new-unit').value.trim() || '-';
     const maxDiff = toNumber(document.getElementById('repeat-new-maxdiff').value);
@@ -5788,6 +5820,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Parameters: thêm trường mới
   document.getElementById('btn-add-param').addEventListener('click', () => {
+    if (!requireAdminEdit()) return;
     const parameter = document.getElementById('param-new-parameter').value.trim();
     const field = document.getElementById('param-new-field').value.trim();
     if (!parameter || !field) { toast('Nhập Chỉ tiêu và Tên trường.', 'warn'); return; }
@@ -5809,6 +5842,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Spec.: thêm dòng ngưỡng mới
   document.getElementById('btn-add-spec').addEventListener('click', () => {
+    if (!requireAdminEdit()) return;
     const customer = document.getElementById('spec-new-customer').value.trim();
     const parameter = document.getElementById('spec-new-parameter').value.trim();
     const unit = document.getElementById('spec-new-unit').value.trim();

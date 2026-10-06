@@ -1,6 +1,6 @@
 # Lab Record – ILD Coffee — Handoff Document
 
-**Cập nhật:** 2026-10-06 (mục 13: SSCC/PO, giờ lò, Density g/L, sửa phiếu, Excel Item Code, Parameters, Độ lặp lại theo Customer; Coffee Oil + Liquid — mục 12; đợt "On going" Excel dòng 10/12/13/20 — mục 10; trước đó: mục 8 sửa theo Excel, mục 9 rebrand ILD Crafted + Theme)
+**Cập nhật:** 2026-10-06 (mục 14: ma trận quyền theo file Quản lý người dùng.xlsx; mục 13: SSCC/PO, giờ lò, Density g/L, sửa phiếu, Excel Item Code, Parameters, Độ lặp lại theo Customer; Coffee Oil + Liquid — mục 12; đợt "On going" Excel dòng 10/12/13/20 — mục 10; trước đó: mục 8 sửa theo Excel, mục 9 rebrand ILD Crafted + Theme)
 **Vị trí dự án:** `C:\Users\BinhDang\Documents\GitHub\LABRecord` (git repo; trước đây ở `C:\Apps\Q - LAB RECORD`, đã chuyển)
 **Trạng thái:** Đã hỗ trợ nhiều LOẠI SẢN PHẨM (Powder / Coffee Oil / Liquid) theo kiến trúc cấu hình (mục 3.6). Powder chạy đầy đủ và cho kết quả trùng bản cũ; Coffee Oil và Liquid mới có khung, chưa có trường/chỉ tiêu. Ứng dụng chạy được đầy đủ (Phần 1-5 kế hoạch gốc + 13 mục hiệu chỉnh vòng 2 + tab Độ lặp lại cho thêm/xoá chỉ tiêu). Còn vài giả định nghiệp vụ cần QA xác nhận (mục 5).
 
@@ -357,3 +357,21 @@ Các xác nhận trong đợt này ƯU TIÊN hơn ghi chú cũ ở Excel/HANDOFF
 **Kiểm thử đã chạy** (local, Console/JS; chưa Supabase thật): PO/SSCC ví dụ 612600083→61260008300221, đổi Customer/Line/Batch (PO tự đổi, 3 số cuối giữ nguyên), PO tự gõ không bị ghi đè + lỗi 4 số cuối/Line/Năm/số 0/Customer/SSCC≠PO, số 0 đầu, Semi-FGs (không báo thiếu tiền tố, không kiểm độ dài), Liquid 6/7; giờ trống/00:00/23:59/24:00/phút 60/chỉ 1 ô/giờ ra<vào, đọc `14:05`/`16:00:00`/rác; Density 932 g/L, dung tích trống, migrate đúng 1 dòng seed + khoá dòng tuỳ chỉnh + xác nhận bằng sửa Spec, phiếu cũ giữ nguyên + ghi chú; sửa phiếu: Inspector bị chặn ở pending/approved, Supervisor sửa tại chỗ (ghi edits), duyệt rồi sửa → v2 + bản đã duyệt giữ nguyên, Lưu nháp không đè; Excel: đọc file openpyxl (deflate, ô số, loại viết thường), lỗi/trùng/mã sai, huỷ không đổi, áp dụng + Inspector bị chặn + audit + persisted, xuất→nhập lại 0 lỗi/240 không đổi, file `.xlsx` mở được bằng openpyxl (ký tự đặc biệt/tiếng Việt, ô Text); Parameters và Độ lặp lại như trên. Không lỗi Console. **Chưa kiểm thử:** mở file bằng Excel thật (chỉ openpyxl), Supabase/RLS/trigger mới, đồng bộ nhiều máy, giao diện mobile của các mục mới.
 
 **Còn chờ xác nhận:** cách suy ra năm đầy đủ khi bỏ "Năm SX (xác nhận)"; cấu trúc đầy đủ PO/SSCC Semi-FGs và các chữ số "mã sản phẩm" của Oil/Liquid; thuật toán sinh số thứ tự SSCC (hiện nhân viên tự nhập 3 số cuối); Spec cho Customer khác (Oil Semi-FGs=NA, Liquid LDC); dung sai Độ lặp lại Oil/Liquid; xung đột `#theme-select` cũ với Theme ILD Crafted (mục 12); các mục không nằm trong đợt này (% mẫu trên sàng đã đúng, tô xanh tên chỉ tiêu đã làm ở mục 11).
+
+
+## 14. Ma trận quyền theo `Quản lý người dùng.xlsx` (2026-10-06) — THAY THẾ các ghi chú quyền ở mục 3.4, 13 (§6–§8) và `settings_permissions.sql` bản trước
+
+| Tab / quyền | Inspector | Supervisor/Manager | Admin |
+|---|---|---|---|
+| Nhập liệu | ✔ | ✔ | ✔ |
+| Lịch sử: tìm/xem, tiếp tục nháp | ✔ | ✔ | ✔ |
+| Lịch sử: phê duyệt; điều chỉnh phiếu đã duyệt | ✘ | ✔ | ✔ |
+| Item Code: thêm / sửa / xoá (kể cả nhập-xuất Excel) | ✔ | ✔ | ✔ |
+| Spec, Parameter, Độ lặp lại | tab ẨN | chỉ XEM | thêm/sửa/xoá |
+| Người dùng | ẩn | ẩn* | ✔ |
+
+\* File ghi "không hiển thị trên Inspector"; Supervisor cũng không thấy vì danh sách người dùng phải qua Edge Function `admin-users` chỉ dành cho Admin — hiển thị chỉ-đọc cho Supervisor cần sửa function, chưa làm. Ngoài file (giữ như cũ): Data Log Supervisor+, Cài đặt Admin, xoá phiếu Supervisor+; Inspector vẫn sửa được phiếu bị TRẢ LẠI (để gửi duyệt lại — không phải "phiếu đã duyệt").
+
+- Giao diện: `applyRolePermissions()` (ẩn/hiện tab) + `applyAdminOnlyEditing()` (Supervisor mở Spec/Parameter/Độ lặp lại chỉ-đọc: ẩn dòng thêm mới, vô hiệu hoá ô sửa/xoá, ghi chú "chỉ quyền XEM") + `requireAdminEdit()` chặn ở từng handler thêm/sửa/xoá. Item Code mở cho mọi vai trò (bỏ kiểm tra Supervisor ở Excel). Sửa tên Parameter (`paramRowEditable`) nay chỉ Admin.
+- Máy chủ: `supabase/settings_permissions.sql` viết lại theo ma trận (itemCodes: mọi vai trò có hồ sơ; thresholds/repeatability/fieldMapping/staff: Admin) — **CHƯA chạy trên project thật**; cho tới khi chạy, RLS cũ trong `auth.sql` vẫn là: Item Code cần Supervisor (Inspector sẽ bị máy chủ từ chối, mục bị bỏ khỏi hàng đợi và báo lỗi ở header), Spec/Độ lặp lại cho Supervisor ghi. Phiếu: `approval_flow.sql` (chưa chạy). RLS không phân biệt từng dòng Parameter nên quy tắc "chỉ dòng tự nhập" chỉ ở giao diện.
+- Đã kiểm (local, Console): 3 vai trò × (tab hiện/ẩn, số điều khiển bật/tắt ở 3 tab quản trị, dòng thêm mới); Supervisor bấm thêm trực tiếp ở Spec/Độ lặp lại/Parameter → không ghi; Inspector thêm/sửa/xoá Item Code và nhập Excel → thành công. Chưa kiểm RLS thật.
