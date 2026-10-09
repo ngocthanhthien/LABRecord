@@ -88,4 +88,4 @@ create trigger trg_lab_records_guard before insert or update on public.lab_recor
 -- 2) Trigger security definer + lab_level() áp dụng cho MỌI request qua PostgREST bất kể UI ẩn nút gì.
 -- 3) Đồng bộ 2 máy: Last-Write-Wins theo meta.updatedAt. Nếu máy A offline sửa 1 phiếu rồi lên mạng khi server đã duyệt phiếu đó,
 --    trigger từ chối (4xx) -> Sync.flush bỏ mục đó khỏi hàng đợi và báo lỗi ở header; chưa có thông báo xung đột chủ động.
--- 4) Quyền ghi danh mục Parameters (settings.fieldMapping) cho Supervisor nằm ở file settings_permissions.sql.
+-- 4) Quyền ghi danh mục Parameters (settings.fieldMapping) cho Supervisor nằm ở file permissions_matrix.sql.

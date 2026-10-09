@@ -1,5 +1,5 @@
 -- Lab Record — máy chủ đọc MA TRẬN QUYỀN cấu hình ở Cài đặt → Phân quyền (2026-10-06).
--- Chạy SAU auth.sql (+ users.sql). THAY THẾ tác dụng của settings_permissions.sql và hàm lab_records_guard trong approval_flow.sql
+-- Chạy SAU auth.sql (+ users.sql). THAY THẾ hàm lab_records_guard trong approval_flow.sql
 -- (nếu đã chạy 2 file đó thì file này ghi đè các policy/hàm cùng tên). Chạy lại nhiều lần được.
 -- CHƯA áp dụng lên project Supabase thật — người phụ trách tự chạy trong SQL Editor khi sẵn sàng.
 --
