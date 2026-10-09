@@ -209,6 +209,8 @@ Form động 3 loại; kết luận tự động; tiến độ + alarm thiếu; 
 
 ## 7. Supabase — trạng thái các file SQL
 
+> **Rà soát 2026-10-09 (chỉ đọc, qua Supabase CLI + PostgREST bằng publishable key):** project `LABrecord` đã có Edge Function `admin-users` (version 2, cập nhật 2026-09-25, mã nguồn TRÙNG bản trong repo); các hàm `lab_level()` và `lab_can()` ĐÃ tồn tại trên database (anon bị từ chối đúng như `revoke` trong `permissions_matrix.sql`) và bảng `profiles` có cột `role/disabled/username` → `auth.sql`, `users.sql`, `permissions_matrix.sql` đã được chạy. Cột "Trạng thái" bên dưới ghi theo thời điểm 06/10 và đã lỗi thời ở các điểm này. CHƯA đối chiếu được nội dung từng hàm/trigger/policy trên server với file SQL (cần quyền đọc database). Đợt sửa 09/10 chỉ đổi `index.html`, không cần cập nhật gì trên Supabase.
+
 | File | Việc | Trạng thái |
 |---|---|---|
 | `schema.sql` | Bảng + bucket + policy mở | **Đã chạy** trên project thật (2026-09-25), đã test đẩy/kéo/tombstone/ảnh; dữ liệu thử đã xoá |
