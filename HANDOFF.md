@@ -1,6 +1,6 @@
 # Lab Record – ILD Coffee Vietnam — Handoff
 
-**Cập nhật:** 2026-10-06 (viết lại toàn bộ, hợp nhất các bản ghi chú theo đợt trước đó — không còn mục "đợt 1/2/3": mọi thứ dưới đây là TRẠNG THÁI HIỆN TẠI)
+**Cập nhật:** 2026-10-09 (đợt "On going" của `Comment-Lab Record.xlsx` — xem §11; bản viết lại 2026-10-06: viết lại toàn bộ, hợp nhất các bản ghi chú theo đợt trước đó — không còn mục "đợt 1/2/3": mọi thứ dưới đây là TRẠNG THÁI HIỆN TẠI)
 **Vị trí:** `C:\Users\BinhDang\Documents\GitHub\LABRecord` (git repo, nhánh `main`; người dùng tự commit — AI không commit/push trừ khi được yêu cầu)
 
 Tài liệu cho AI/dev khác tiếp nhận dự án mà không có lịch sử hội thoại. Đọc §0 và §1 trước khi sửa code.
@@ -23,7 +23,7 @@ Tài liệu cho AI/dev khác tiếp nhận dự án mà không có lịch sử h
 Web app nội bộ **offline-first** cho phòng QA/Lab của ILD Coffee Vietnam: nhập kết quả phân tích hoá lý, tự so ngưỡng → Đạt/Không đạt, lưu bền, tra cứu lịch sử, phê duyệt, xuất CSV/PDF/Excel, backup/restore, đồng bộ Supabase, đăng nhập + phân quyền theo vai trò.
 
 - **3 loại sản phẩm** (`productType`): `powder` (Powder, 9 chỉ tiêu), `coffeeOil` (Coffee Oil, 3 chỉ tiêu), `liquid` (Liquid, 7 chỉ tiêu). Mỗi loại có form, Item Code, Spec, Parameters, Độ lặp lại riêng.
-- **Toàn bộ app là 1 file `index.html`** (~6160 dòng, ~450 KB): HTML + CSS + JS + seed dữ liệu + logo (base64) nhúng cả trong file. **Không build, không npm, không CDN, không thư viện ngoài** (có module tự viết đọc/ghi `.xlsx` — `XlsxLite`). Lý do: gửi 1 file cho đồng nghiệp là chạy. Đừng thêm dependency.
+- **Toàn bộ app là 1 file `index.html`** (~6310 dòng, ~465 KB): HTML + CSS + JS + seed dữ liệu + logo (base64) nhúng cả trong file. **Không build, không npm, không CDN, không thư viện ngoài** (có module tự viết đọc/ghi `.xlsx` — `XlsxLite`). Lý do: gửi 1 file cho đồng nghiệp là chạy. Đừng thêm dependency.
 - Mở trực tiếp bằng trình duyệt được; nên dev qua local server (§9).
 
 ### Nội dung thư mục
@@ -96,13 +96,15 @@ Form Nhập liệu dựng động từ `TYPE_CONFIG[type]` = `{ sampleFields, bl
 - Powder: Độ ẩm, Tỷ trọng, Độ màu, Độ cặn (ảnh), pH, Acidity, Độ hòa tan (Nóng/Lạnh V/X + cảnh báo nhiệt độ 96–98 / 18–20 °C), Kích thước hạt (sàng), Ngoại vật (Absent/Present + ảnh).
 - Coffee Oil: Moisture (Oven), Sediment, Density (g/L). Trường Type (FGs/Semi-FGs) → Customer tự điền (FGs→LDC, Semi-FGs→NA).
 - Liquid: Brix, Dry Matter, Sediment (Grade + ảnh), pH, Acidity, Density (g/L), Foreign Matter.
-- Công thức Oil/Liquid đã đối chiếu số mẫu trong Excel: Moisture = ((đĩa+nắp)+mẫu−sau sấy)/mẫu×100; Sediment (Oil) = (ống+cặn−ống)/(KL mẫu)×100; Dry Matter = (sau sấy−đĩa)/mẫu×100; Acidity = V×NaOH/0.1; **Density (g/L) = (bình+mẫu−bình)/dung tích×1000**, không mặc định dung tích (nhân viên nhập), hiển thị 1 chữ số thập phân. Nhiệt độ lò: Oil 102–104 °C, Liquid 94–96 °C, chỉ cảnh báo màu (xanh/đỏ), không đổi kết luận.
+- Công thức Oil/Liquid đã đối chiếu số mẫu trong Excel: Moisture = ((đĩa+nắp)+mẫu−sau sấy)/mẫu×100; Sediment (Oil) = (ống+cặn−ống)/(KL mẫu)×100; Dry Matter = (sau sấy−đĩa)/mẫu×100; Acidity = V×NaOH/0.1; **Density: Coffee Oil theo g/ml = (bình+mẫu−bình)/dung tích (4 chữ số thập phân, từ 2026-10-09); Liquid theo g/L = …×1000 (1 chữ số thập phân)**; không mặc định dung tích (nhân viên nhập). Nhiệt độ lò: Oil 102–104 °C, Liquid 94–96 °C, chỉ cảnh báo màu (xanh/đỏ), không đổi kết luận.
+- **Giờ ra lò tự điền** (Oil Moisture, Liquid Dry Matter): cột `shared` có `autoFrom: { key:'tg_vao_lo', addMinutes:120 }` → `autoFillLinkedTime()` điền giờ ra = giờ vào + 2h khi ô ra lò trống hoặc vẫn là giá trị app tự điền (`state.autoTimes`); giờ nhân viên tự sửa / giờ đã lưu không bị đè; qua 24h quay vòng.
+- **Ảnh bắt buộc** (`photos.required:true`): Powder Độ cặn + Ngoại vật, Liquid Foreign Matter — cần ≥ 1 ảnh mới hoàn thành chỉ tiêu (Liquid Sediment: ảnh vẫn tuỳ chọn). Sửa phiếu/nạp nháp: ảnh đã lưu nằm ở `keptAttachments[name]` (hiện lại trong thư viện, xoá được) và được GIỮ khi lưu (`collectPhotos` = ảnh giữ + ảnh mới) — trước đây sửa phiếu làm mất ảnh cũ.
 - **Công thức % mẫu trên sàng:** % = (KL mẫu+sàng − KL sàng) / tổng KL thu hồi × 100; chỉ tính khi đủ 8 cỡ hợp lệ và tổng > 0 (ngược lại hiện `--`); validate chặn mẫu+sàng < sàng, số âm, tổng = 0.
 
 ### 2.3. Hoàn thành chỉ tiêu & cảnh báo thiếu
 
-- Một quy tắc dùng chung: `blockSpecs(b)` + `blockCompletion(b, get)` → `{complete, missing[], invalid[]}`; `get` đọc form (`fval`) hoặc bản ghi (`recordBlockGetter` + `blockReaders`). Hoàn thành = đủ MỌI trường của phương pháp và hợp lệ; số 0 = đã nhập; độc lập Đạt/Không đạt; ảnh không bắt buộc; ô có giá trị mặc định tính là đã có.
-- Dùng cho: thanh tiến độ cố định ở form (x/N chỉ tiêu, `calcCompletion`), tiến độ trong chi tiết phiếu (`completionOfRecord(r)` → `null` ⇒ "Chưa xác định" nếu bản ghi cũ thiếu khối/khoá), màu xanh tên chỉ tiêu (`card__title--done`, dấu ✓), và alarm khi Lưu chính thức (`collectMissingResults` → modal `showMissingResultsModal`, bấm mục để focus ô; `refreshMissingNotes` cập nhật khi nhập tiếp). Trường thêm SAU các bản ghi cũ (Người thực hiện của Ngoại vật, `productionYear`) thiếu khoá thì bỏ khỏi tổng.
+- Một quy tắc dùng chung: `blockSpecs(b)` + `blockCompletion(b, get)` → `{complete, missing[], invalid[]}`; `get` đọc form (`fval`) hoặc bản ghi (`recordBlockGetter` + `blockReaders`). Hoàn thành = đủ MỌI trường của phương pháp và hợp lệ; số 0 = đã nhập; độc lập Đạt/Không đạt; ảnh chỉ bắt buộc ở khối `photos.required` (spec kind `photo`, getter trả SỐ ảnh — form dùng `formGet`, bản ghi đếm `attachments`; bản ghi không có khoá `attachments` thì bỏ qua); ô có giá trị mặc định tính là đã có.
+- Dùng cho: thanh tiến độ cố định ở form (x/N chỉ tiêu, `calcCompletion`), tiến độ trong chi tiết phiếu (`completionOfRecord(r)` → `null` ⇒ "Chưa xác định" nếu bản ghi cũ thiếu khối/khoá), màu xanh tên chỉ tiêu (`card__title--done`, dấu ✓), và alarm khi Lưu chính thức (`collectMissingResults` → modal `showMissingResultsModal` trình bày GỌN: mỗi chỉ tiêu 1 dòng qua `groupMissingByBlock` + `compactMissingText`, bấm dòng để tới ô thiếu đầu tiên; `refreshMissingNotes` ghi 1 dòng gọn ở từng khối, cập nhật khi nhập tiếp). Trường thêm SAU các bản ghi cũ (Người thực hiện của Ngoại vật, `productionYear`) thiếu khoá thì bỏ khỏi tổng.
 - Tách 3 khái niệm khi lưu: *hợp lệ dữ liệu* (`validateBeforeSubmit` + `blockValidationErrors` — chặn cả Force), *đầy đủ* (thiếu → chặn Lưu chính thức, Force bỏ qua; nút Force hiện khi còn thiếu), *chất lượng* (có chỉ tiêu Không đạt → `confirmSaveAlarm`, lưu `record.qcAlarm`). Lưu nháp không qua các bước này.
 
 ### 2.4. Quy tắc mã (Item Code / Batch / PO / SSCC / Customer)
@@ -110,7 +112,7 @@ Form Nhập liệu dựng động từ `TYPE_CONFIG[type]` = `{ sampleFields, bl
 Validator dùng chung UI + lưu: `validateSampleField`, `collectFieldErrors`, `setFieldError` (lỗi dưới ô, `aria-invalid`), `revalidateCodeFields`. Kiểm khi blur/change, không kiểm lúc đang gõ dở; lưu chính thức (kể cả Force) chạy lại; lưu nháp không kiểm.
 
 - **Item Code, PO:** `<input inputmode=numeric>` (giữ số 0 đầu). Item Code phải tồn tại trong danh mục loại đang chọn.
-- **Batch** (`parseBatchStructure`, `BATCH_RULE_*`): tự viết hoa, đúng cấu trúc theo loại — Powder 10 ký tự: 1 số năm + 3 số Julian + 4 số cuối PO + 1 chữ loại + 1 số line; Oil FGs `…OF<line>` (11 ký tự), Oil Semi-FGs `…O<line>` (10), Liquid `…L<line>`; kiểm Julian 1–366 + năm nhuận. Batch chỉ có 1 chữ số năm → field **"Năm SX (xác nhận)"** (`productionYear`): trống thì tự đoán năm gần nhất (±6 năm, hoà → để trống) và LUÔN hiện ghi chú "tự động…"; người dùng sửa thì chỉ kiểm khớp chữ số cuối. Ngày SX = năm xác nhận + Julian. Mở phiếu cũ chỉ đọc lại giá trị đã lưu.
+- **Batch** (`parseBatchStructure`, `BATCH_RULE_*`): tự viết hoa, đúng cấu trúc theo loại — Powder 10 ký tự: 1 số năm + 3 số Julian + 4 số cuối PO + 1 chữ loại + 1 số line; Oil FGs `…OF<line>` (11 ký tự), Oil Semi-FGs `…O<line>` (10), Liquid `…L<line>`; kiểm Julian 1–366 + năm nhuận. Batch chỉ có 1 chữ số năm → **đã BỎ ô "Năm SX (xác nhận)"** (2026-10-09): `productionYear` là trường ẨN (`input:'hidden'`, vẫn lưu trong `sampleInfo`), app tự lấy **năm gần nhất không vượt quá năm hiện tại** có chữ số cuối khớp (`resolveBatchYear`; quy tắc do AI đề xuất, chủ dự án chưa xác nhận riêng — §8), ghi "Năm SX … (tự xác định theo Batch)" dưới ô Batch và cảnh báo nếu cách hiện tại > 1 năm. Năm đã lưu trong phiếu mà còn khớp chữ số năm của Batch thì giữ nguyên (không tính lại phiếu cũ). Ngày SX = năm đó + Julian.
 - **PO Powder** tự sinh (`generatedPo/maybeGeneratePo`): Customer (6=INS, 7=LDC) + Line (Batch[10]) + 2 số cuối Năm SX xác nhận + "0" + 4 số cuối PO (Batch ký tự 5–8); chỉ điền khi PO trống hoặc đúng là PO app sinh trước đó (`state.poAutoValue`). Customer tự điền theo chữ số đầu PO (`applyCustomerFromPo`, không đè lựa chọn tay; lệch → lỗi tại ô, chặn lưu chính thức/Force). **6=INS, 7=LDC áp cho Powder và Liquid.**
 - **SSCC:** 14 chữ số = PO(9) + "00" + **3 số nhân viên tự nhập** (VD 612600083 → 61260008300 → +221 → 61260008300221). Tiền tố tự điền `ssccSuggestPrefix` (`suggestZeros:2`); **KHÔNG tự tăng số**. Khi PO đổi, `syncSsccPrefix(old,new)` đổi tiền tố tự sinh, giữ phần người dùng gõ. 9 số đầu SSCC phải trùng PO (`ssccPoMessage`). Tiền tố chưa đủ 14 số bị chặn lưu chính thức; trống thì được.
 - `poStructureMessage`: PO 9 số phải khớp Batch (4 số cuối, line), năm, chữ số thứ 5 = 0 (Powder), Customer theo chữ số đầu. Dữ liệu thiếu không bị coi là mâu thuẫn.
@@ -119,7 +121,7 @@ Validator dùng chung UI + lưu: `validateSampleField`, `collectFieldErrors`, `s
 ### 2.5. Ngưỡng (Spec) & độ lặp lại
 
 - `getThreshold(type, customer, label, recipe)` lọc theo loại; nhiều dòng theo dải Recipe thì so 2 số đầu (giả định chưa QA xác nhận §10).
-- **Density g/L:** block khai báo `thresholdUnit:'g/L'`; dòng Spec chỉ dùng khi có `unitBasis:'g/L'`. `migrateDensityThresholds()` chỉ ×1000 các dòng còn đúng giá trị seed cũ (`0.92-1.2`, `1.184-1.223`); dòng khác bị tô nền ở tab Spec, phiếu hiện "Cần xác nhận đơn vị ngưỡng", chỉ tiêu ở trạng thái chờ tới khi Supervisor/Admin nhập lại theo g/L (sửa ô Yêu cầu = xác nhận). Phiếu cũ (không `unitBasis`) không bị tính lại; chi tiết ghi "Lưu theo đơn vị cũ (g/ml), không tự quy đổi".
+- **Đơn vị Density:** block khai báo `thresholdUnit` (Coffee Oil `'g/ml'`, Liquid `'g/L'`); dòng Spec chỉ dùng khi `unitBasis` trùng đơn vị đó. `migrateDensityThresholds()` chỉ tự chuyển các dòng còn đúng giá trị do app khởi tạo/quy đổi (`LEGACY_DENSITY_SEEDS`: Oil `0.92-1.2` không basis hoặc `920-1200` basis g/L → `0.92-1.2` g/ml; Liquid `1.184-1.223` → `1184-1223` g/L); dòng khác bị tô nền ở tab Spec, phiếu hiện "Cần xác nhận đơn vị ngưỡng", chỉ tiêu ở trạng thái chờ tới khi Supervisor/Admin nhập lại theo g/L (sửa ô Yêu cầu = xác nhận). Phiếu lưu theo đơn vị khác đơn vị hiện hành (không `unitBasis` = g/ml; Oil lưu 06–09/10 = g/L) không bị tính lại; chi tiết ghi "Lưu theo đơn vị cũ (…), không tự quy đổi".
 - **Độ lặp lại theo Customer:** `getRepeatConfig()` ưu tiên đúng Customer → "Mặc định chung" (customer rỗng) → `null` ("chưa cấu hình ngưỡng", không coi là 0). Chặn trùng (loại+chỉ tiêu+Customer). Chỉ cảnh báo đỏ, không đổi Kết luận. Dung tích Oil/Liquid chưa có dòng nào (Excel không nêu).
 
 ### 2.6. Phê duyệt phiếu & sửa phiếu đã lưu
@@ -133,11 +135,11 @@ Validator dùng chung UI + lưu: `validateSampleField`, `collectFieldErrors`, `s
 
 ### 2.7. Excel Item Code (`XlsxLite`)
 
-Module tự viết: ghi zip STORE + chuỗi nội tuyến định dạng Text (giữ số 0 đầu); đọc zip + `DecompressionStream('deflate-raw')` (cần trình duyệt mới). Tab Item Code: "Tải Template", "Xuất dữ liệu", "Nhập từ .xlsx…". Cột: Loại sản phẩm | Item Code | Product Name | Recipe (+ sheet "Huong dan"). Nhập: xem trước (thêm mới / cập nhật before→after / không đổi / lỗi / cảnh báo), chỉ ghi khi "Xác nhận nhập"; khoá = loại + Item Code; mã vắng trong file giữ nguyên; **có dòng lỗi → không ghi gì**; trùng hoàn toàn chỉ cảnh báo (powder 11000018 trùng sẵn trong dữ liệu gốc); Item Code dạng số trong file bị cảnh báo (có thể mất số 0 đầu). Ghi qua `persistItemCodes()`; Audit Log `import-itemcode`/`export-itemcode`. Nhập Excel cần cả quyền thêm và sửa Item Code.
+Module tự viết: ghi zip STORE + chuỗi nội tuyến định dạng Text (giữ số 0 đầu); đọc zip + `DecompressionStream('deflate-raw')` (cần trình duyệt mới). Tab Item Code: "Tải Template", "Xuất dữ liệu", "Nhập từ .xlsx…". Cột: Item Code | Product Name | Recipe (+ sheet "Huong dan") — **không còn cột Loại sản phẩm**: template/xuất/nhập đều theo loại đang chọn ở tab Item Code (`state.adminType`, hiện rõ ở bước xem trước); file mẫu cũ có cột "Loại sản phẩm" vẫn đọc được theo cột đó. "Xuất dữ liệu" chỉ xuất loại đang xem. Nhập: xem trước (thêm mới / cập nhật before→after / không đổi / lỗi / cảnh báo), chỉ ghi khi "Xác nhận nhập"; khoá = loại + Item Code; mã vắng trong file giữ nguyên; **có dòng lỗi → không ghi gì**; trùng hoàn toàn chỉ cảnh báo (powder 11000018 trùng sẵn trong dữ liệu gốc); Item Code dạng số trong file bị cảnh báo (có thể mất số 0 đầu). Ghi qua `persistItemCodes()`; Audit Log `import-itemcode`/`export-itemcode`. Nhập Excel cần cả quyền thêm và sửa Item Code.
 
 ### 2.8. Parameters
 
-Mỗi dòng có `id` ổn định; dòng người dùng thêm có `origin:'user'` → sửa được "Chỉ tiêu"/"Trường" nếu có quyền `param.edit` (chặn trống/trùng; Audit `rename-param`; chỉ đổi dòng tham chiếu, không đụng Spec/Độ lặp lại/cấu hình form). Dòng `system` (seed) hoặc không có `origin` (dữ liệu cũ, không phân biệt được) bị khoá tên.
+Mỗi dòng có `id` ổn định. **Mọi dòng** (kể cả seed hệ thống) sửa được "Chỉ tiêu"/"Trường" nếu có quyền `param.edit` (từ 2026-10-09; chặn trống/trùng; Audit `rename-param`). Đổi tên chỉ đổi bảng tham chiếu này, không đụng Spec/Độ lặp lại/cấu hình form.
 
 ### 2.9. Theme "ILD Crafted"
 
@@ -158,7 +160,7 @@ Mỗi dòng có `id` ổn định; dòng người dùng thêm có `origin:'user'
 
 - Auto Save mỗi 20 s khi ở tab Nhập liệu → bản ghi cố định `draft_current` (khác "Lưu nháp" tạo bản ghi nháp riêng); `checkAutoRecovery()` hỏi khôi phục khi mở lại; chỉ chạy sau đăng nhập.
 - Ảnh đính kèm (Độ cặn, Ngoại vật, Sediment Liquid…): Blob trong IndexedDB, đa ảnh cộng dồn + thư viện xem trước; ảnh đã đẩy lên bucket nhưng **app chưa hiển thị ảnh kéo về từ máy khác**.
-- Xuất: CSV (Lịch sử/Data Log), PDF qua `window.print` (`printRecord`, `printFullReport`; in dùng `body.is-printing`), Backup/Restore JSON (gồm ma trận quyền).
+- Xuất: CSV (Lịch sử/Data Log), PDF qua `window.print` (`printRecord`, `printFullReport`; in dùng `body.is-printing`). **Full Report** (`renderFullReportHtml` + `frBlockHtml`, CSS `.fr-*`): đầu trang có logo + kết luận, bảng thông tin mẫu, bảng tóm tắt, mỗi chỉ tiêu 1 khối `break-inside: avoid` với bảng ngang giống form (nhãn cột lấy từ `TYPE_CONFIG`), khổ A4 (`@page`), Backup/Restore JSON (gồm ma trận quyền).
 - Thanh tiến độ ở form dính (`.completion-row--sticky`, `--sticky-offset` do `updateStickyOffset()`); `.main-content:has(> #panel-form.is-active){overflow:visible}` để sticky hoạt động (vì `.main-content{overflow-y:auto}` sẽ vô hiệu nó) và `#analysis-form{overflow-x:auto}` cho bảng sàng trên mobile.
 
 ---
@@ -223,6 +225,9 @@ Thứ tự chạy + hướng dẫn deploy Edge Function: `supabase/README.md`. *
 
 ## 8. Giả định nghiệp vụ CHƯA được QA xác nhận
 
+0. **Năm SX tự xác định** = năm gần nhất không vượt quá năm hiện tại khớp chữ số năm của Batch (thay ô xác nhận đã bỏ).
+0b. **Mã Customer 6/7:** code đang áp 6=INS, 7=LDC; ghi chú trong `Comment-Lab Record.xlsx` (dòng SSCC Powder, PO Powder, SSCC Liquid) lại ghi 6-LDC, 7-INS → CHƯA đổi, chờ chủ dự án chốt.
+
 1. Khớp ngưỡng theo dải Recipe (so 2 số đầu) — nhánh "Low Density" của Tỷ trọng-LDC rơi về dòng đầu.
 2. Ngoại vật Powder: đơn giản hoá Absent = Đạt / Present = Không đạt (quy tắc gốc "tối đa 10 hạt <1mm, tối đa 1 hạt >1mm" chưa implement).
 3. `REPEATABILITY` mặc định Powder (0.1 / 5 / 1 / 0.05 / 0.05) là ước lượng; cảnh báo tự động chỉ chạy với chỉ tiêu 2 lần đo có dòng cấu hình.
@@ -254,7 +259,8 @@ Ghi chú công cụ (Windows): shell là Git Bash/PowerShell; script Python/JS l
 ## 10. Việc còn chờ xác nhận / chưa làm
 
 **Chờ chủ dự án xác nhận (không đoán):**
-1. Cách suy ra năm đầy đủ nếu bỏ ô "Năm SX (xác nhận)" (hiện bắt buộc xác nhận vì Batch chỉ có 1 chữ số năm).
+0. Các dòng "On going" CHƯA làm vì thiếu thông tin: (a) mã Customer 6/7 (§8.0b) — ảnh hưởng PO Powder tự điền; (b) công thức "% mẫu trên sàng" mong muốn (mẫu số = tổng thu hồi như hiện tại hay Khối lượng mẫu ban đầu?); (c) SSCC Liquid: chữ số thứ 2 là mã "Liquid product" (số mấy?) — app vẫn bắt 9 số đầu SSCC = PO; (d) SSCC Coffee Oil: 2 chữ số mã sản phẩm cho FGs và Semi-FGs; (e) "sửa phiếu đã lưu cho Sup & Admin" — đã có (phiếu đã duyệt tạo phiên bản mới + duyệt lại), cần biết người dùng còn muốn gì khác; (f) Density Liquid có đổi sang g/ml như Coffee Oil không; (g) ảnh bắt buộc có áp cho Liquid Sediment không.
+1. Quy tắc năm SX tự xác định (§8.0) có đúng ý không.
 2. Cấu trúc đầy đủ PO/SSCC của **Coffee Oil Semi-FGs** và 2 chữ số "mã sản phẩm" đầu PO/SSCC của Oil/Liquid (chỉ kiểm chuỗi số).
 3. Thuật toán sinh/tăng 3 số cuối SSCC (hiện nhân viên tự nhập; đã bỏ đề xuất "bộ đếm theo PO").
 4. **Spec cho Customer khác:** Oil Semi-FGs = NA; Liquid LDC. File Mapping trỏ tới "bảng Thông tin Kết luận" của Oil/Liquid nhưng chưa được cung cấp → hiện chỉ có seed LDC (Oil) và INS (Liquid); Customer khác ở trạng thái chờ tới khi Admin thêm dòng ở tab Spec.
@@ -278,6 +284,7 @@ Ghi chú công cụ (Windows): shell là Git Bash/PowerShell; script Python/JS l
 - ILD Crafted rebrand + Theme (2026-09-29).
 - Coffee Oil + Liquid (2026-10-05): form, công thức, Batch theo loại, seed, engine `pair.shared`/`hhmm`.
 - Đợt 2026-10-06: SSCC/PO tự điền + đối chiếu mã, giờ lò hh:mm, Density g/L, Supervisor sửa phiếu đã lưu + lịch sử chỉnh sửa, Excel Item Code, sửa tên Parameter, độ lặp lại theo Customer, ma trận quyền theo "Quản lý người dùng.xlsx" rồi cho Admin chỉnh trong Cài đặt.
+- Đợt 2026-10-09 (các dòng "On going" trong `.claude/Comment-Lab Record.xlsx`): bỏ ô Năm SX (trường ẩn, tự xác định); giờ ra lò = vào lò + 2h; Density Coffee Oil về g/ml; ảnh bắt buộc cho Độ cặn/Ngoại vật/Foreign Matter + giữ ảnh đã lưu khi sửa phiếu; alarm thiếu dữ liệu gọn theo chỉ tiêu; Full Report mới không ngắt trang giữa chỉ tiêu; template Item Code bỏ cột Loại sản phẩm; Parameter sửa được Chỉ tiêu/Trường mọi dòng. Kiểm thử: bản sao tắt Supabase (`enabled:false, auth:false`) trên localhost qua Console/JS — Powder nhập→lưu→mở lại→Full Report, Oil/Liquid các mục liên quan, migrate ngưỡng Density, nhập/xuất Excel 3 cột + file cũ 4 cột, đổi tên Parameter; chưa in PDF thật, chưa thử Supabase thật, chưa thử mobile.
 - 2026-10-06 (dọn dẹp): viết lại HANDOFF; xoá `supabase/settings_permissions.sql` (bị `permissions_matrix.sql` thay thế); bỏ khối "Hello world" thừa trong `admin-users/index.ts`; cập nhật `supabase/README.md`.
 
 **Phương pháp kiểm thử đã dùng (cục bộ, chưa Supabase thật):** Console/JS trên `http://localhost:8766` qua Browser pane — Powder/Oil/Liquid đủ luồng nhập→lưu→nạp lại giống hệt, công thức theo số mẫu Excel, mọi validator mã, sticky/mobile 375px, 3 vai trò × ma trận quyền, flow duyệt/trả lại/phiên bản, Excel round-trip (240 dòng, 0 lỗi), `node --check` sau mỗi bước. Không có lỗi Console ở các lượt kiểm.
